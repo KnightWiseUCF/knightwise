@@ -1,0 +1,137 @@
+name: KnightWise CI/CD 
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  # continuous integration
+  test-backend:
+    name: test backend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: run backend tests
+        working-directory: ./backend
+        run: npm test
+        env:
+          MONGO_URI: mongodb://localhost:27017/test-studytool
+          JWT_SECRET: test_jwt_secret
+          NODE_ENV: test
+
+  test-frontend:
+    name: test frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: run linter
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: run frontend tests
+        working-directory: ./frontend
+        run: npm test
+
+      - name: build frontend
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+          retention-days: 1
+
+  # Continuous Deployment
+  deploy:
+    name: deploy to droplet
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+
+      - name: deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # navigate to app directory
+            cd /var/www/knightwise
+            
+            # pull latest code
+            git pull origin main
+            
+            # backend deployment
+            cd backend
+            npm ci --production
+            
+            # restart backend with PM2
+            pm2 restart backend || pm2 start npm --name "backend" -- start
+            
+            # frontend deployment
+            cd ../frontend
+            npm ci
+            npm run build
+            
+            # copy build files to nginx directory
+            sudo rm -rf /var/www/html/*
+            sudo cp -r dist/* /var/www/html/
+            
+            # restart nginx
+            sudo systemctl restart nginx
+
+      - name: deployment status
+        if: success()
+        run: echo "yippe! deployment successful"
+
+      - name: notify on failure
+        if: failure()
+        run: echo "deployment failed... have you tried turning it off and on again..?"
