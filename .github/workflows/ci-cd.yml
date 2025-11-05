@@ -120,10 +120,11 @@ jobs:
             cd ../frontend
             npm ci
             npm run build
-            
+
+            # uncomment these lines if anything breaks with regards to the frontend not being in /www/html
             # copy build files to nginx directory
-            sudo rm -rf /var/www/html/*
-            sudo cp -r dist/* /var/www/html/
+            # sudo rm -rf /var/www/html/*
+            # sudo cp -r dist/* /var/www/html/
             
             # restart nginx
             sudo systemctl restart nginx
