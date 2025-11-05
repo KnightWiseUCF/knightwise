@@ -1,17 +1,11 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//
 //  Year:          2025
-//
 //  Author(s):     Daniel Landsman
-//
 //  File:          discordWebhook.js
-//
 //  Description:   Contains functionality for the KnightWise
 //                 Discord webhook, used for administration.
-//
-//  Last Modified: 10/08/2025 
 //
 ////////////////////////////////////////////////////////////////
 
@@ -24,7 +18,7 @@ const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
  * @param   {object} [options] - Optional. General options for future features
  * @returns {boolean}          - True if message sent successfully, false otherwise 
  */
-export async function sendNotification(content, options = {}) 
+async function sendNotification(content, options = {}) 
 {
   if (!DISCORD_WEBHOOK_URL) 
   {
@@ -65,3 +59,5 @@ export async function sendNotification(content, options = {})
     return false;
   }
 }
+
+module.exports = { sendNotification };
