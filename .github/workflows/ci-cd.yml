@@ -2,7 +2,8 @@ name: KnightWise CI/CD
 
 on:
   pull_request:
-    types: [closed]
+    branches: [ main ]
+    types: [ closed ]
 
 env:
   NODE_VERSION: '18.x'
