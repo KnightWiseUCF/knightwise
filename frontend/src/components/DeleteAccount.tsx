@@ -6,7 +6,8 @@
 //  File:          DeleteAccount.tsx
 //  Description:   Handles user account deletion.
 //
-//  Dependencies:  react, api instance
+//  Dependencies:  react
+//                 api instance
 //
 ////////////////////////////////////////////////////////////////
 

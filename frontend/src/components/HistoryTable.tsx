@@ -1,3 +1,16 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     Daniel Landsman
+//  File:          HistoryTable.tsx
+//  Description:   My Progress tab's Problem History table
+//
+//  Dependencies:  react
+//                 api instance
+//
+////////////////////////////////////////////////////////////////
+
 import React, { useEffect, useState } from 'react';
 import api from "../api";
 import correctAnswer from "../assets/correctAnswer.png";
@@ -34,12 +47,19 @@ const HistoryTable: React.FC = () => {
       });
 
       const problem = response.data;
+
+      // Get correct and incorrect answers
+      const correctAnswer = problem.answers?.find((a: any) => a.IS_CORRECT_ANSWER)?.TEXT || '';
+      const wrongAnswers = problem.answers
+        ?.filter((a: any) => !a.IS_CORRECT_ANSWER)
+        .map((a: any) => a.TEXT) || [];
+
       const problemParams = new URLSearchParams({
-        question: problem.question,
-        category: problem.category,
-        topic: problem.subcategory,
-        answerCorrect: problem.answerCorrect,
-        answersWrong: JSON.stringify(problem.answersWrong),
+        question: problem.QUESTION_TEXT,
+        category: problem.CATEGORY,
+        topic: problem.SUBCATEGORY,
+        answerCorrect: correctAnswer,
+        answersWrong: JSON.stringify(wrongAnswers),
       }).toString();
 
       const width = 600;

@@ -2,7 +2,7 @@
 //
 //  Project:       KnightWise
 //  Year:          2025
-//  Author(s):     Knightwise Team
+//  Author(s):     KnightWise Team
 //  File:          App.tsx
 //  Description:   Main app component, defined all routes
 //                 and navigation.

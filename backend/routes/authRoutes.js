@@ -1,8 +1,28 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          authRoutes.js
+//  Description:   Authentication routes for register, login,
+//                 email verify, password reset.
+//
+//  Notes:         Does not use authMiddleware as these
+//                 routes are for unauthenticated users.
+//
+//  Dependencies:  mysql2 connection pool (req.db)
+//                 bcryptjs
+//                 jsonwebtoken
+//                 node-mailjet
+//                 otp-generator
+//                 discordWebhook service (sendNotification)
+//
+////////////////////////////////////////////////////////////////
+
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendNotification } = require("../services/discordWebhook");
-const User = require("../models/User");
 const router = express.Router();
 
 // Mailjet for sending verification code
@@ -12,7 +32,6 @@ const mailjet = Mailjet.apiConnect(
     process.env.MJ_APIKEY_PRIVATE
 );
 
-const EmailCode = require("../models/EmailCode");
 const otpGenerator = require("otp-generator");
 
 // create code using otp-generator library
@@ -33,37 +52,53 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "Invalid Fields" });
     }
 
-    // need email verification to sign up
-    const record = await EmailCode.findOne({ email });
-    if (!record || record.verified !== true)
+    // Search for email verification code
+    const [emailRecords] = await req.db.query(
+      'SELECT * FROM EmailCode WHERE EMAIL = ?',
+      [email]
+    );
+
+    if (emailRecords.length === 0 || !emailRecords[0].IS_VERIFIED)
+    {
       return res
         .status(400)
         .json({ message: "Email verification is required" });
+    }
 
-    let user = await User.findOne({ username });
-    if (user) return res.status(400).json({ message: "User already exists" });
+    // Check if user or email already exists
+    const [existingUsers] = await req.db.query(
+      'SELECT * FROM User WHERE USERNAME = ? OR EMAIL = ?', 
+      [username, email]
+    );
+
+    if (existingUsers.length > 0)
+    {
+      return res
+        .status(400)
+        .json({ message: "User or email already exists" });
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    user = new User({
-      username,
-      email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-      isVerified: true,
-    });
 
-    await user.save();
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // Insert new user into db
+    const [result] = await req.db.query(
+      'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME) VALUES (?, ?, ?, ?, ?)',
+      [username, email, hashedPassword, firstName, lastName]
+    );
+
+    const userId = result.insertId;
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     // Signup success, send notification to Discord admin channel
     res.status(201).json({ message: "User Registered", token });
-    sendNotification(`New user signed up: ${user.username}`)
+    sendNotification(`New user signed up: ${username}`)
       .then(success => {
-        if (!success) console.warn(`Discord notification not sent for new user "${user.username}"`);
+        if (!success) console.warn(`Discord notification not sent for new user "${username}"`);
       })
       .catch(error => console.error("Failed to send new user notification:", error));
 
@@ -77,25 +112,32 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const [users] = await req.db.query(
+      'SELECT * FROM User WHERE USERNAME = ?',
+      [username]
+    );
+      
+    if (users.length === 0) return res.status(400).json({ message: "User not found" });
+    
+    // Get user and validate credentials
+    const user = users[0];
+    const isMatch = await bcrypt.compare(password, user.PASSWORD);
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ userId: user.ID }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
     res.status(200).json({
       message: "User Logged In",
       token,
       user: {
-        id: user._id,
-        name: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        id: user.ID,
+        name: user.USERNAME,
+        email: user.EMAIL,
+        firstName: user.FIRSTNAME,
+        lastName: user.LASTNAME,
       },
     });
   } catch (error) {
@@ -113,29 +155,42 @@ router.post("/sendotp", async (req, res) => {
     const { email, purpose } = req.body;
     const otp = generateCode();
     const expires = new Date(Date.now() + 5 * 60 * 1000);
-    const user = await User.findOne({ email });
+
+    const [users] = await req.db.query(
+      'SELECT * FROM User WHERE EMAIL = ?',
+      [email]
+    );
 
     // check if the email is already registered to avoid duplicate email
     if (purpose === "signup") {
-      if (user) {
+      if (users.length > 0) {
         return res.status(400).json({ message: "Email already registered" });
       }
     }
     // check if the email is already registered to avoid unregistered users from reset password
     if (purpose === "reset") {
-      if (!user) {
+      if (users.length === 0) {
         return res.status(404).json({ message: "User not found" });
       }
     }
 
-    const found = await EmailCode.findOne({ email });
+    const [emailRecords] = await req.db.query(
+      'SELECT * FROM EmailCode WHERE EMAIL = ?',
+      [email]
+    );
 
     // if email exists, update the OTP and expires
-    // if email doesn't exist, create EmailCode in MongoDB
-    if (found) {
-      await EmailCode.updateOne({ email }, { $set: { otp, expires } });
+    // if email doesn't exist, create EmailCode in MySQL
+    if (emailRecords.length > 0) {
+      await req.db.query(
+        'UPDATE EmailCode SET OTP = ?, EXPIRES = ?, IS_VERIFIED = FALSE WHERE EMAIL = ?',
+        [otp, expires, email]
+      );
     } else {
-      await EmailCode.create({ email, otp, expires });
+      await req.db.query(
+        'INSERT INTO EmailCode (EMAIL, OTP, EXPIRES, IS_VERIFIED) VALUES (?, ?, ?, FALSE)',
+        [email, otp, expires]
+      );
     }
 
     // send email containing an OTP to user
@@ -150,7 +205,7 @@ router.post("/sendotp", async (req, res) => {
             From: 
             {
               Email: "webdevpeeps@gmail.com",
-              Name: "KnightWise Developers"
+              Name: "KnightWise"
             },
             To: 
             [{
@@ -209,18 +264,26 @@ router.post("/sendotp", async (req, res) => {
 router.post("/verify", async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const record = await EmailCode.findOne({ email });
+    const [records] = await req.db.query(
+      'SELECT * FROM EmailCode WHERE EMAIL = ?',
+      [email]
+    );
 
-    // check the OTP and expiration time related to email in MongoDB
-    if (!record) return res.status(400).json({ message: "No Record" });
-    if (record.otp !== otp)
+    // check the OTP and expiration time related to email
+    if (records.length === 0) return res.status(400).json({ message: "No Record" });
+
+    const record = records[0]
+    if (record.OTP !== otp)
       return res.status(400).json({ message: "Wrong OTP" });
-    if (record.expires < new Date())
+    if (new Date(record.EXPIRES) < new Date())
       return res.status(400).json({ message: "Expired" });
 
     // ensure email verification is marked as complete
     // if other fields (e.g. password, username) are changed when sign in
-    await EmailCode.updateOne({ email }, { $set: { verified: true } });
+    await req.db.query(
+      'UPDATE EmailCode SET IS_VERIFIED = TRUE WHERE EMAIL = ?',
+      [email]
+    );
     res.json({ message: "Verify" });
   } catch (error) {
     console.error("Verify Error: ", error);
@@ -232,10 +295,13 @@ router.post("/verify", async (req, res) => {
 router.post("/resetPassword", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const record = await EmailCode.findOne({ email });
+    const [records] = await req.db.query(
+      'SELECT * FROM EmailCode WHERE EMAIL = ?',
+      [email]
+    );
 
     // double check that user email has been verified
-    if (!record || !record.verified) {
+    if (records.length === 0 || !records[0].IS_VERIFIED) {
       return res.status(403).json({ message: "Email verification required" });
     }
 
@@ -243,7 +309,10 @@ router.post("/resetPassword", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // update new password
-    await User.updateOne({ email }, { $set: { password: hashedPassword } });
+    await req.db.query(
+      'UPDATE User SET PASSWORD = ? WHERE EMAIL = ?',
+      [hashedPassword, email]
+    );
     res.json({ message: "Password reset" });
   } catch (error) {
     console.error("Reset Password Error:", error);

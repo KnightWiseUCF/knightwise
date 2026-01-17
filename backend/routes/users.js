@@ -7,7 +7,9 @@
 //  Description:   Express routes for user operations.
 //                 Protected by JWT authentication.
 //
-//  Dependencies:  express, authMiddleware, userController
+//  Dependencies:  express
+//                 authMiddleware
+//                 userController
 //
 ////////////////////////////////////////////////////////////////
 

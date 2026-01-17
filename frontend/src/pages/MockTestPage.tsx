@@ -1,10 +1,26 @@
-// This page is for the mock test
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          MockTestPage.tsx
+//  Description:   Mock Test page component
+//
+//  Dependencies:  react
+//                 api instance
+//                 Layout component
+//                 MockTestInfo component
+//                 MockTestProblem component
+//                 MockTestResult component
+//
+////////////////////////////////////////////////////////////////
+
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import MockTestInfo from "../components/MockTestInfo";
 import MockTestProblem from "../components/MockTestProblem";
 import MockTestResult from "../components/MockTestResult";
-import axios from "axios";
+import api from "../api";
 
 const MockTestPage: React.FC = () => {
   const [step, setStep] = useState<"info" | "test" | "result">("info");
@@ -19,15 +35,20 @@ const MockTestPage: React.FC = () => {
   useEffect(() => {
     const fetchMockTestProblems = async () => {
       try {
-        const res = await axios.get("/api/test/mocktest");
+        const res = await api.get("/api/test/mocktest");
         const data = res.data;
 
-        const withOptions = data.problems.map((p: any) => ({
-          ...p,
-          options: [p.answerCorrect, ...p.answersWrong].sort(
-            () => Math.random() - 0.5
-          ),
-        }));
+        const withOptions = data.questions.map((question: any) => {
+          const correctAnswer = question.answers?.find((a: any) => a.IS_CORRECT_ANSWER);
+          const allAnswerTexts = question.answers?.map((a: any) => a.TEXT) || [];
+          const shuffledOptions = allAnswerTexts.sort(() => 0.5 - Math.random());
+
+          return {
+            ...question,
+            answerCorrect: correctAnswer?.TEXT,
+            options: shuffledOptions,
+          };
+        });
 
         setQuestions(withOptions);
         setSectionScores({});
@@ -53,7 +74,7 @@ const MockTestPage: React.FC = () => {
   const handleSubmit = () => {
     if (!selectedAnswer || !current) return;
 
-    const section = current.section;
+    const section = current.SECTION;
     setSectionScores((prev) => ({
       ...prev,
       [section]: {

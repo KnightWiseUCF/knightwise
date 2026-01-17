@@ -1,25 +1,18 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2025
+//  Year:          2025-2026
 //  Author(s):     Daniel Landsman
 //  File:          userController.js
 //  Description:   Controller functions for user operations,
 //                 including updating profile information and
 //                 deleting accounts. Requires authentication.
 //
-//  Dependencies: mongoose        (TODO: Migration to SQL)
-//                User model      (TODO: Migration to SQL)
-//                EmailCode model (TODO: Migration to SQL)
-//                Answer model    (TODO: Migration to SQL)
+//  Dependencies: mysql2 connection pool (req.db)
 //                discordWebhook service (sendNotification)
 //
 ////////////////////////////////////////////////////////////////
 
-const mongoose  = require("mongoose");            // TODO: Migration to SQL
-const User      = require("../models/User");      // TODO: Migration to SQL
-const EmailCode = require("../models/EmailCode"); // TODO: Migration to SQL
-const Answer    = require("../models/Answer");    // TODO: Migration to SQL
 const { sendNotification } = require("../services/discordWebhook");
 
 /**
@@ -36,15 +29,15 @@ const deleteAccount = async (req, res) => {
   try 
   {
     // Account can only be deleted by account owner
-    if (req.user.id !== userId) 
+    if (req.user.id !== parseInt(userId)) 
     {
       return res
         .status(403)
         .json({ message: "Forbidden" });
     }
 
-    // Ensure userId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(userId))
+    // Ensure userId is a valid primary key
+    if (isNaN(parseInt(userId)) || parseInt(userId) <= 0)
     {
       return res
         .status(400)
@@ -52,24 +45,30 @@ const deleteAccount = async (req, res) => {
     }
 
     // Get user info
-    const user = await User.findById(userId);
-    if (!user)
+    const [users] = await req.db.query(
+      'SELECT * FROM User WHERE ID = ?',
+      [userId]
+    );
+
+    if (users.length === 0)
     { 
       return res
         .status(404)
         .json({ message: "User not found" });
     }
 
+    const user = users[0];
+
     // Delete user and associated email code/answers
-    await User.findByIdAndDelete(userId);
-    await EmailCode.deleteMany({ email: user.email });
-    await Answer.deleteMany({ user_id: user._id });
+    await req.db.query('DELETE FROM User WHERE ID = ?', [userId]);
+    await req.db.query('DELETE FROM EmailCode WHERE EMAIL = ?', [user.EMAIL]);
+    await req.db.query('DELETE FROM Response WHERE USERID = ?', [userId]);
     console.log(`User ${userId} and all associated data deleted successfully`);
 
     // Send delete notification to Discord
-    sendNotification(`User deleted: ${user.username}`)
+    sendNotification(`User deleted: ${user.USERNAME}`)
       .then(success => {
-        if (!success) console.warn(`Discord notification not sent for deleted user "${user.username}"`);
+        if (!success) console.warn(`Discord notification not sent for deleted user "${user.USERNAME}"`);
       })
       .catch(error => console.error("Failed to send deleted user notification:", error));
 

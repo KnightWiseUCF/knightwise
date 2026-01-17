@@ -1,7 +1,20 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          MockTestProblem.tsx
+//  Description:   Individual Mock Test question
+//
+//  Dependencies:  react
+//                 html-react-parser
+//                 dompurify
+//
+////////////////////////////////////////////////////////////////
+
 import React from "react";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
-
 
 type Props = {
   current: any; // current question
@@ -29,17 +42,17 @@ const MockTestProblem: React.FC<Props> = ({
   <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 mt-12 sm:mt-16 md:mt-20">
     {/* top: section, category, subcategory, exam date */}
     <div className="flex flex-col sm:flex-row justify-between mb-2 text-sm sm:text-lg md:text-2xl">
-      <p className="text-gray-600">Section {current.section}</p>
+      <p className="text-gray-600">Section {current.SECTION}</p>
       <p className="font-medium">
         Question {currentIndex + 1} of {total}
       </p>
     </div>
 
     <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 mb-2">
-      {current.category} <span className="text-yellow-600">&gt;</span>{" "}
-      {current.subcategory}
+      {current.CATEGORY} <span className="text-yellow-600">&gt;</span>{" "}
+      {current.SUBCATEGORY}
       <span className="block text-sm sm:text-base md:text-xl text-gray-500 font-normal mt-1 sm:mt-0">
-        (Exam Date: {current.exam_id})
+        (Exam Date: {current.AUTHOR_EXAM_ID})
       </span>
     </h1>
 
@@ -49,7 +62,7 @@ const MockTestProblem: React.FC<Props> = ({
     </h2>
 
     <div className="text-base sm:text-lg md:text-xl font-medium mb-4">
-      {parse(DOMPurify.sanitize(current.question))}
+      {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
     </div>
 
     {/* multiple choice */}
@@ -77,7 +90,7 @@ const MockTestProblem: React.FC<Props> = ({
     </div>
 
     {/* button */}
-    {/* if it's the last question, show the result button, otherwise show sumit/next */}
+    {/* if it's the last question, show the result button, otherwise show submit/next */}
     <div className="mt-6">
       <button
         onClick={showFeedback ? handleNext : handleSubmit}

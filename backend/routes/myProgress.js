@@ -1,53 +1,29 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     Daniel Landsman
+//  File:          myProgress.js
+//  Description:   User progress tracking routes (history
+//                 table, topic mastery, daily streak).
+//
+//  Dependencies:  mysql2 connection pool (req.db)
+//                 express
+//                 authMiddleware
+//
+////////////////////////////////////////////////////////////////
+
 const express = require('express');
-const Answer = require('../models/Answer');
-const User = require('../models/User');
-const jwt = require("jsonwebtoken");
 const router = express.Router();
-const mongoose = require('mongoose');
+const authMiddleware = require("../middleware/authMiddleware");
 
-// Middleware to check authentication
-const authMiddleware = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized: No Token Provided" });
-  }
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.userId).select("-password"); // Exclude password
-    next();
-  } catch (error) {
-    console.error("JWT Error: ", error);
-    res.status(401).json({ error: "Invalid Token" });
-  }
-};
-
-// GET Progress Data Route
-router.get('/graph', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    // Fetch user progress data from the database
-    const userAnswers = await Answer.find({ user_id: userId });
-
-    // Process the data to calculate the user's progress (can aggregate by topic/category)
-    const progressData = processProgressData(userAnswers);
-
-    res.status(200).json({ progress: progressData });
-  } catch (error) {
-    console.error("Error fetching progress: ", error);
-    res.status(500).json({ message: "Server Error: Unable to fetch progress data" });
-  }
-});
-
-// Helper function to process the data and calculate the user's progress (you can refine this)
+// Helper function to process the data and calculate the user's progress
 const processProgressData = (answers) => {
   const progress = {};
 
   answers.forEach((answer) => {
-    const topic = answer.topic;
-    const isCorrect = answer.isCorrect;
+    const topic = answer.TOPIC;
+    const isCorrect = answer.ISCORRECT;
 
     // Initialize topic if not already in progress
     if (!progress[topic]) {
@@ -71,28 +47,52 @@ const processProgressData = (answers) => {
 };
 
 // GET Progress Data Route
+router.get('/graph', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch user progress data from the database
+    const [userAnswers] = await req.db.query(
+      'SELECT * FROM Response WHERE USERID = ?',
+      [userId]
+    );
+
+    // Process the data to calculate the user's progress (can aggregate by topic/category)
+    const progressData = processProgressData(userAnswers);
+
+    res.status(200).json({ progress: progressData });
+  } catch (error) {
+    console.error("Error fetching progress: ", error);
+    res.status(500).json({ message: "Server Error: Unable to fetch progress data" });
+  }
+});
+
+// GET Progress Data Route
 router.get("/messageData", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     // Fetch all answers from the user
-    const userAnswers = await Answer.find({ user_id: userId });
+    const [userAnswers] = await req.db.query(
+      'SELECT * FROM Response WHERE USERID = ?',
+      [userId]
+    );
 
     // Process history and mastery levels
-    const history = userAnswers.map(({ datetime, topic }) => ({
-      datetime,
-      topic,
+    const history = userAnswers.map(({ DATETIME, TOPIC }) => ({
+      datetime: DATETIME,
+      topic: TOPIC,
     }));
 
     // Compute mastery levels
     const mastery = {};
-    userAnswers.forEach(({ topic, isCorrect }) => {
-      if (!mastery[topic]) {
-        mastery[topic] = { correct: 0, total: 0 };
+    userAnswers.forEach(({ TOPIC, ISCORRECT }) => {
+      if (!mastery[TOPIC]) {
+        mastery[TOPIC] = { correct: 0, total: 0 };
       }
-      mastery[topic].total += 1;
-      if (isCorrect) {
-        mastery[topic].correct += 1;
+      mastery[TOPIC].total += 1;
+      if (ISCORRECT) {
+        mastery[TOPIC].correct += 1;
       }
     });
 
@@ -107,9 +107,9 @@ router.get("/messageData", authMiddleware, async (req, res) => {
     const today = new Date().toDateString();
     console.log("today is ", today);
     const uniqueDays = new Set();
-    userAnswers.forEach(({ datetime }) => {
-      console.log("datetime is ", datetime);
-      uniqueDays.add(new Date(datetime).toDateString());
+    userAnswers.forEach(({ DATETIME }) => {
+      console.log("datetime is ", DATETIME);
+      uniqueDays.add(new Date(DATETIME).toDateString());
     });
 
     // Determine consecutive streak
@@ -153,22 +153,28 @@ router.get('/history', authMiddleware, async (req, res) => {
     // Pagination logic: default to page 1, limit to 10 results per page
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
-    const skip = (page - 1) * limit;  // Calculate the number of results to skip
-    const ObjectId = require('mongoose').Types.ObjectId;
+    const offset = (page - 1) * limit;  // Calculate the number of results to skip
 
-    // Fetch the user's history with pagination
-    const history = await Answer.find({ user_id: new mongoose.Types.ObjectId(userId) })
-      .sort({ datetime: -1 }) // Sort by datetime, descending
-      .skip(skip)
-      .limit(limit)
-      .select('datetime topic isCorrect problem_id'); // Only select necessary fields
+    const [history] = await req.db.query(
+      'SELECT DATETIME, TOPIC, ISCORRECT, PROBLEM_ID FROM Response WHERE USERID = ? ORDER BY DATETIME DESC LIMIT ? OFFSET ?',
+      [userId, limit, offset]
+    );
 
     // Count the total number of entries for pagination
-    const totalEntries = await Answer.countDocuments({ user_id: new mongoose.Types.ObjectId(userId) });
+    const [countResults] = await req.db.query(
+      'SELECT COUNT(*) as total FROM Response WHERE USERID = ?',
+      [userId]
+    );
+    const totalEntries = countResults[0].total;
     console.log("totalEntries is ", totalEntries);
 
     res.status(200).json({
-      history,
+      history: history.map(row => ({
+        datetime: row.DATETIME,
+        topic: row.TOPIC,
+        isCorrect: row.ISCORRECT,
+        problem_id: row.PROBLEM_ID
+      })),
       totalEntries,
       currentPage: page,
       totalPages: Math.max(1, Math.ceil(totalEntries / limit)),
