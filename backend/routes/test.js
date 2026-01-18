@@ -1,25 +1,43 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          test.js
+//  Description:   Routes for mock test generation, topic
+//                 practice, and answer submission.
+//
+//  Dependencies:  mysql2 connection pool (req.db)
+//                 express
+//                 authMiddleware
+//
+////////////////////////////////////////////////////////////////
+
 const express = require("express");
-const Problem = require("../models/Problem");
-const Answer = require("../models/Answer");
-const User = require("../models/User");
 const router = express.Router();
-const jwt = require("jsonwebtoken");
+const authMiddleware = require("../middleware/authMiddleware");
 
-const authMiddleware = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized: No Token Provided" });
+/**
+ * Helper function, gets answers for given questions, pairs them with each question
+ * @param {Array} questions - Array of question objects with ID field
+ * @param {Object} db - Database connection pool
+ * @returns {Promise<Array>} Questions with paired answers array
+ */
+const pairAnswersWithQuestions = async (questions, db) => {
+  if (!questions || questions.length === 0) {
+    return questions;
   }
-  const token = authHeader.split(" ")[1];
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.userId).select("-password"); // Exclude password
-    next();
-  } catch (error) {
-    console.error("JWT Error: ", error);
-    res.status(401).json({ error: "Invalid Token" });
-  }
+  const questionIds = questions.map(q => q.ID);
+  const [answers] = await db.query(
+    'SELECT * FROM AnswerText WHERE QUESTION_ID IN (?)',
+    [questionIds]
+  );
+
+  return questions.map(question => ({
+    ...question,
+    answers: answers.filter(answer => answer.QUESTION_ID === question.ID)
+  }));
 };
 
 // topic test
@@ -27,14 +45,18 @@ router.get("/topic/:topicName", async (req, res) => {
   const { topicName } = req.params;
 
   try {
-    // Find the problem by subcategory
-    const problem = await Problem.find({ subcategory: topicName });
+    // Get all questions of this subcategory
+    const [questions] = await req.db.query(
+      'SELECT * FROM Question WHERE SUBCATEGORY = ?',
+      [topicName]
+    );
 
-    if (!problem || problem.length === 0) {
-      return res.status(404).json({ message: "Problem not found" });
+    if (!questions || questions.length === 0) {
+      return res.status(404).json({ message: "Question not found" });
     }
 
-    res.json(problem);
+    const questionsWithAnswers = await pairAnswersWithQuestions(questions, req.db);
+    res.json(questionsWithAnswers);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -44,45 +66,45 @@ router.get("/topic/:topicName", async (req, res) => {
 router.get("/mocktest", async (req, res) => {
   try {
     const sections = ["A", "B", "C", "D"];
-    const problemsBySection = {};
+    const questionsBySection = {};
 
     // shuffled problem per section and pick three question randomly
     for (const section of sections) {
-      const problems = await Problem.find({ section });
-      // note: add later after got all problem
-      // if (!problems || problems.length === 0) {
-      //   return res
-      //     .status(404)
-      //     .json({ message: `Problem not found in section ${section}` });
-      // }
-      const shuffled = problems.sort(() => 0.5 - Math.random());
-      problemsBySection[section] = shuffled.slice(0, 3);
+      const [questions] = await req.db.query(
+        'SELECT * FROM Question WHERE SECTION = ?',
+        [section]
+      );
+
+      if (!questions || questions.length === 0) {
+        return res
+          .status(404)
+          .json({ message: `Question not found in section ${section}` });
+      }
+      const shuffled = questions.sort(() => 0.5 - Math.random());
+      questionsBySection[section] = shuffled.slice(0, 3);
     }
 
-    const allProblems = Object.values(problemsBySection).flat();
-    res.status(200).json({ total: allProblems.length, problems: allProblems });
+    const allQuestions = Object.values(questionsBySection).flat();
+    const questionsWithAnswers = await pairAnswersWithQuestions(allQuestions, req.db);
+
+    res.status(200).json({ total: questionsWithAnswers.length, questions: questionsWithAnswers });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// Note: 'subcategory' from problems collection is stored as 'topic' in answers collection
+// Note: 'SUBCATEGORY' from Question table is stored as 'TOPIC' in Response table
 router.post("/submit", authMiddleware, async (req, res) => {
   try {
     const { problem_id, isCorrect, category, topic } = req.body;
-    const user_id = req.user._id;
+    const user_id = req.user.id;
 
-    const answer = new Answer({
-      user_id,
-      problem_id,
-      isCorrect,
-      category,
-      topic,
-      datetime: new Date(),
-    });
+    await req.db.query(
+      'INSERT INTO Response (USERID, PROBLEM_ID, ISCORRECT, CATEGORY, TOPIC, DATETIME) VALUES (?, ?, ?, ?, ?, ?)',
+      [user_id, problem_id, isCorrect, category, topic, new Date()]
+    );
 
-    await answer.save();
     res.status(201).json({ message: "Answer submitted" });
   } catch (error) {
     console.error("Submit Answer Error:", error);

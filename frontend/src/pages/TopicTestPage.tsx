@@ -1,8 +1,25 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          TopicTestPage.tsx
+//  Description:   Handles Topic Practice operations such as
+//                 answer submission, grading, and feedback.
+//
+//  Dependencies:  react
+//                 api instance
+//                 html-react-parser
+//                 dompurify
+//                 Layout component
+//
+////////////////////////////////////////////////////////////////
+
 // this page shows questions related to the chosen topic
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-import axios from "axios";
+import api from "../api";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 
@@ -20,19 +37,24 @@ const TopicTestPage: React.FC = () => {
   useEffect(() => {
     const fetchProblems = async () => {
       try {
-        const res = await axios.get(`/api/test/topic/${topicName}`);
+        const res = await api.get(`/api/test/topic/${topicName}`);
         const data = res.data;
 
         // shuffle problems
         const shuffledProblems = data.sort(() => 0.5 - Math.random());
 
         // shuffle choices
-        const withOptions = shuffledProblems.map((p: any) => ({
-          ...p,
-          options: [p.answerCorrect, ...p.answersWrong].sort(
-            () => 0.5 - Math.random()
-          ),
-        }));
+        const withOptions = shuffledProblems.map((question: any) => {
+          const correctAnswer = question.answers?.find((a: any) => a.IS_CORRECT_ANSWER);
+          const allAnswerTexts = question.answers?.map((a: any) => a.TEXT) || [];
+          const shuffledOptions = allAnswerTexts.sort(() => 0.5 - Math.random());
+     
+          return {
+            ...question,
+            answerCorrect: correctAnswer?.TEXT,
+            options: shuffledOptions,
+          };
+        });
 
         setProblems(withOptions);
       } catch (err) {
@@ -43,7 +65,7 @@ const TopicTestPage: React.FC = () => {
     if (topicName) fetchProblems();
   }, [topicName]);
 
-  // summit answer and send to server
+  // submit answer and send to server
   const handleSubmit = async () => {
     if (!selectedAnswer) return;
     const current = problems[currentIndex];
@@ -55,13 +77,13 @@ const TopicTestPage: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.post(
+      await api.post(
         "/api/test/submit",
         {
-          problem_id: current._id,
+          problem_id: current.ID,
           isCorrect,
-          category: current.category,
-          topic: current.subcategory,
+          category: current.CATEGORY,
+          topic: current.SUBCATEGORY,
         },
         {
           headers: {
@@ -135,9 +157,9 @@ const TopicTestPage: React.FC = () => {
         {/* Header: subcategory + date + number */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h1 className="text-xl sm:text-3xl md:text-5xl font-bold text-gray-900">
-            {current.subcategory}
+            {current.SUBCATEGORY}
             <span className="block text-sm sm:text-xl md:text-2xl text-gray-500 font-normal">
-              (Exam Date: {current.exam_id})
+              (Exam Date: {current.AUTHOR_EXAM_ID})
             </span>
           </h1>
           <p className="text-sm sm:text-lg md:text-xl font-medium">
@@ -151,7 +173,7 @@ const TopicTestPage: React.FC = () => {
             Q{currentIndex + 1}.
           </h2>
           <div className="text-base sm:text-lg md:text-xl font-medium mb-4">
-            {parse(DOMPurify.sanitize(current.question))}
+            {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
           </div>
         </div>
 
