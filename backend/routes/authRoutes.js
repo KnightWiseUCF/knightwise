@@ -107,7 +107,7 @@ router.post("/signup", asyncHandler(async (req, res) => {
 
   // Signup success, send notification to Discord admin channel
   res.status(201).json({ message: "User Registered", token });
-  notifyUserEvent(`New user signed up: ${username}`);
+  notifyUserEvent(`New user signed up: ${username} (ID: ${userId})`);
 }));
 
 /**
