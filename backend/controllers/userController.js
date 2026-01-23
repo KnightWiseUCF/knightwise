@@ -9,11 +9,13 @@
 //                 deleting accounts. Requires authentication.
 //
 //  Dependencies: mysql2 connection pool (req.db)
-//                discordWebhook service (sendNotification)
+//                discordWebhook
+//                errorHandler
 //
 ////////////////////////////////////////////////////////////////
 
-const { sendNotification } = require("../services/discordWebhook");
+const { notifyUserEvent } = require('../services/discordWebhook');
+const { asyncHandler, AppError } = require('../middleware/errorHandler');
 
 /**
  * @route   DELETE /api/users/:id
@@ -24,66 +26,47 @@ const { sendNotification } = require("../services/discordWebhook");
  * @param {import('express').Response} res  - Express response object
  * @returns {Promise<void>}                 - Sends HTTP/JSON response
  */
-const deleteAccount = async (req, res) => {
+const deleteAccount = asyncHandler(async (req, res) => {
   const userId = req.params.id;
-  try 
+
+  // Ensure userId is a valid primary key
+  if (isNaN(parseInt(userId)) || parseInt(userId) <= 0)
   {
-    // Account can only be deleted by account owner
-    if (req.user.id !== parseInt(userId)) 
-    {
-      return res
-        .status(403)
-        .json({ message: "Forbidden" });
-    }
-
-    // Ensure userId is a valid primary key
-    if (isNaN(parseInt(userId)) || parseInt(userId) <= 0)
-    {
-      return res
-        .status(400)
-        .json({ message: "Invalid user ID" });
-    }
-
-    // Get user info
-    const [users] = await req.db.query(
-      'SELECT * FROM User WHERE ID = ?',
-      [userId]
-    );
-
-    if (users.length === 0)
-    { 
-      return res
-        .status(404)
-        .json({ message: "User not found" });
-    }
-
-    const user = users[0];
-
-    // Delete user and associated email code/answers
-    await req.db.query('DELETE FROM User WHERE ID = ?', [userId]);
-    await req.db.query('DELETE FROM EmailCode WHERE EMAIL = ?', [user.EMAIL]);
-    await req.db.query('DELETE FROM Response WHERE USERID = ?', [userId]);
-    console.log(`User ${userId} and all associated data deleted successfully`);
-
-    // Send delete notification to Discord
-    sendNotification(`User deleted: ${user.USERNAME}`)
-      .then(success => {
-        if (!success) console.warn(`Discord notification not sent for deleted user "${user.USERNAME}"`);
-      })
-      .catch(error => console.error("Failed to send deleted user notification:", error));
-
-    return res
-      .status(200)
-      .json({ message: "Account deleted successfully" });
-  } 
-  catch (err) 
-  {
-    console.error(`Error deleting user ${userId}:`, err);
-    return res
-      .status(500)
-      .json({ message: "Server error" });
+    throw new AppError(`Failed to delete user, userId not a valid primary key: ${userId}`, 400, "Invalid user ID");
   }
-};
+
+  // Account can only be deleted by account owner
+  if (req.user.id !== parseInt(userId)) 
+  {
+    throw new AppError(`Unauthorized delete attempt: userId ${userId} by user ${req.user.id}`, 403, "Forbidden");
+  }
+
+  // Get user info
+  const [users] = await req.db.query(
+    'SELECT * FROM User WHERE ID = ?',
+    [userId]
+  );
+
+  if (users.length === 0)
+  { 
+    throw new AppError(`Failed to delete user, userId not found: ${userId}`, 404, "User not found");
+  }
+
+  const user = users[0];
+
+  // Delete user and associated email code/answers
+  await req.db.query('DELETE FROM User WHERE ID = ?', [userId]);
+  await req.db.query('DELETE FROM EmailCode WHERE EMAIL = ?', [user.EMAIL]);
+  await req.db.query('DELETE FROM Response WHERE USERID = ?', [userId]);
+  console.log(`User ${userId} and all associated data deleted successfully`);
+
+  // Send delete notification to Discord
+  notifyUserEvent(`User deleted: ${user.USERNAME}`);
+
+  return res
+    .status(200)
+    .json({ message: "Account deleted successfully" });
+});
 
 /** TODO
  * @route   GET /api/users/:id
@@ -94,9 +77,9 @@ const deleteAccount = async (req, res) => {
  * @param {import('express').Response} res  - Express response object
  * @returns {Promise<void>}                 - Sends HTTP/JSON response
  */
-const getUserInfo = async (req, res) => {
+const getUserInfo = asyncHandler(async (req, res) => {
   // TODO: Implement fetching user data
-};
+});
 
 /** TODO
  * @route   PUT /api/users/:id
@@ -107,9 +90,9 @@ const getUserInfo = async (req, res) => {
  * @param {import('express').Response} res  - Express response object
  * @returns {Promise<void>}                 - Sends HTTP/JSON response
  */
-const updateUser = async (req, res) => {
+const updateUser = asyncHandler(async (req, res) => {
   // TODO: Implement updating user data
-};
+});
 
 // TODO: Export getUserInfo and updateUser when implemented
 module.exports = {

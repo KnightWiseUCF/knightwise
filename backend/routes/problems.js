@@ -9,18 +9,20 @@
 //  Dependencies:  mysql2 connection pool (req.db)
 //                 express
 //                 authMiddleware
+//                 errorHandler
 //
 ////////////////////////////////////////////////////////////////
 
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
+const { asyncHandler, AppError } = require("../middleware/errorHandler");
 
 /**
  * Helper function, gets answers for a given question
  * @param {number} questionId - Question ID
- * @param {Object} db - Database connection pool
- * @returns {Promise<Array>} Array of answers
+ * @param {Object} db         - Database connection pool
+ * @returns {Promise<Array>}  - Array of answers
  */
 const getAnswersForQuestion = async (questionId, db) => {
   const [answers] = await db.query(
@@ -30,31 +32,35 @@ const getAnswersForQuestion = async (questionId, db) => {
   return answers;
 };
 
-// GET request to fetch a problem by its ID
-router.get('/:id', authMiddleware, async (req, res) => {
-  const { id } = req.params;
+/**
+ * @route   GET /api/problems/:id
+ * @desc    Fetch a question by its ID with its associated answers
+ * @access  Protected
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with question and its answers
+ */
+router.get('/:id', authMiddleware, asyncHandler(async (req, res) => {
+const { id } = req.params;
 
-  try {
-    // Find question by ID
-    const [questions] = await req.db.query(
-      'SELECT * FROM Question WHERE ID = ?',
-      [id]
-    );
+  // Find question by ID
+  const [questions] = await req.db.query(
+    'SELECT * FROM Question WHERE ID = ?',
+    [id]
+  );
 
-    if (questions.length === 0) {
-      return res.status(404).json({ message: 'Question not found' });
-    }
-
-    const question = questions[0];
-
-    // Get answers for question
-    const answers = await getAnswersForQuestion(id, req.db);
-
-    res.json({...question, answers});
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+  if (questions.length === 0) 
+  {
+    throw new AppError(`No questions associated with ID: ${id}`, 404, "Question not found");
   }
-});
+
+  const question = questions[0];
+
+  // Get answers for question
+  const answers = await getAnswersForQuestion(id, req.db);
+
+  res.json({...question, answers});
+}));
 
 module.exports = router;

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2025
+//  Year:          2025-2026
 //  Author(s):     Daniel Landsman
 //  File:          authMiddleware.js
 //  Description:   Express middleware that verifies JWT tokens
@@ -9,10 +9,13 @@
 //                 user payload to req.user.
 //
 //  Dependencies:  jsonwebtoken
+//                 errorHandler
 //
 ////////////////////////////////////////////////////////////////
 
 const jwt = require("jsonwebtoken");
+const { AppError } = require("../middleware/errorHandler");
+
 
 // Ensure JWT_SECRET environment variable set
 if (!process.env.JWT_SECRET) 
@@ -26,8 +29,8 @@ if (!process.env.JWT_SECRET)
  * If token valid, attaches decoded payload to `req.user`.
  * If missing/invalid, responds with 401 Unauthorized.
  *
- * @param {import('express').Request} req       - Express request object
- * @param {import('express').Response} res      - Express response object
+ * @param {import('express').Request}      req  - Express request object
+ * @param {import('express').Response}     res  - Express response object
  * @param {import('express').NextFunction} next - Next middleware function
  *
  * @returns {void} Sends 401 response or calls next()
@@ -38,11 +41,7 @@ const authMiddleware = (req, res, next) => {
   // 401 Unauthorized if improper token, case insensitive
   if (!authHeader || !authHeader.toLowerCase().startsWith("bearer "))
   {
-    console.warn("Unauthorized access attempt: Improper token")
-    return res
-      .status(401)
-      .set("WWW-Authenticate", 'Bearer realm="Access to protected resource"')
-      .json({ message: "Unauthorized" });
+    throw new AppError("Unauthorized access attempt: Improper token", 401, "Unauthorized");
   }
 
   const token = authHeader.split(" ")[1].trim();
@@ -50,11 +49,7 @@ const authMiddleware = (req, res, next) => {
   // Validate token is present
   if (!token)
   {
-    console.warn("Unauthorized access attempt: Missing token");
-    return res
-      .status(401)
-      .set("WWW-Authenticate", 'Bearer realm="Access to protected resource"')
-      .json({ message: "Unauthorized" });
+    throw new AppError("Unauthorized access attempt: Missing token", 401, "Unauthorized");
   }
 
   // Try to verify, 401 Unauthorized if error
@@ -66,19 +61,11 @@ const authMiddleware = (req, res, next) => {
   } 
   catch (err) 
   {
-    // Check if token expired
-    if (err.name === "TokenExpiredError")
-    {
-      console.warn("Unauthorized access attempt: Expired token");
-    }
-    else
-    {
-      console.warn("JWT verification failed:", err.message);
-    }
-    return res
-      .status(401)
-      .set("WWW-Authenticate", 'Bearer realm="Access to protected resource"')
-      .json({ message: "Unauthorized" });
+    // Check if token expired or other error
+    const errStr = (err.name === "TokenExpiredError") 
+      ? "Unauthorized access attempt: Expired token" 
+      : `JWT verification failed: ${err.message}`;
+    throw new AppError(errStr, 401, "Unauthorized");
   }
 };
 
