@@ -12,6 +12,7 @@
 //                 html-react-parser
 //                 dompurify
 //                 Layout component
+//                 models (RawQuestion, Question)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -22,10 +23,11 @@ import Layout from "../components/Layout";
 import api from "../api";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
+import { RawQuestion, Question } from "../models";
 
 const TopicTestPage: React.FC = () => {
   const { topicName } = useParams<{ topicName: string }>();
-  const [problems, setProblems] = useState<any[]>([]);
+  const [problems, setProblems] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -37,35 +39,42 @@ const TopicTestPage: React.FC = () => {
   useEffect(() => {
     const fetchProblems = async () => {
       try {
-        const res = await api.get(`/api/test/topic/${topicName}`);
+        const res = await api.get<RawQuestion[]>(`/api/test/topic/${topicName}`);
         const data = res.data;
 
         // shuffle problems
         const shuffledProblems = data.sort(() => 0.5 - Math.random());
 
         // shuffle choices
-        const withOptions = shuffledProblems.map((question: any) => {
-          const correctAnswer = question.answers?.find((a: any) => a.IS_CORRECT_ANSWER);
-          const allAnswerTexts = question.answers?.map((a: any) => a.TEXT) || [];
+        const withOptions = shuffledProblems.map((question) => {
+          const correctAnswer = question.answers?.find((a) => a.IS_CORRECT_ANSWER);
+          const allAnswerTexts = question.answers?.map((a) => a.TEXT) || [];
           const shuffledOptions = allAnswerTexts.sort(() => 0.5 - Math.random());
      
           return {
-            ...question,
-            answerCorrect: correctAnswer?.TEXT,
-            options: shuffledOptions,
+            ID:             question.ID,
+            SECTION:        question.SECTION,
+            CATEGORY:       question.CATEGORY,
+            SUBCATEGORY:    question.SUBCATEGORY,
+            AUTHOR_EXAM_ID: question.AUTHOR_EXAM_ID,
+            QUESTION_TEXT:  question.QUESTION_TEXT,
+            answerCorrect:  correctAnswer?.TEXT || "",
+            options:        shuffledOptions,
           };
         });
 
         setProblems(withOptions);
-      } catch (err) {
-        console.error("Failed to load topic problems", err);
+      } 
+      catch 
+      {
+        console.error("Failed to load topic problems");
       }
     };
 
     if (topicName) fetchProblems();
   }, [topicName]);
 
-  // submit answer and send to server
+  // submit response and send to server
   const handleSubmit = async () => {
     if (!selectedAnswer) return;
     const current = problems[currentIndex];
@@ -91,8 +100,10 @@ const TopicTestPage: React.FC = () => {
           },
         }
       );
-    } catch (err) {
-      console.error("Failed to submit answer", err);
+    } 
+    catch
+    {
+      console.error("Failed to submit response");
     }
   };
 
@@ -179,7 +190,7 @@ const TopicTestPage: React.FC = () => {
 
         {/* Options */}
         <div className="space-y-3">
-          {current.options.map((ans: string, idx: number) => (
+          {current.options.map((ans, idx) => (
             <label
               key={idx}
               className={`block p-3 sm:p-4 rounded-lg border transition cursor-pointer text-sm sm:text-lg md:text-xl ${

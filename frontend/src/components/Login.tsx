@@ -1,4 +1,16 @@
-// This code is based on Dr. Reinenker's code : Login.tsx
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          Login.tsx
+//  Description:   Login component based on Dr. Leinecker's code.
+//
+//  Dependencies:  react
+//                 react-router-dom
+//                 api instance
+//
+////////////////////////////////////////////////////////////////
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -34,8 +46,10 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
       setTimeout(() => {
         navigate("/dashboard");
       }, 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.message);
+    } 
+    catch 
+    {
+      setError("Invalid username or password. Please try again.");
     }
   };
 

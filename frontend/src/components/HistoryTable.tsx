@@ -8,24 +8,28 @@
 //
 //  Dependencies:  react
 //                 api instance
+//                 models (RawQuestion, HistoryEntry, HistoryResponse)
+//                 
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import api from "../api";
-import correctAnswer from "../assets/correctAnswer.png";
-import incorrectAnswer from "../assets/incorrectAnswer.png";
-import viewProblem from "../assets/viewProblem.png";
+import correctAnswerImg from "../assets/correctAnswer.png";
+import incorrectAnswerImg from "../assets/incorrectAnswer.png";
+import viewProblemImg from "../assets/viewProblem.png";
+import { RawQuestion, HistoryEntry, HistoryResponse } from '../models';
 
 const HistoryTable: React.FC = () => {
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const token = localStorage.getItem('token');
 
-  const fetchHistory = async (page: number) => {
+  const fetchHistory = useCallback(async (page: number) => {
+    const token = localStorage.getItem('token');
+
     try {
-      const response = await api.get("api/progress/history", 
+      const response = await api.get<HistoryResponse>("api/progress/history", 
       {
         headers: { 'Authorization': `Bearer ${token}` },
         params: { page, limit: 10 },
@@ -34,14 +38,18 @@ const HistoryTable: React.FC = () => {
       setHistory(response.data.history);
       setTotalPages(response.data.totalPages);
       setCurrentPage(response.data.currentPage);
-    } catch (error) {
-      console.error('Error fetching history:', error);
+    } 
+    catch 
+    {
+      console.error('Error fetching history');
     }
-  };
+  }, []);
 
-  const fetchProblem = async (problemId: string) => {
+  const fetchProblem = async (problemId: number) => {
+    const token = localStorage.getItem('token');
+
     try {
-      const response = await api.get(`api/problems/${problemId}`, 
+      const response = await api.get<RawQuestion>(`api/problems/${problemId}`, 
       {
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -49,10 +57,10 @@ const HistoryTable: React.FC = () => {
       const problem = response.data;
 
       // Get correct and incorrect answers
-      const correctAnswer = problem.answers?.find((a: any) => a.IS_CORRECT_ANSWER)?.TEXT || '';
+      const correctAnswer = problem.answers?.find((a) => a.IS_CORRECT_ANSWER)?.TEXT || '';
       const wrongAnswers = problem.answers
-        ?.filter((a: any) => !a.IS_CORRECT_ANSWER)
-        .map((a: any) => a.TEXT) || [];
+        ?.filter((a) => !a.IS_CORRECT_ANSWER)
+        .map((a) => a.TEXT) || [];
 
       const problemParams = new URLSearchParams({
         question: problem.QUESTION_TEXT,
@@ -76,14 +84,16 @@ const HistoryTable: React.FC = () => {
       if (popupWindow) {
         popupWindow.focus();
       }
-    } catch (error) {
-      console.error('Error fetching problem:', error);
+    } 
+    catch
+    {
+      console.error('Error fetching problem');
     }
   };
 
   useEffect(() => {
     fetchHistory(currentPage);
-  }, [currentPage]);
+  }, [currentPage, fetchHistory]);
 
   return (
     <div className="m-1">
@@ -108,7 +118,7 @@ const HistoryTable: React.FC = () => {
                   <td className="px-4 py-2 text-center">{entry.topic}</td>
                   <td className="px-4 py-2 text-center">
                     <img
-                      src={entry.isCorrect ? correctAnswer : incorrectAnswer}
+                      src={entry.isCorrect ? correctAnswerImg : incorrectAnswerImg}
                       alt={entry.isCorrect ? '✅' : '❌'}
                       className="w-6 h-6 inline-block"
                     />
@@ -119,7 +129,7 @@ const HistoryTable: React.FC = () => {
                       onClick={() => fetchProblem(entry.problem_id)}
                     >
                       <img
-                        src={viewProblem}
+                        src={viewProblemImg}
                         alt="➡️"
                         className="w-6 h-6 inline-block"
                       />

@@ -1,12 +1,15 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2025
+//  Year:          2025-2026
 //  Author(s):     Daniel Landsman
 //  File:          AccountPage.tsx
 //  Description:   Page for account customization/settings.
 //
-//  Dependencies: react, DeleteAccount, Layout
+//  Dependencies: react
+//                react-router-dom
+//                DeleteAccount component 
+//                Layout component
 //
 ////////////////////////////////////////////////////////////////
 
@@ -29,9 +32,9 @@ const AccountPage: React.FC = () => {
   {
     userData = userDataString ? JSON.parse(userDataString) : null;
   }
-  catch (err: any)
+  catch
   {
-    console.error("Failed to parse user data:", err);
+    console.error("Failed to get user data");
     parseError = true;
   }
 

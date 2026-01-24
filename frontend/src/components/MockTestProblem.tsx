@@ -4,20 +4,22 @@
 //  Year:          2025-2026
 //  Author(s):     KnightWise Team
 //  File:          MockTestProblem.tsx
-//  Description:   Individual Mock Test question
+//  Description:   Individual Mock Test question.
 //
 //  Dependencies:  react
 //                 html-react-parser
 //                 dompurify
+//                 models (Question)
 //
 ////////////////////////////////////////////////////////////////
 
 import React from "react";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
+import { Question } from "../models";
 
 type Props = {
-  current: any; // current question
+  current: Question; // current question
   currentIndex: number; // current index
   total: number; // total number of question
   selectedAnswer: string | null; // select answer by user
@@ -67,7 +69,7 @@ const MockTestProblem: React.FC<Props> = ({
 
     {/* multiple choice */}
     <div className="space-y-3">
-      {current.options.map((ans: string, idx: number) => (
+      {current.options.map((ans, idx) => (
         <label
           key={idx}
           className={`block p-3 sm:p-4 rounded-lg border transition cursor-pointer text-sm sm:text-base md:text-xl ${

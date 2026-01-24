@@ -1,8 +1,22 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          Layout.tsx
+//  Description:   Common layout components.
+//
+//  Dependencies:  react
+//                 Sidebar
+//                 Header
+//
+////////////////////////////////////////////////////////////////
+
 import React, { PropsWithChildren, useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
-const Layout: React.FC<PropsWithChildren<{}>> = ({ children }) => {
+const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false); 
 
   return (
