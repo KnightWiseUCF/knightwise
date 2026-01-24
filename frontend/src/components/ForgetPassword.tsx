@@ -1,6 +1,20 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          ForgetPassword.tsx
+//  Description:   Handles password reset functionality.
+//
+//  Dependencies:  react
+//                 react-router-dom
+//                 api instance
+//
+////////////////////////////////////////////////////////////////
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import logo from "../assets/ucflogo.png";
 
 const ForgotPassword: React.FC = () => {
@@ -11,42 +25,45 @@ const ForgotPassword: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
-  // 인증코드 보내기
+  // Send verification code
   const handleSendOtp = async () => {
     setError("");
     setSuccessMessage("");
-    try {
-      await axios.post("/api/auth/sendotp", { email, purpose: "reset" });
+    try 
+    {
+      await api.post("/api/auth/sendotp", { email, purpose: "reset" });
       setSuccessMessage("Check your email");
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to send verification code"
-      );
+    } 
+    catch 
+    {
+      setError("Failed to send verification code. Please try again.");
     }
   };
 
-  // 인증코드 검증
+  // Verify OTP
   const handleVerifyOtp = async () => {
     setError("");
     setSuccessMessage("");
     try {
-      await axios.post("/api/auth/verify", { email, otp });
+      await api.post("/api/auth/verify", { email, otp });
       setIsVerified(true);
       setSuccessMessage("Email verified!");
-      // 인증 성공 시 다음 페이지로 이동하며 이메일 전달
+      // Verified, redirect and send reset email
       localStorage.setItem("reset_email", email);
       setTimeout(() => {
         navigate("/reset-password");
       }, 1000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Verification failed");
+    } 
+    catch 
+    {
+      setError("Verification failed. Please check your code and try again.");
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 py-8 px-4">
       <div className="bg-white p-6 sm:p-10 md:p-12 rounded-xl shadow-xl w-full max-w-lg">
-        {/* 로고 */}
+        {/* Logo */}
         <div className="flex justify-center mb-6">
           <img
             src={logo}
@@ -63,7 +80,7 @@ const ForgotPassword: React.FC = () => {
           Enter your email to receive a verification code.
         </p>
 
-        {/* 이메일 입력 */}
+        {/* Enter email */}
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             Email
@@ -87,7 +104,7 @@ const ForgotPassword: React.FC = () => {
           </button>
         </div>
 
-        {/* OTP 입력 */}
+        {/* OTP input */}
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-700 mb-1 block">
             Enter OTP
@@ -110,7 +127,7 @@ const ForgotPassword: React.FC = () => {
           </button>
         </div>
 
-        {/* 메시지 출력 */}
+        {/* Message output */}
         {error && (
           <p className="text-red-500 text-sm text-center mt-2">{error}</p>
         )}
@@ -120,7 +137,7 @@ const ForgotPassword: React.FC = () => {
           </p>
         )}
 
-        {/* 돌아가기 */}
+        {/* Go back to login page */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
             Remember your password?{" "}

@@ -1,3 +1,15 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          Dashboard.tsx
+//  Description:   Dashboard component.
+//
+//  Dependencies:  react
+//
+////////////////////////////////////////////////////////////////
+
 import { useState, useEffect } from "react";
 
 interface TimeLeft {
@@ -6,11 +18,13 @@ interface TimeLeft {
   minutes: number;
   seconds: number;
 }
+
+// set foundation exam date
+// set the date of the Summer 2025 semester to first weeek Saturday: 2025/5/17
+// TODO: Avoid having this be hard-coded
+const targetDate = new Date("2025-05-17T00:00:00").getTime();
+
 const Dashboard: React.FC = () => {
-  // set foundation exam date
-  // set the date of the Summer 2025 semester to first weeek Saturday: 2025/5/17
-  // TODO: Avoid having this be hard-coded
-  const targetDate = new Date("2025-05-17T00:00:00").getTime();
 
   // function: calculate timeleft
   const calculateTimeLeft = (): TimeLeft => {
