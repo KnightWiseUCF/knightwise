@@ -91,12 +91,13 @@ app.use((req, res, next) =>
 });
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/progress', require('./routes/myProgress'));
-app.use('/api/problems', require('./routes/problems'));
-app.use('/api/test', require('./routes/test'));
-app.use('/api/users', require('./routes/users'));
+app.use('/api/auth',        require('./routes/authRoutes'));
+app.use('/api/dashboard',   require('./routes/dashboard'));
+app.use('/api/progress',    require('./routes/myProgress'));
+app.use('/api/problems',    require('./routes/problems'));
+app.use('/api/test',        require('./routes/test'));
+app.use('/api/users',       require('./routes/users'));
+app.use('/api/code',        require('./routes/codeSubmission'));
 
 // Error handler
 app.use(handleError);
