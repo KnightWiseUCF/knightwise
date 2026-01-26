@@ -10,21 +10,24 @@
 //  Dependencies:  mysql2 connection pool (req.db)
 //                 express
 //                 authMiddleware
+//                 errorHandler
 //
 ////////////////////////////////////////////////////////////////
 
 const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
+const { asyncHandler, AppError } = require("../middleware/errorHandler");
 
 /**
  * Helper function, gets answers for given questions, pairs them with each question
- * @param {Array} questions - Array of question objects with ID field
- * @param {Object} db - Database connection pool
- * @returns {Promise<Array>} Questions with paired answers array
+ * @param {Array}  questions - Array of question objects with ID field
+ * @param {Object} db        - Database connection pool
+ * @returns {Promise<Array>} - Questions with paired answers array
  */
 const pairAnswersWithQuestions = async (questions, db) => {
-  if (!questions || questions.length === 0) {
+  if (!questions || questions.length === 0) 
+  {
     return questions;
   }
 
@@ -40,76 +43,86 @@ const pairAnswersWithQuestions = async (questions, db) => {
   }));
 };
 
-// topic test
-router.get("/topic/:topicName", async (req, res) => {
+/**
+ * @route   GET /api/test/topic/:topicName
+ * @desc    Fetch questions for a given subcategory (e.g. Backtracking)
+ * @access  Protected
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with the subcategory's questions and answers
+ */
+router.get("/topic/:topicName", authMiddleware, asyncHandler(async (req, res) => {
   const { topicName } = req.params;
 
-  try {
-    // Get all questions of this subcategory
+  // Get all questions of this subcategory
+  const [questions] = await req.db.query(
+    'SELECT * FROM Question WHERE SUBCATEGORY = ?',
+    [topicName]
+  );
+
+  if (!questions || questions.length === 0) 
+  {
+    throw new AppError(`No questions exist for subcategory: ${topicName}`, 404, "Question not found");
+  }
+
+  const questionsWithAnswers = await pairAnswersWithQuestions(questions, req.db);
+  res.json(questionsWithAnswers);
+}));
+
+/**
+ * @route   GET /api/test/mocktest
+ * @desc    Fetch questions info for a mock test
+ * @access  Protected
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with mock test info
+ */
+router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
+  const sections = ["A", "B", "C", "D"];
+  const questionsBySection = {};
+
+  // shuffled problem per section and pick three question randomly
+  for (const section of sections) {
     const [questions] = await req.db.query(
-      'SELECT * FROM Question WHERE SUBCATEGORY = ?',
-      [topicName]
+      'SELECT * FROM Question WHERE SECTION = ?',
+      [section]
     );
 
-    if (!questions || questions.length === 0) {
-      return res.status(404).json({ message: "Question not found" });
+    if (!questions || questions.length === 0) 
+    {
+      throw new AppError(`Question not found in section: ${section}`, 404, "Question not found");
     }
-
-    const questionsWithAnswers = await pairAnswersWithQuestions(questions, req.db);
-    res.json(questionsWithAnswers);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    const shuffled = questions.sort(() => 0.5 - Math.random());
+    questionsBySection[section] = shuffled.slice(0, 3);
   }
-});
 
-router.get("/mocktest", async (req, res) => {
-  try {
-    const sections = ["A", "B", "C", "D"];
-    const questionsBySection = {};
+  const allQuestions = Object.values(questionsBySection).flat();
+  const questionsWithAnswers = await pairAnswersWithQuestions(allQuestions, req.db);
 
-    // shuffled problem per section and pick three question randomly
-    for (const section of sections) {
-      const [questions] = await req.db.query(
-        'SELECT * FROM Question WHERE SECTION = ?',
-        [section]
-      );
+  res.status(200).json({ total: questionsWithAnswers.length, questions: questionsWithAnswers });
+}));
 
-      if (!questions || questions.length === 0) {
-        return res
-          .status(404)
-          .json({ message: `Question not found in section ${section}` });
-      }
-      const shuffled = questions.sort(() => 0.5 - Math.random());
-      questionsBySection[section] = shuffled.slice(0, 3);
-    }
+/**
+ * @route   POST /api/test/submit
+ * @desc    Submit user answer. Note that 'SUBCATEGORY' from Question table is stored as 'TOPIC' in Response table
+ * @access  Protected
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response to confirm successful submission
+ */
+router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
+  const { problem_id, isCorrect, category, topic } = req.body;
+  const user_id = req.user.id;
 
-    const allQuestions = Object.values(questionsBySection).flat();
-    const questionsWithAnswers = await pairAnswersWithQuestions(allQuestions, req.db);
+  await req.db.query(
+    'INSERT INTO Response (USERID, PROBLEM_ID, ISCORRECT, CATEGORY, TOPIC, DATETIME) VALUES (?, ?, ?, ?, ?, ?)',
+    [user_id, problem_id, isCorrect, category, topic, new Date()]
+  );
 
-    res.status(200).json({ total: questionsWithAnswers.length, questions: questionsWithAnswers });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Note: 'SUBCATEGORY' from Question table is stored as 'TOPIC' in Response table
-router.post("/submit", authMiddleware, async (req, res) => {
-  try {
-    const { problem_id, isCorrect, category, topic } = req.body;
-    const user_id = req.user.id;
-
-    await req.db.query(
-      'INSERT INTO Response (USERID, PROBLEM_ID, ISCORRECT, CATEGORY, TOPIC, DATETIME) VALUES (?, ?, ?, ?, ?, ?)',
-      [user_id, problem_id, isCorrect, category, topic, new Date()]
-    );
-
-    res.status(201).json({ message: "Answer submitted" });
-  } catch (error) {
-    console.error("Submit Answer Error:", error);
-    res.status(500).json({ message: "Server Error" });
-  }
-});
+  res.status(201).json({ message: "Answer submitted" });
+}));
 
 module.exports = router;

@@ -12,6 +12,7 @@
 //                 cors
 //                 dotenv
 //                 route modules
+//                 errorHandler
 //
 ////////////////////////////////////////////////////////////////
 
@@ -19,6 +20,7 @@ const express = require('express');
 const mysql = require('mysql2/promise')
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { handleError } = require('./middleware/errorHandler');
 
 dotenv.config();
 const app = express();
@@ -95,6 +97,9 @@ app.use('/api/progress', require('./routes/myProgress'));
 app.use('/api/problems', require('./routes/problems'));
 app.use('/api/test', require('./routes/test'));
 app.use('/api/users', require('./routes/users'));
+
+// Error handler
+app.use(handleError);
 
 // Start the server
 const PORT = 5000;
