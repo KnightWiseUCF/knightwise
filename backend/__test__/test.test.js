@@ -15,7 +15,7 @@
 
 const request = require("supertest");
 const { app, pool } = require("../server");
-const { TEST_USER, getAuthToken, verifyTestDatabase } = require("./testHelpers")
+const { TEST_USER, getAuthToken, verifyTestDatabase } = require("./testHelpers");
 
 // Mock Discord webhook
 jest.mock('../services/discordWebhook', () => ({
