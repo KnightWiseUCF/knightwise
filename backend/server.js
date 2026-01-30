@@ -7,22 +7,20 @@
 //  Description:   Main Express app server, backend entry point.
 //                 Sets up middleware, database, API routes.
 //
-//  Dependencies:  express
+//  Dependencies:  env
+//                 express
 //                 mysql2/promise
 //                 cors
-//                 dotenv
-//                 route modules
 //                 errorHandler
 //
 ////////////////////////////////////////////////////////////////
 
+// Always require env first
+require('./config/env');
 const express = require('express');
 const mysql = require('mysql2/promise')
 const cors = require('cors');
-const dotenv = require('dotenv');
 const { handleError } = require('./middleware/errorHandler');
-
-dotenv.config();
 const app = express();
 
 // Middleware
@@ -41,6 +39,19 @@ if (!db_password)   console.error("ERROR: DB_PASSWORD not set");
 if (!db_name)       console.error("ERROR: DB_NAME not set");
 
 if (!db_user || !db_password || !db_name) process.exit(1);
+
+// Safety checks to ensure proper db is used
+if (process.env.NODE_ENV === 'test' && db_name !== 'KW_Testing') 
+{
+  console.error('ERROR: Test environment must use KW_Testing database!');
+  console.error(`Current DB_NAME: ${db_name}`);
+  process.exit(1);
+}
+if (process.env.NODE_ENV !== 'test' && db_name === 'KW_Testing') 
+{
+  console.error('ERROR: Production cannot use KW_Test database!');
+  process.exit(1);
+}
 
 // Create connection pool
 const pool = mysql.createPool(
@@ -91,19 +102,25 @@ app.use((req, res, next) =>
 });
 
 // Routes
-app.use('/api/auth',        require('./routes/authRoutes'));
-app.use('/api/dashboard',   require('./routes/dashboard'));
-app.use('/api/progress',    require('./routes/myProgress'));
-app.use('/api/problems',    require('./routes/problems'));
-app.use('/api/test',        require('./routes/test'));
-app.use('/api/users',       require('./routes/users'));
-app.use('/api/code',        require('./routes/codeSubmission'));
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/progress', require('./routes/myProgress'));
+app.use('/api/problems', require('./routes/problems'));
+app.use('/api/test', require('./routes/testRoutes'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/code', require('./routes/codeSubmission'));
 
 // Error handler
 app.use(handleError);
 
-// Start the server
-const PORT = 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-// when test 
-// module.exports = app; 
+// Start the server (unless just running tests)
+if (process.env.NODE_ENV !== 'test')
+{
+    const PORT = 5000;
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = {
+    app,
+    pool
+}; 
