@@ -1,58 +1,89 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          test.test.js
+//  Description:   Unit tests for test routes.
+//
+//  Dependencies:  supertest
+//                 mysql2 connection pool (server.js)
+//                 testHelpers
+//                 discordWebhook (mocked)
+//
+////////////////////////////////////////////////////////////////
+
 const request = require("supertest");
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
-const app = require("../server");
+const { app, pool } = require("../server");
+const { TEST_USER, getAuthToken, verifyTestDatabase } = require("./testHelpers")
 
-const Problem = require("../models/Problem");
-const Answer = require("../models/Answer");
-const User = require("../models/User");
+// Mock Discord webhook
+jest.mock('../services/discordWebhook', () => ({
+  sendNotification: jest.fn().mockResolvedValue(true),
+  notifyUserEvent: jest.fn().mockResolvedValue(true),
+  notifyError: jest.fn().mockResolvedValue(true),
+}));
 
-require("dotenv").config({ path: ".env.test" });
+let token;
 
-let token, userId;
-
+// Test setup/teardown
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGO_URI);
-  const user = await User.create({
-    username: "tester",
-    email: "test@example.com",
-    password: "pass",
-    firstName: "Test",
-    lastName: "User",
-  });
+  // Extra database safety check
+  await verifyTestDatabase(pool);
 
-  userId = user._id.toString();
-  token = jwt.sign({ userId }, process.env.JWT_SECRET);
+  await pool.query('DELETE FROM User WHERE EMAIL = ?', [TEST_USER.email]);
+  token = await getAuthToken();
 });
 
 afterEach(async () => {
-  await Problem.deleteMany({});
-  await Answer.deleteMany({});
+  await pool.query('DELETE FROM Response');
+  await pool.query('DELETE FROM AnswerText');
+  await pool.query('DELETE FROM Question');
 });
 
 afterAll(async () => {
-  await User.deleteMany({});
-  await mongoose.connection.close();
+  await pool.query('DELETE FROM User WHERE EMAIL = ?', [TEST_USER.email]);
+  try
+  {
+    await pool.end();
+  }
+  catch (err)
+  {
+    console.error("Error closing pool in /test unit test:", err);
+  }
 });
 
+// GET topicName test cases
 test("GET /api/test/topic/:topicName", async () => {
   // give
-  await Problem.insertMany([
-    { question: "Q1", subcategory: "test", section: "A" },
-    { question: "Q2", subcategory: "test", section: "A" },
-  ]);
+  await pool.query(
+    'INSERT INTO Question (QUESTION_TEXT, SUBCATEGORY, SECTION) VALUES (?, ?, ?)',
+    ["Q1", "test", "A"]
+  );
+  await pool.query(
+    'INSERT INTO Question (QUESTION_TEXT, SUBCATEGORY, SECTION) VALUES (?, ?, ?)',
+    ["Q2", "test", "A"]
+  );
 
   // when
-  const res = await request(app).get("/api/test/topic/test");
+  const res = await request(app)
+    .get("/api/test/topic/test")
+    .set("Authorization", `Bearer ${token}`);
 
   // then
   expect(res.statusCode).toBe(200);
   expect(res.body.length).toBe(2);
-  expect(res.body[0].subcategory).toBe("OS");
+  expect(res.body[0].SUBCATEGORY).toBe("test");
 });
 
+test("GET /api/test/topic/:topicName requires auth", async () => {
+  const res = await request(app).get("/api/test/topic/noauth");
+  expect(res.statusCode).toBe(401);
+});
+
+// mocktest test cases
 test("GET /api/test/mocktest", async () => {
-  // give
+  // give (Create 20 problems, 5 per section)
   const sections = ["A", "B", "C", "D"];
   const problems = sections.flatMap((sec) =>
     Array.from({ length: 5 }, (_, i) => ({
@@ -61,13 +92,29 @@ test("GET /api/test/mocktest", async () => {
       section: sec,
     }))
   );
-  await Problem.insertMany(problems);
+
+  // Insert all problems
+  for (const problem of problems)
+  {
+    await pool.query(
+      'INSERT INTO Question (QUESTION_TEXT, SUBCATEGORY, SECTION) VALUES (?, ?, ?)',
+      [problem.question, problem.subcategory, problem.section]
+    );
+  }
 
   // when
-  const res = await request(app).get("/api/test/mocktest");
+  const res = await request(app)
+    .get("/api/test/mocktest")
+    .set("Authorization", `Bearer ${token}`);
 
   // then
+  // Expect 12 since /mocktest gets 3 questions from each of 4 sections
   expect(res.statusCode).toBe(200);
   expect(res.body.total).toBe(12);
-  expect(res.body.problems.length).toBe(12);
+  expect(res.body.questions.length).toBe(12);
+});
+
+test("GET /api/test/mocktest requires auth", async () => {
+  const res = await request(app).get("/api/test/mocktest");
+  expect(res.statusCode).toBe(401);
 });
