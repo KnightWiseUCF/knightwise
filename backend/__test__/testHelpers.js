@@ -52,6 +52,11 @@ async function getAuthToken()
       password: TEST_USER.password
     });
 
+  if (!res.body.token) 
+  {
+    throw new Error("Failed to get auth token: " + JSON.stringify(res.body));
+  }
+
   return res.body.token;
 }
 
