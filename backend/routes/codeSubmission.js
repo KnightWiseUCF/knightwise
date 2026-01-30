@@ -7,6 +7,10 @@
 //  Description:   Routes for programming problem
 //                 submission and grading using Judge0.
 //
+//  Dependencies:  express
+//                 authMiddleware
+//                 codeController
+//
 ////////////////////////////////////////////////////////////////
 
 const express = require("express");
