@@ -21,6 +21,20 @@ const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const adminMiddleware = require("../middleware/adminMiddleware");
 
 /**
+ * Helper function, gets answers for a given question
+ * @param {number} questionId - Question ID
+ * @param {Object} db         - Database connection pool
+ * @returns {Promise<Array>}  - Array of answers
+ */
+const getAnswersForQuestion = async (questionId, db) => {
+  const [answers] = await db.query(
+    'SELECT * FROM AnswerText WHERE QUESTION_ID = ?',
+    [questionId]
+  );
+  return answers;
+};
+
+/**
  * @route   DELETE /api/admin/user/:id
  * @desc    Delete a user's account and associated data
  * @access  Admin
@@ -149,7 +163,7 @@ router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) =>
  * @param {import('express').Response} res - Express response object
  * @returns {Promise<void>} - JSON response with question and its answers
  */
-router.get('problems/:id', adminMiddleware, asyncHandler(async (req, res) => {
+router.get('/problems/:id', adminMiddleware, asyncHandler(async (req, res) => {
 const { id } = req.params;
 
   // Find question by ID
@@ -172,18 +186,20 @@ const { id } = req.params;
 }));
 
 /**
- * @route   GET /api/admin/users/:id
- * @desc    Fetch a user by its ID
+ * @route   GET /api/admin/getuser
+ * @desc    Fetch a user by its ID or username
  * @access  Admin
  * 
  * @param {import('express').Request}  req - Express request object
  * @param {import('express').Response} res - Express response object
  * @returns {Promise<void>} - JSON response with question and its answers
  */
-router.get('users/:id', adminMiddleware, asyncHandler(async (req, res) => {
-const { id } = req.params;
+router.get('/getuser', adminMiddleware, asyncHandler(async (req, res) => {
+  const { id, username } = req.body;
 
-  // Find question by ID
+  // Find user by ID
+  if (username == null)
+  {
   const [users] = await req.db.query(
     'SELECT * FROM User WHERE ID = ?',
     [id]
@@ -193,11 +209,33 @@ const { id } = req.params;
   {
     throw new AppError(`No users associated with ID: ${id}`, 404, "User not found");
   }
-
-  const user = user[0];
+  
+  const user = users[0];
 
 
   res.json({...user});
+  }
+
+  // find user by username
+  else if (id == null)
+  {
+  const [users] = await req.db.query(
+    'SELECT * FROM User WHERE USERNAME = ?',
+    [username]
+  );
+
+  if (users.length === 0) 
+  {
+    throw new AppError(`No users associated with username: ${username}`, 404, "User not found");
+  }
+
+  const user = users[0];
+
+
+  res.json({...user});
+  }
+
+  
 }));
 
 module.exports = router;
