@@ -101,3 +101,45 @@ router.post("/createuser", adminMiddleware, asyncHandler(async(req, res) => {
 
 }));
 module.exports = router;
+
+/**
+ * @route   POST /api/admin/createquestion
+ * @desc    Create a new question object and a certain number of corresponding answer_text objects
+ * @access  Admin
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response to confirm successful submission
+ */
+router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) => {
+  const { type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id, answer_text, answer_correctness, answer_priority } = req.body;
+
+  if (!type || !author_exam_id || !section || !category || !subcategory || !points_possible || !question_text || !owner_id || !answer_text || !answer_correctness || !answer_priority)
+  {
+    throw new AppError("Missing required fields", 400, "Invalid fields");
+  }
+
+  const [result] = await req.db.query(
+    'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id]
+  );
+
+  const questionId = result.insertId;
+
+  if (questionId)
+  {
+    for (let i = 0; i < answer_text.length; i++)
+    {
+      await req.db.query(
+        'INSERT INTO AnswerText (QUESTION_ID, IS_CORRECT_ANSWER, TEXT, PRIORITY) VALUES (?, ?, ?, ?)',
+        [questionId, answer_correctness[i], answer_text[i], answer_priority[i]]
+      );
+    }
+  }
+
+  res.status(201).json({ message: "Question added", questionId});
+}));
+
+
+
+module.exports = router;
