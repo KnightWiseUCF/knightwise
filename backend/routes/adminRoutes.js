@@ -140,6 +140,64 @@ router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) =>
   res.status(201).json({ message: "Question added", questionId});
 }));
 
+/**
+ * @route   GET /api/admin/problems/:id
+ * @desc    Fetch a question by its ID with its associated answers
+ * @access  Admin
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with question and its answers
+ */
+router.get('problems/:id', adminMiddleware, asyncHandler(async (req, res) => {
+const { id } = req.params;
 
+  // Find question by ID
+  const [questions] = await req.db.query(
+    'SELECT * FROM Question WHERE ID = ?',
+    [id]
+  );
+
+  if (questions.length === 0) 
+  {
+    throw new AppError(`No questions associated with ID: ${id}`, 404, "Question not found");
+  }
+
+  const question = questions[0];
+
+  // Get answers for question
+  const answers = await getAnswersForQuestion(id, req.db);
+
+  res.json({...question, answers});
+}));
+
+/**
+ * @route   GET /api/admin/users/:id
+ * @desc    Fetch a user by its ID
+ * @access  Admin
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with question and its answers
+ */
+router.get('users/:id', adminMiddleware, asyncHandler(async (req, res) => {
+const { id } = req.params;
+
+  // Find question by ID
+  const [users] = await req.db.query(
+    'SELECT * FROM User WHERE ID = ?',
+    [id]
+  );
+
+  if (users.length === 0) 
+  {
+    throw new AppError(`No users associated with ID: ${id}`, 404, "User not found");
+  }
+
+  const user = user[0];
+
+
+  res.json({...user});
+}));
 
 module.exports = router;
