@@ -238,4 +238,23 @@ router.get('/getuser', adminMiddleware, asyncHandler(async (req, res) => {
   
 }));
 
+/**
+ * @route   GET /api/admin/unverifiedprofs
+ * @desc    Fetch a list of unverified professors
+ * @access  Admin
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with question and its answers
+ */
+router.get('/unverifiedprofs', adminMiddleware, asyncHandler(async (req, res) => {
+
+  const [profs] = await req.db.query(
+    'SELECT * FROM Professor WHERE VERIFIED = 0'
+  );
+
+  res.json({...profs});
+  
+}));
+
 module.exports = router;
