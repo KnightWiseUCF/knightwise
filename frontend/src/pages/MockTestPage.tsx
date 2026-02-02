@@ -12,6 +12,7 @@
 //                 MockTestInfo component
 //                 MockTestProblem component
 //                 MockTestResult component
+//                 models (Question, MockTestResponse)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -21,10 +22,11 @@ import MockTestInfo from "../components/MockTestInfo";
 import MockTestProblem from "../components/MockTestProblem";
 import MockTestResult from "../components/MockTestResult";
 import api from "../api";
+import { Question, MockTestResponse } from "../models";
 
 const MockTestPage: React.FC = () => {
   const [step, setStep] = useState<"info" | "test" | "result">("info");
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [sectionScores, setSectionScores] = useState<
@@ -35,18 +37,23 @@ const MockTestPage: React.FC = () => {
   useEffect(() => {
     const fetchMockTestProblems = async () => {
       try {
-        const res = await api.get("/api/test/mocktest");
+        const res = await api.get<MockTestResponse>("/api/test/mocktest");
         const data = res.data;
 
-        const withOptions = data.questions.map((question: any) => {
-          const correctAnswer = question.answers?.find((a: any) => a.IS_CORRECT_ANSWER);
-          const allAnswerTexts = question.answers?.map((a: any) => a.TEXT) || [];
+        const withOptions = data.questions.map((question) => {
+          const correctAnswer = question.answers?.find((a) => a.IS_CORRECT_ANSWER);
+          const allAnswerTexts = question.answers?.map((a) => a.TEXT) || [];
           const shuffledOptions = allAnswerTexts.sort(() => 0.5 - Math.random());
 
           return {
-            ...question,
-            answerCorrect: correctAnswer?.TEXT,
-            options: shuffledOptions,
+            ID:             question.ID,
+            SECTION:        question.SECTION,
+            CATEGORY:       question.CATEGORY,
+            SUBCATEGORY:    question.SUBCATEGORY,
+            AUTHOR_EXAM_ID: question.AUTHOR_EXAM_ID,
+            QUESTION_TEXT:  question.QUESTION_TEXT,
+            answerCorrect:  correctAnswer?.TEXT || "",
+            options:        shuffledOptions,
           };
         });
 
@@ -55,8 +62,10 @@ const MockTestPage: React.FC = () => {
         setCurrentIndex(0);
         setSelectedAnswer(null);
         setShowFeedback(false);
-      } catch (err) {
-        console.error("Failed to load mock problems", err);
+      } 
+      catch 
+      {
+        console.error("Failed to load mock test problems");
       }
     };
 

@@ -1,5 +1,20 @@
-// This code is based on Dr. Reinenker's code : Login.tsx
-// The implementation of the password checklist was based on the article: https://www.geeksforgeeks.org/how-to-create-password-checklist-in-reactjs/
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          Signup.tsx
+//  Description:   Frontend user registration functionality.
+//                 Code based on Dr. Leinecker's Login.tsx code.
+//                 Password checklist based on the following article:
+//                 https://www.geeksforgeeks.org/how-to-create-password-checklist-in-reactjs/
+//
+//  Dependencies:  react
+//                 react-password-checklist
+//                 api instance
+//
+////////////////////////////////////////////////////////////////
+
 import React, { useState } from "react";
 import PasswordChecklist from "react-password-checklist";
 import api from "../api";
@@ -21,24 +36,26 @@ const Signup: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{5,}$/;
 
   const handleSendOtp = async () => {
-    try {
+    try 
+    {
       await api.post("/api/auth/sendotp", 
       {
         email,
         purpose: "signup",
       });
-      setSuccessMessage("Send email");
+      setSuccessMessage("Verification email sent!");
       setError("");
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to send verification code"
-      );
+    } 
+    catch 
+    {
+      setError("Failed to send verification code. Please try again.");
       setSuccessMessage("");
     }
   };
 
   const handleVerifyOtp = async () => {
-    try {
+    try 
+    {
       await api.post("/api/auth/verify", 
       {
         email, otp 
@@ -46,8 +63,10 @@ const Signup: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
       setIsVerified(true);
       setSuccessMessage("Email verified");
       setError("");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Verification failed");
+    } 
+    catch 
+    {
+      setError("Verification failed. Please check your code and try again.");
       setSuccessMessage("");
     }
   };
@@ -77,7 +96,8 @@ const Signup: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
       return;
     }
 
-    try {
+    try 
+    {
       const response = await api.post("/api/auth/signup", 
       {
         username,
@@ -89,8 +109,10 @@ const Signup: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
 
       setSuccessMessage(response.data.message);
       setTimeout(() => onToggle(), 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.message);
+    } 
+    catch
+    {
+      setError("Registration failed. Please try again.");
     }
   };
 

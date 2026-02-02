@@ -1,8 +1,23 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     KnightWise Team
+//  File:          ResetPassword.tsx
+//  Description:   Frontend password reset functionality.
+//
+//  Dependencies:  react
+//                 react-password-checklist
+//                 react-router-dom
+//                 api instance
+//
+////////////////////////////////////////////////////////////////
+
 import React, { useEffect, useState } from "react";
 import PasswordChecklist from "react-password-checklist";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/ucflogo.png";
-import axios from "axios";
+import api from "../api";
 
 const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState("");
@@ -28,13 +43,16 @@ const ResetPassword: React.FC = () => {
       return;
     }
 
-    try {
-      await axios.post("/api/auth/resetPassword", { email, password });
+    try 
+    {
+      await api.post("/api/auth/resetPassword", { email, password });
       setSuccessMessage("Password changed successfully!");
       localStorage.removeItem("reset_email");
       setTimeout(() => navigate("/"), 1000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to reset password.");
+    } 
+    catch 
+    {
+      setError("Failed to reset password. Please try again.");
     }
   };
 

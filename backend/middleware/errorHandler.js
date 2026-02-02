@@ -60,7 +60,17 @@ function asyncHandler(fn) {
  */
 function handleError(err, req, res, next)
 {
-  console.error("Error:", err);
+  // Label errors that occur during tests since they are likely intentional
+  const isTest = (process.env.NODE_ENV === 'test');
+
+  if (isTest)
+  {
+    console.log("TEST ERROR:", err);
+  }
+  else
+  {
+    console.error("Error:", err);
+  }
     
   const statusCode = err.statusCode || 500; // Default to server error
 

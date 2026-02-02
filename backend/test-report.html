@@ -274,109 +274,371 @@ header {
   font-size: 1rem;
   padding: 0 0.5rem;
 }
-</style></head><body><main class="jesthtml-content"><header><h1 id="title">Test Report</h1></header><section id="metadata-container"><div id="timestamp">Started: 2025-03-31 17:10:34</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (2)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">2 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (12)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">12 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/test.test.js</div><div class="suite-time warn">6.547s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/topic/:topicName</div><div class="test-status">failed</div><div class="test-duration">0.359s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as get] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.get (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/test.test.js:46:34)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/mocktest</div><div class="test-status">failed</div><div class="test-duration">0.2s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as get] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.get (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/test.test.js:67:34)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/home/yoni/Desktop/COP4331_LargeProject/backend/server.js:18:25)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MongoDB Connected</pre></div></div></details><details id="suite-2" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js</div><div class="suite-time warn">7.837s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  send OTP for signup</div><div class="test-status">failed</div><div class="test-duration">1.333s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:35:36)
-    at Promise.then.completed (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:316:40)
+</style></head><body><main class="jesthtml-content"><header><h1 id="title">Test Report</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-01-29 22:37:20</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (2)</div><div class="summary-passed ">2 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (14)</div><div class="summary-passed ">14 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/test.test.js</div><div class="suite-time">3.78s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/topic/:topicName</div><div class="test-status">passed</div><div class="test-duration">0.311s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/topic/:topicName requires auth</div><div class="test-status">passed</div><div class="test-duration">0.139s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/mocktest</div><div class="test-status">passed</div><div class="test-duration">1.217s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/mocktest requires auth</div><div class="test-status">passed</div><div class="test-duration">0.15s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
+    at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
+    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at async Object.worker (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:74:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:81:11)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if email is already registered during signup</div><div class="test-status">failed</div><div class="test-duration">0.165s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:56:36)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if user does not exist during reset</div><div class="test-status">failed</div><div class="test-duration">0.109s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:68:36)
-    at Promise.then.completed (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:316:40)
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/test.test.js:32:3)</pre><pre class="suite-consolelog-item-message">Database check passed: Using KW_Testing</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at authMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:44:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at authMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:44:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div></div></details><details id="suite-2" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/auth.test.js</div><div class="suite-time">4.154s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  send OTP for signup</div><div class="test-status">passed</div><div class="test-duration">0.264s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if email is already registered during signup</div><div class="test-status">passed</div><div class="test-duration">0.185s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if user does not exist during reset</div><div class="test-status">passed</div><div class="test-duration">0.124s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  verify correct OTP</div><div class="test-status">passed</div><div class="test-duration">0.26s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail with wrong OTP</div><div class="test-status">passed</div><div class="test-duration">0.186s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if OTP expired</div><div class="test-status">passed</div><div class="test-duration">0.188s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if no OTP record found</div><div class="test-status">passed</div><div class="test-duration">0.136s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">signup -  succeed if email verified</div><div class="test-status">passed</div><div class="test-duration">0.363s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">login -  login with correct credentials</div><div class="test-status">passed</div><div class="test-duration">0.367s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">resetPassword -  reset password after verify</div><div class="test-status">passed</div><div class="test-duration">0.587s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
+    at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
+    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at async Object.worker (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:74:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:81:11)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  verify correct OTP</div><div class="test-status">failed</div><div class="test-duration">0.178s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:88:8)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail with wrong OTP</div><div class="test-status">failed</div><div class="test-duration">0.182s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:109:36)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if OTP expired</div><div class="test-status">failed</div><div class="test-duration">0.149s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:129:36)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if no OTP record found</div><div class="test-status">failed</div><div class="test-duration">0.109s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:141:36)
-    at Promise.then.completed (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">signup -  succeed if email verified</div><div class="test-status">failed</div><div class="test-duration">0.187s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:162:36)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">login -  login with correct credentials</div><div class="test-status">failed</div><div class="test-duration">0.381s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:188:36)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">resetPassword -  reset password after verify</div><div class="test-status">failed</div><div class="test-duration">0.314s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: app.address is not a function
-    at Test.serverAddress (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:61:22)
-    at new Test (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/lib/test.js:49:14)
-    at Object.obj.&lt;computed&gt; [as post] (/home/yoni/Desktop/COP4331_LargeProject/backend/node_modules/supertest/index.js:39:18)
-    at Object.post (/home/yoni/Desktop/COP4331_LargeProject/backend/__test__/auth.test.js:219:36)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Server.log (/home/yoni/Desktop/COP4331_LargeProject/backend/server.js:45:32)
-    at Object.onceWrapper (node:events:632:28)
-    at Server.emit (node:events:530:35)
-    at emitListeningNT (node:net:1980:10)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</pre><pre class="suite-consolelog-item-message">Server running on port 5000</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/home/yoni/Desktop/COP4331_LargeProject/backend/server.js:18:25)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MongoDB Connected</pre></div></div></details></main></body></html>
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/auth.test.js:47:3)</pre><pre class="suite-consolelog-item-message">Database check passed: Using KW_Testing</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:273:15)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">Email sent successfully: { Messages: [ { Status: 'success' } ] }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Signup attempt with existing email: existing@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:186:13
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'Email already registered'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Password reset failed, email not registered: unknown@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:194:13
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 404,
+  userMessage: 'User not found'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Verify failed, incorrect OTP: 000000
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:309:11
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'Invalid OTP'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: OTP expired for email: expiredotp@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:313:11
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'OTP expired'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Verify failed, no OTP for email: notfound@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:303:11
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'No record'
+}</pre></div></div></details></main></body></html>

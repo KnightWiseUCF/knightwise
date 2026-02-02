@@ -1,3 +1,19 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     Daniel Landsman
+//  File:          Graph.tsx
+//  Description:   Topic mastery radar chart component.
+//
+//  Dependencies:  react
+//                 react-chartjs-2
+//                 chart.js
+//                 api instance
+//                 models (ProgressData)
+//
+////////////////////////////////////////////////////////////////
+
 import React, { useEffect, useState } from 'react';
 import { Radar } from "react-chartjs-2";
 import {
@@ -9,14 +25,16 @@ import {
   Tooltip,
   Legend,
   ChartOptions,
+  TooltipItem,
 } from "chart.js";
 import api from "../api";
+import { ProgressData } from '../models';
 
 // Register required chart elements
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 const Graph: React.FC = () => {
-  const [progressData, setProgressData] = useState<any>({});
+  const [progressData, setProgressData] = useState<ProgressData>({});
   
   const allTopics = [
     "Algorithm Analysis", "AVL Trees", "Backtracking", "Base Conversion", "Binary Trees",
@@ -24,23 +42,25 @@ const Graph: React.FC = () => {
     "Queues", "Recurrence Relations", "Recursion", "Sorting", "Stacks", "Summations", "Tries"
   ];
 
-  const token = localStorage.getItem("token");
-
   useEffect(() => {
-    // Fetch user progress data from your API
+    const token = localStorage.getItem("token");
+
+    // Fetch user progress data
     const fetchProgressData = async () => {
       try {
-        const response = await api.get("api/progress/graph", 
+        const response = await api.get<{ progress: ProgressData }>("api/progress/graph", 
         {
           headers: 
           {
-            'Authorization': `Bearer ${token}`,  // Add your token here
+            'Authorization': `Bearer ${token}`,
           }
         });
 
-        setProgressData(response.data.progress);  // Assuming the response structure
-      } catch (error) {
-        console.error('Error fetching progress data', error);
+        setProgressData(response.data.progress);
+      } 
+      catch 
+      {
+        console.error('Error fetching progress data');
       }
     };
 
@@ -57,7 +77,7 @@ const Graph: React.FC = () => {
           // Set the mastery level (percentage) for each topic
           const topicData = progressData[topic];
           if (topicData !== undefined && topicData.percentage !== undefined) {
-            return parseFloat(topicData.percentage);  // Get the percentage from the API
+            return parseFloat(topicData.percentage.toString());
           }
           return 0;  // Set to 0 if no data is available for this topic
         }),
@@ -87,8 +107,8 @@ const Graph: React.FC = () => {
       tooltip: { 
         enabled: true,
         callbacks: {
-          label: function (context: any) {
-            const value = context.raw;
+          label: function (context: TooltipItem<"radar">) {
+            const value = context.raw as number;
             if (value === 0) return ""; // Don't show tooltip for 0 values
             return `Mastery Level: ${value}%`;
           },

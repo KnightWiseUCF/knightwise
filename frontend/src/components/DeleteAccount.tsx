@@ -1,19 +1,22 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2025
+//  Year:          2025-2026
 //  Author(s):     Daniel Landsman
 //  File:          DeleteAccount.tsx
 //  Description:   Handles user account deletion.
 //
 //  Dependencies:  react
+//                 react-router-dom
 //                 api instance
+//                 axios (isAxiosError)
 //
 ////////////////////////////////////////////////////////////////
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import { isAxiosError } from "axios";
 
 // Prop to pass back to AccountPage to indicate successful deletion
 interface DeleteAccountProps 
@@ -44,9 +47,8 @@ const DeleteAccount: React.FC<DeleteAccountProps> = ({ onDeleteSuccess }) => {
     {
       userData = userDataString ? JSON.parse(userDataString) : null;
     }
-    catch (err: any)
+    catch
     {
-      console.error("Failed to parse user data:", err);
       setError("Invalid user data. Please log in again.");
       return;
     }
@@ -70,21 +72,27 @@ const DeleteAccount: React.FC<DeleteAccountProps> = ({ onDeleteSuccess }) => {
       // Success, parent handler redirects to login, clears localStorage
       onDeleteSuccess?.();
     } 
-    catch (err: any) 
+    catch (err: unknown) 
     {
-      if (err.response?.status === 401)
+      if (isAxiosError(err))
       {
-        setError("Session expired. Please log in again.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user_data");
-        localStorage.removeItem("reset-email");
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
-        return;
+        if (err.response?.status === 401)
+        {
+          setError("Session expired. Please log in again.");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user_data");
+          localStorage.removeItem("reset-email");
+          setTimeout(() => {
+            navigate("/");
+          }, 1500);
+          return;
+        }
+        setError("Failed to delete account. Please try again.");
       }
-      const errorMsg = err.response?.data?.message || err.message || "Failed to delete account";
-      setError(errorMsg);
+      else
+      {
+        setError("Something went wrong. Please try again.");
+      }
     } 
     finally 
     {

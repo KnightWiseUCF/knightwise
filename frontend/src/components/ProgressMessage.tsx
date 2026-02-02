@@ -1,3 +1,15 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2025-2026
+//  Author(s):     Daniel Landsman
+//  File:          ProgressMessage.tsx
+//  Description:   Progress tab message component.
+//
+//  Dependencies:  react
+//
+////////////////////////////////////////////////////////////////
+
 import React from "react";
 
 interface ProgressMessageProps {
@@ -22,7 +34,7 @@ const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, str
 
   // Find weakest topic (lowest mastery percentage among attempted topics)
   const attemptedTopics = Object.entries(mastery)
-    .filter(([_, level]) => typeof level === "number")
+    .filter(([, level]) => typeof level === "number")
     .sort((a, b) => (a[1] as number) - (b[1] as number));
 
   const weakestTopic = (attemptedTopics.length > 0 && attemptedTopics[0][1] < 100)
