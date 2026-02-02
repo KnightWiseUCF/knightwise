@@ -72,6 +72,46 @@ router.delete("/users/:id", adminMiddleware, asyncHandler(async (req, res) => {
     .json({ message: "Account deleted successfully" });
 }));
 
+
+/**
+ * @route   DELETE /api/admin/problems/:id
+ * @desc    Delete a question and associated data
+ * @access  Admin
+ */
+router.delete("/problems/:id", adminMiddleware, asyncHandler(async (req, res) => {
+  const questionId = req.params.id;
+
+  // Ensure userId is a valid primary key
+  if (isNaN(parseInt(questionId)) || parseInt(questionId) <= 0)
+  {
+    throw new AppError(`Failed to delete question, questionId not a valid primary key: ${questionId}`, 400, "Invalid question ID");
+  }
+
+  // Get user info
+  const [questions] = await req.db.query(
+    'SELECT * FROM Question WHERE ID = ?',
+    [questionId]
+  );
+
+  if (questions.length === 0)
+  { 
+    throw new AppError(`Failed to delete question, questionId not found: ${questionId}`, 404, "Question not found");
+  }
+
+  const question = questions[0];
+
+  // Delete user and associated email code/answers
+  await req.db.query('DELETE FROM Question WHERE ID = ?', [questionId]);
+  await req.db.query('DELETE FROM AnswerText WHERE QUESTION_ID = ?', [questionId]);
+  await req.db.query('DELETE FROM Response WHERE PROBLEM_ID = ?', [questionId]);
+  console.log(`Question ${questionId} and all associated data deleted successfully`);
+
+  return res
+    .status(200)
+    .json({ message: "Question deleted successfully" });
+}));
+
+
 /**
  * @route   POST /api/admin/createuser
  * @desc    Allows an admin to create an accout bypassing verification
@@ -248,9 +288,36 @@ router.get('/getuser', adminMiddleware, asyncHandler(async (req, res) => {
  * @returns {Promise<void>} - JSON response with question and its answers
  */
 router.get('/unverifiedprofs', adminMiddleware, asyncHandler(async (req, res) => {
-
+  
   const [profs] = await req.db.query(
     'SELECT * FROM Professor WHERE VERIFIED = 0'
+  );
+
+  res.json({...profs});
+  
+}));
+
+/**
+ * @route   POST /api/admin/verifyprof/:id
+ * @desc    Fetch a list of unverified professors
+ * @access  Admin
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with question and its answers
+ */
+router.post('/verifyprof/:id', adminMiddleware, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Ensure id is a valid primary key
+  if (isNaN(parseInt(id)) || parseInt(id) <= 0)
+  {
+    throw new AppError(`Failed to verify professor, id not a valid primary key: ${id}`, 400, "Invalid professor ID");
+  }
+
+  const [profs] = await req.db.query(
+    'UPDATE Professor SET VERIFIED = 1 WHERE ID = ?',
+    [id]
   );
 
   res.json({...profs});
