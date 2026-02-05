@@ -10,6 +10,7 @@
 //                 react-password-checklist
 //                 react-router-dom
 //                 api instance
+//                 axios (isAxiosError)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -18,6 +19,7 @@ import PasswordChecklist from "react-password-checklist";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/ucflogo.png";
 import api from "../api";
+import { isAxiosError } from "axios";
 
 const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState("");
@@ -50,9 +52,16 @@ const ResetPassword: React.FC = () => {
       localStorage.removeItem("reset_email");
       setTimeout(() => navigate("/"), 1000);
     } 
-    catch 
+    catch (err : unknown) 
     {
-      setError("Failed to reset password. Please try again.");
+      if (isAxiosError(err))
+      {
+        setError(err.response?.data?.message || "Failed to reset password. Please try again.");
+      }
+      else
+      {
+        setError("Something went wrong. Please try again.");
+      }
     }
   };
 

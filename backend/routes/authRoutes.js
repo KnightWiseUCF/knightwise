@@ -344,6 +344,23 @@ router.post("/resetPassword", asyncHandler(async (req, res) => {
     throw new AppError(`Cannot reset password for "${email}", not verified`, 403, "Email verification required");
   }
 
+  // Get user's current password hash
+  const [users] = await req.db.query(
+    'SELECT PASSWORD FROM User WHERE EMAIL = ?',
+    [email]
+  );
+  if (users.length === 0)
+  {
+    throw new AppError(`User not found for email: ${email}`, 404, "User not found");
+  }
+
+  // Ensure new password is different from the old one
+  const isSamePassword = await bcrypt.compare(password, users[0].PASSWORD);
+  if (isSamePassword)
+  {
+    throw new AppError(`Cannot reset password for "${email}", same as current password`, 400, "Your new password cannot be the same as your current password.");
+  }
+
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
