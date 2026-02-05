@@ -33,9 +33,14 @@ jobs:
         working-directory: ./backend
         run: npm test
         env:
-          MONGO_URI: mongodb://localhost:27017/test-studytool
-          JWT_SECRET: test_jwt_secret
-          NODE_ENV: test
+          DB_HOST: ${{ secrets.DB_HOST_TEST }}
+          DB_USER: ${{ secrets.DB_USER_TEST }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD_TEST }}
+          DB_NAME: ${{ secrets.DB_NAME_TEST }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
+          MJ_APIKEY_PUBLIC: ${{ secrets.MJ_APIKEY_PUBLIC_TEST }}
+          MJ_APIKEY_PRIVATE: ${{ secrets.MJ_APIKEY_PRIVATE_TEST }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY_TEST }}
 
   test-frontend:
     name: test frontend
