@@ -48,9 +48,12 @@ const ResetPassword: React.FC = () => {
     try 
     {
       await api.post("/api/auth/resetPassword", { email, password });
-      setSuccessMessage("Password changed successfully!");
+      setSuccessMessage("Password changed successfully! Redirecting...");
+
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      navigate("/");
       localStorage.removeItem("reset_email");
-      setTimeout(() => navigate("/"), 1000);
     } 
     catch (err : unknown) 
     {
