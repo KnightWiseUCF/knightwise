@@ -42,9 +42,6 @@ const getAnswersForQuestion = async (questionId, db) => {
 router.delete("/users/:id", adminMiddleware, asyncHandler(async (req, res) => {
   const userId = req.params.id;
 
-  // for the unit test, don't ask why
-  console.log(userId);
-
   // Ensure userId is a valid primary key
   if (isNaN(parseInt(userId)) || parseInt(userId) <= 0)
   {
@@ -154,8 +151,6 @@ router.post("/createuser", adminMiddleware, asyncHandler(async(req, res) => {
 
   const userId = result.insertId;
 
-  console.log(userId);
-
   res.status(201).json({ message: "User Registered", userId});
 
 }));
@@ -245,7 +240,6 @@ router.get('/getuser', adminMiddleware, asyncHandler(async (req, res) => {
   // Find user by ID
   if (username == null)
   {
-  console.log(id);
   const [users] = await req.db.query(
     'SELECT * FROM User WHERE ID = ?',
     [id]
@@ -265,7 +259,6 @@ router.get('/getuser', adminMiddleware, asyncHandler(async (req, res) => {
   // find user by username
   else if (id == null)
   {
-  console.log(username);
   const [users] = await req.db.query(
     'SELECT * FROM User WHERE USERNAME = ?',
     [username]
