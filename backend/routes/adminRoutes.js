@@ -173,6 +173,11 @@ router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) =>
     throw new AppError("Missing required fields", 400, "Invalid fields");
   }
 
+  if (!(answer_correctness.length === answer_priority.length && answer_correctness.length === answer_text.length))
+  {
+    throw new AppError("Answer arrays are not equal length.", 400, "Invalid fields");
+  }
+
   const [result] = await req.db.query(
     'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     [type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id]
