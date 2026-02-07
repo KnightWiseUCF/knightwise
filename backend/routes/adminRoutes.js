@@ -320,7 +320,7 @@ router.post('/verifyprof/:id', adminMiddleware, asyncHandler(async (req, res) =>
     [id]
   );
 
-  res.json({...profs});
+  res.json({ message: "Professor verified successfully" });
   
 }));
 
