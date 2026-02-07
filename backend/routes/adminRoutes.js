@@ -299,7 +299,7 @@ router.get('/unverifiedprofs', adminMiddleware, asyncHandler(async (req, res) =>
 
 /**
  * @route   POST /api/admin/verifyprof/:id
- * @desc    Fetch a list of unverified professors
+ * @desc    Verify a professor by ID
  * @access  Admin
  * 
  * @param {import('express').Request}  req - Express request object
