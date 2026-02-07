@@ -235,7 +235,7 @@ const { id } = req.params;
  * @returns {Promise<void>} - JSON response with question and its answers
  */
 router.get('/getuser', adminMiddleware, asyncHandler(async (req, res) => {
-  const { id, username } = req.body;
+  const { id, username } = req.query;
 
   // Find user by ID
   if (username == null)
