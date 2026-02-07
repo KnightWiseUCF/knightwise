@@ -293,7 +293,7 @@ router.get('/unverifiedprofs', adminMiddleware, asyncHandler(async (req, res) =>
     'SELECT * FROM Professor WHERE VERIFIED = 0'
   );
 
-  res.json({...profs});
+  res.json({profs});
   
 }));
 
