@@ -304,7 +304,7 @@ router.get('/unverifiedprofs', adminMiddleware, asyncHandler(async (req, res) =>
  * 
  * @param {import('express').Request}  req - Express request object
  * @param {import('express').Response} res - Express response object
- * @returns {Promise<void>} - JSON response with question and its answers
+ * @returns {Promise<void>} - JSON response with professor verification status message
  */
 router.post('/verifyprof/:id', adminMiddleware, asyncHandler(async (req, res) => {
   const { id } = req.params;
