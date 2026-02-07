@@ -52,13 +52,13 @@ describe("Admin Routes", () => {
       const res = await request(app)
         .get("/api/admin/getuser")
         .set("Authorization", `Bearer ${token}`)
-        .send({id: userId});
+        .query({id: userId});
       
       expect(res.statusCode).toBe(200);
     });
 
     test("GET /api/admin/getuser gets a user with a username", async () => {
-      const [result] = await pool.query(
+      await pool.query(
         'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME) VALUES (?, ?, ?, ?, ?)',
         ["anothertest", "testttest@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName]
       );
@@ -66,7 +66,7 @@ describe("Admin Routes", () => {
       const res = await request(app)
         .get("/api/admin/getuser")
         .set("Authorization", `Bearer ${token}`)
-        .send({username: "anothertest"});
+        .query({username: "anothertest"});
 
       expect(res.statusCode).toBe(200);
     });
