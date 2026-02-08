@@ -11,6 +11,7 @@
 //                 express
 //                 authMiddleware
 //                 errorHandler
+//                 gradingController
 //
 ////////////////////////////////////////////////////////////////
 
@@ -18,6 +19,7 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
+const { gradeQuestion } = require("../controllers/gradingController");
 
 /**
  * Helper function, gets answers for given questions, pairs them with each question
@@ -114,15 +116,46 @@ router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
  * @returns {Promise<void>} - JSON response to confirm successful submission
  */
 router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
-  const { problem_id, isCorrect, category, topic } = req.body;
+  const { problem_id, userAnswer, category, topic } = req.body;
   const user_id = req.user.id;
 
-  await req.db.query(
-    'INSERT INTO Response (USERID, PROBLEM_ID, ISCORRECT, CATEGORY, TOPIC, DATETIME) VALUES (?, ?, ?, ?, ?, ?)',
-    [user_id, problem_id, isCorrect, category, topic, new Date()]
+  // Get question by ID, we care about question type and points
+  const [questions] = await req.db.query(
+    'SELECT TYPE, POINTS_POSSIBLE FROM Question WHERE ID = ?',
+    [problem_id]
+  );
+  if (!questions || questions.length === 0)
+  {
+    throw new AppError(`Question ID not found: ${problem_id}`, 404, 'Question not found.');
+  }
+
+  // Deconstruct and extract type and points
+  const { TYPE: questionType, POINTS_POSSIBLE: maxPoints } = questions[0];
+
+  // Get answers for this question ID
+  const [answers] = await req.db.query(
+    'SELECT * FROM AnswerText WHERE QUESTION_ID = ?',
+    [problem_id]
   );
 
-  res.status(201).json({ message: "Answer submitted" });
+  // Grade user response
+  const result = gradeQuestion(problem_id, questionType, userAnswer, answers, maxPoints);
+
+  // Store user response
+  await req.db.query(
+    'INSERT INTO Response (USERID, PROBLEM_ID, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC, DATETIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [user_id, problem_id, result.isCorrect, result.pointsEarned, result.pointsPossible, category, topic, new Date()]
+  );
+
+  res.status(201).json(
+  { 
+    message:          "Answer submitted",
+    isCorrect:        result.isCorrect,
+    pointsEarned:     result.pointsEarned,
+    pointsPossible:   result.pointsPossible,
+    normalizedScore:  result.normalizedScore,
+    feedback:         result.feedback
+  });
 }));
 
 module.exports = router;
