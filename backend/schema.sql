@@ -1,20 +1,3 @@
-----------------------------------------------------------------
---
---  Project:       KnightWise
---  Year:          2026
---  Author(s):     Daniel Landsman
---  File:          schema.sql
---  Description:   KnightWise database schema
---                 Should be kept in sync with KW_Testing
---
-----------------------------------------------------------------
-
--- MySQL dump 10.13  Distrib 8.4.7, for Linux (x86_64)
---
--- Host: localhost    Database: KnightWise
--- ------------------------------------------------------
--- Server version       8.4.7-0ubuntu0.25.04.1
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -25,10 +8,6 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- Table structure for table `AnswerText`
---
 
 DROP TABLE IF EXISTS `AnswerText`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -46,10 +25,6 @@ CREATE TABLE `AnswerText` (
 ) ENGINE=InnoDB AUTO_INCREMENT=279 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `EmailCode`
---
-
 DROP TABLE IF EXISTS `EmailCode`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -65,10 +40,6 @@ CREATE TABLE `EmailCode` (
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Professor`
---
-
 DROP TABLE IF EXISTS `Professor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -83,10 +54,6 @@ CREATE TABLE `Professor` (
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `Question`
---
 
 DROP TABLE IF EXISTS `Question`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -106,10 +73,6 @@ CREATE TABLE `Question` (
   CONSTRAINT `FK_Question_Owner` FOREIGN KEY (`OWNER_ID`) REFERENCES `User` (`ID`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `Response`
---
 
 DROP TABLE IF EXISTS `Response`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -131,10 +94,6 @@ CREATE TABLE `Response` (
   CONSTRAINT `Response_ibfk_2` FOREIGN KEY (`PROBLEM_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=131 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `User`
---
 
 DROP TABLE IF EXISTS `User`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -159,5 +118,3 @@ CREATE TABLE `User` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-02-10  2:50:36
