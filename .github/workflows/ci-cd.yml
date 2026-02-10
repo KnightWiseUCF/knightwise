@@ -19,7 +19,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: test_password
-          MYSQL_DATABASE: knightwise_test
+          MYSQL_DATABASE: KW_CICD
         ports:
           - 3306:3306
         options: >-
@@ -40,7 +40,7 @@ jobs:
       - name: setup database schema
         working-directory: ./backend
         run: |
-          mysql -h 127.0.0.1 -u root -ptest_password knightwise_test < schema.sql
+          mysql -h 127.0.0.1 -u root -ptest_password KW_CICD < schema.sql
 
       - name: setup node
         uses: actions/setup-node@v4
@@ -61,7 +61,7 @@ jobs:
           DB_HOST: 127.0.0.1
           DB_USER: root
           DB_PASSWORD: test_password
-          DB_NAME: knightwise_test
+          DB_NAME: KW_CICD
           JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
           MJ_APIKEY_PUBLIC: ${{ secrets.MJ_APIKEY_PUBLIC_TEST }}
           MJ_APIKEY_PRIVATE: ${{ secrets.MJ_APIKEY_PRIVATE_TEST }}

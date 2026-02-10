@@ -16,6 +16,10 @@ const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const { app, pool } = require('../server');
 
+// KW_Testing: Local testing database
+// KW_CICD:    Isolated testing database used during pipeline runs
+const validTestDBs = ['KW_Testing', 'KW_CICD'];
+
 // Default test user template, can be overridden for individual tests
 const TEST_USER = {
   email: "test@example.com",
@@ -65,23 +69,25 @@ async function getAuthToken()
 async function verifyTestDatabase(pool) 
 {
   const [records] = await pool.query('SELECT DATABASE() as db');
+  const currentDB = records[0].db;
   
-  if (records[0].db !== 'KW_Testing') 
+  if (!allowedTestDbs.includes(currentDb)) 
   {
     console.error('##############################################');
     console.error('   CRITICAL ERROR: WRONG TESTING DATABASE');
-    console.error(`   Expected: KW_Testing`);
-    console.error(`   Connected to: ${records[0].db}`);
+    console.error(`   Expected one of: ${validTestDBs.join(', ')}`);
+    console.error(`   Connected to: ${currentDB}`);
     console.error('   STOPPING TESTS IMMEDIATELY');
     console.error('##############################################');
     await pool.end();
     process.exit(1);
   }
   
-  console.log('Database check passed: Using KW_Testing');
+  console.log(`Database check passed: Using ${currentDB}`);
 }
 
 module.exports = {
+  validTestDBs,
   TEST_USER,
   getAuthToken,
   verifyTestDatabase
