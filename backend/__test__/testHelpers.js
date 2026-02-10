@@ -71,7 +71,7 @@ async function verifyTestDatabase(pool)
   const [records] = await pool.query('SELECT DATABASE() as db');
   const currentDB = records[0].db;
   
-  if (!allowedTestDbs.includes(currentDb)) 
+  if (!validTestDBs.includes(currentDB)) 
   {
     console.error('##############################################');
     console.error('   CRITICAL ERROR: WRONG TESTING DATABASE');
