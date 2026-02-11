@@ -27,6 +27,6 @@ console.log('Loaded environment file:', envFile);
 
 // KW_Testing: Local testing database
 // KW_CICD:    Isolated testing database used during pipeline runs
-const validTestDBs = ['KW_Testing', 'knightwise_test'];
+const validTestDBs = ['KW_Testing', 'KW_CICD'];
 
 module.exports = { validTestDBs };
