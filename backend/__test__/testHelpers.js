@@ -9,16 +9,14 @@
 //  Dependencies:  bcryptjs
 //                 supertest
 //                 mysql2 connection pool (server.js)
+//                 env config
 //
 ////////////////////////////////////////////////////////////////
 
 const bcrypt = require('bcryptjs');
 const request = require('supertest');
-const { app, pool } = require('../server');
-
-// KW_Testing: Local testing database
-// KW_CICD:    Isolated testing database used during pipeline runs
-const validTestDBs = ['KW_Testing', 'KW_CICD'];
+const { app, pool, poolReady } = require('../server');
+const { validTestDBs } = require('../config/env');
 
 // Default test user template, can be overridden for individual tests
 const TEST_USER = {
@@ -68,6 +66,8 @@ async function getAuthToken()
  */
 async function verifyTestDatabase(pool) 
 {
+  await poolReady;
+
   const [records] = await pool.query('SELECT DATABASE() as db');
   const currentDB = records[0].db;
   

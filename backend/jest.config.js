@@ -10,6 +10,7 @@
 
 module.exports = {
   testEnvironment: 'node',
+  maxWorkers: 1, // Runs test suites serially, prevents races
   setupFiles: ['<rootDir>/config/env.js'],
   reporters: [
     'default',

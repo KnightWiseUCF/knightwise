@@ -12,7 +12,7 @@
 //                 mysql2/promise
 //                 cors
 //                 errorHandler
-//                 testHelpers
+//                 env config
 //
 ////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ const express = require('express');
 const mysql = require('mysql2/promise')
 const cors = require('cors');
 const { handleError } = require('./middleware/errorHandler');
-const { validTestDBs } = require('./__test__/testHelpers');
+const { validTestDBs } = require('./config/env');
 const app = express();
 
 // Middleware
@@ -68,13 +68,14 @@ const pool = mysql.createPool(
         enableKeepAlive:        true,   
         keepAliveInitialDelay:  0
     }
-)
+);
 
 // Connect to MySQL
-pool.getConnection()
+const poolReady = pool.getConnection()
     .then(connection => {
         console.log("MySQL Connected");
         connection.release();
+        return pool;
     })
     .catch(err => {
         console.error("ERROR: MySQL connection error in server.js: ", err);
@@ -123,5 +124,6 @@ if (process.env.NODE_ENV !== 'test')
 
 module.exports = {
     app,
-    pool
+    pool,
+    poolReady
 }; 
