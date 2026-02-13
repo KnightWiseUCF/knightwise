@@ -12,6 +12,7 @@
 //                 mysql2/promise
 //                 cors
 //                 errorHandler
+//                 env config
 //
 ////////////////////////////////////////////////////////////////
 
@@ -21,6 +22,7 @@ const express = require('express');
 const mysql = require('mysql2/promise')
 const cors = require('cors');
 const { handleError } = require('./middleware/errorHandler');
+const { validTestDBs } = require('./config/env');
 const app = express();
 
 // Middleware
@@ -41,15 +43,15 @@ if (!db_name)       console.error("ERROR: DB_NAME not set");
 if (!db_user || !db_password || !db_name) process.exit(1);
 
 // Safety checks to ensure proper db is used
-if (process.env.NODE_ENV === 'test' && db_name !== 'KW_Testing') 
+if (process.env.NODE_ENV === 'test' && !validTestDBs.includes(db_name)) 
 {
-  console.error('ERROR: Test environment must use KW_Testing database!');
+  console.error('ERROR: Test environment must use a valid testing database!');
   console.error(`Current DB_NAME: ${db_name}`);
   process.exit(1);
 }
-if (process.env.NODE_ENV !== 'test' && db_name === 'KW_Testing') 
+if (process.env.NODE_ENV !== 'test' && validTestDBs.includes(db_name)) 
 {
-  console.error('ERROR: Production cannot use KW_Test database!');
+  console.error('ERROR: Production cannot use a testing database!');
   process.exit(1);
 }
 
@@ -66,13 +68,14 @@ const pool = mysql.createPool(
         enableKeepAlive:        true,   
         keepAliveInitialDelay:  0
     }
-)
+);
 
 // Connect to MySQL
-pool.getConnection()
+const poolReady = pool.getConnection()
     .then(connection => {
         console.log("MySQL Connected");
         connection.release();
+        return pool;
     })
     .catch(err => {
         console.error("ERROR: MySQL connection error in server.js: ", err);
@@ -122,5 +125,6 @@ if (process.env.NODE_ENV !== 'test')
 
 module.exports = {
     app,
-    pool
+    pool,
+    poolReady
 }; 

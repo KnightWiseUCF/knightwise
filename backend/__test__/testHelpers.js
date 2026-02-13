@@ -9,12 +9,14 @@
 //  Dependencies:  bcryptjs
 //                 supertest
 //                 mysql2 connection pool (server.js)
+//                 env config
 //
 ////////////////////////////////////////////////////////////////
 
 const bcrypt = require('bcryptjs');
 const request = require('supertest');
-const { app, pool } = require('../server');
+const { app, pool, poolReady } = require('../server');
+const { validTestDBs } = require('../config/env');
 
 // Default test user template, can be overridden for individual tests
 const TEST_USER = {
@@ -69,24 +71,28 @@ async function getAuthToken()
  */
 async function verifyTestDatabase(pool) 
 {
+  await poolReady;
+
   const [records] = await pool.query('SELECT DATABASE() as db');
+  const currentDB = records[0].db;
   
-  if (records[0].db !== 'KW_Testing') 
+  if (!validTestDBs.includes(currentDB)) 
   {
     console.error('##############################################');
     console.error('   CRITICAL ERROR: WRONG TESTING DATABASE');
-    console.error(`   Expected: KW_Testing`);
-    console.error(`   Connected to: ${records[0].db}`);
+    console.error(`   Expected one of: ${validTestDBs.join(', ')}`);
+    console.error(`   Connected to: ${currentDB}`);
     console.error('   STOPPING TESTS IMMEDIATELY');
     console.error('##############################################');
     await pool.end();
     process.exit(1);
   }
   
-  console.log('Database check passed: Using KW_Testing');
+  console.log(`Database check passed: Using ${currentDB}`);
 }
 
 module.exports = {
+  validTestDBs,
   TEST_USER,
   getAuthToken,
   verifyTestDatabase
