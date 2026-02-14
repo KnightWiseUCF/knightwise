@@ -43,6 +43,7 @@ jest.mock('../services/judge0Service', () => {
   };
 });
 
+let token;
 let testUserId;
 
 // Test setup/teardown
@@ -54,7 +55,8 @@ beforeAll(async () => {
   await pool.query('DELETE FROM Response WHERE USERID IN (SELECT ID FROM User WHERE EMAIL = ?)', [TEST_USER.email]);
   await pool.query('DELETE FROM User WHERE EMAIL = ?', [TEST_USER.email]);
 
-  // Set user ID
+  // Get token and set user ID
+  token = await getAuthToken();
   const [users] = await pool.query('SELECT ID FROM User WHERE EMAIL = ?', [TEST_USER.email]);
   if (!users || users.length === 0)
   {
@@ -83,13 +85,9 @@ afterAll(async () => {
 
 // Test submitCode route
 describe("POST /api/code/submitCode", () => {
-  
-  let authToken;
   let testProblemId;
   
   beforeAll(async () => {
-    authToken = await getAuthToken();
-
     // Create test programming question
     const [result] = await pool.query(
       `INSERT INTO Question (QUESTION_TEXT, TYPE, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE)
@@ -131,7 +129,7 @@ describe("POST /api/code/submitCode", () => {
     test("should reject missing code field", async () => {
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           languageId: judge0Service.LANGUAGE_IDS.PYTHON
@@ -144,7 +142,7 @@ describe("POST /api/code/submitCode", () => {
     test("should reject empty code field", async () => {
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "   ",
@@ -158,7 +156,7 @@ describe("POST /api/code/submitCode", () => {
     test("should reject missing languageId field", async () => {
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Hello')"
@@ -173,7 +171,7 @@ describe("POST /api/code/submitCode", () => {
       
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: longCode,
@@ -203,7 +201,7 @@ describe("POST /api/code/submitCode", () => {
       // Attempt one more submission
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Extra Submission')",
@@ -217,7 +215,7 @@ describe("POST /api/code/submitCode", () => {
     test("should reject invalid language ID", async () => {
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Hello')",
@@ -231,7 +229,7 @@ describe("POST /api/code/submitCode", () => {
     test("should reject when problem not found", async () => {
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: 99999, // Non-existent 
           code: "print('Hello')",
@@ -260,7 +258,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Hello World')",
@@ -272,7 +270,7 @@ describe("POST /api/code/submitCode", () => {
       expect(res.body.allPassed).toBe(true);
       expect(res.body.passedTests).toBe(1);
       expect(res.body.totalTests).toBe(1);
-      expect(res.body.pointsEarned).toBe(10);
+      expect(res.body.pointsEarned).toBe(10.00);
       expect(res.body.testResults).toHaveLength(1);
       expect(res.body.testResults[0].passed).toBe(true);
     });
@@ -291,7 +289,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Goodbye World')",
@@ -302,7 +300,7 @@ describe("POST /api/code/submitCode", () => {
       expect(res.body.success).toBe(true);
       expect(res.body.allPassed).toBe(false);
       expect(res.body.passedTests).toBe(0);
-      expect(res.body.pointsEarned).toBe(0);
+      expect(res.body.pointsEarned).toBe(0.00);
       expect(res.body.testResults[0].passed).toBe(false);
       expect(res.body.testResults[0].expectedOutput).toBe("Hello World");
       expect(res.body.testResults[0].actualOutput).toBe("Goodbye World");
@@ -319,7 +317,7 @@ describe("POST /api/code/submitCode", () => {
 
       await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Hello World')",
@@ -332,11 +330,12 @@ describe("POST /api/code/submitCode", () => {
         [testUserId, testProblemId]
       );
 
+      // Note: MySQL decimal columns are represented as strings.
       expect(responses.length).toBe(1);
       expect(responses[0].CODE).toBe("print('Hello World')");
       expect(responses[0].ISCORRECT).toBe(1); // All tests passed
-      expect(responses[0].POINTS_EARNED).toBe(10);
-      expect(responses[0].POINTS_POSSIBLE).toBe(10);
+      expect(responses[0].POINTS_EARNED).toBe('10.00');
+      expect(responses[0].POINTS_POSSIBLE).toBe('10.00');
     });
   });
 
@@ -357,7 +356,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Hello'",
@@ -386,7 +385,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "x = 1/0",
@@ -408,7 +407,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Hello')",
@@ -492,7 +491,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: multiTestProblemId,
           code: "def is_prime(n): ...",
@@ -504,7 +503,7 @@ describe("POST /api/code/submitCode", () => {
       expect(res.body.allPassed).toBe(true);
       expect(res.body.passedTests).toBe(5);
       expect(res.body.totalTests).toBe(5);
-      expect(res.body.pointsEarned).toBe(10);
+      expect(res.body.pointsEarned).toBe(10.00);
       expect(res.body.testResults).toHaveLength(5);
     });
 
@@ -548,7 +547,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: multiTestProblemId,
           code: "def is_prime(n): ...",
@@ -560,7 +559,7 @@ describe("POST /api/code/submitCode", () => {
       expect(res.body.allPassed).toBe(false);
       expect(res.body.passedTests).toBe(3);
       expect(res.body.totalTests).toBe(5);
-      expect(res.body.pointsEarned).toBe(6); // 3/5 * 10 = 6
+      expect(res.body.pointsEarned).toBe(6.00); // 3/5 * 10 = 6
       
       // Check individual test results
       expect(res.body.testResults[0].passed).toBe(true);
@@ -583,7 +582,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: multiTestProblemId,
           code: "def is_prime(n): return 'Wrong'",
@@ -595,7 +594,7 @@ describe("POST /api/code/submitCode", () => {
       expect(res.body.allPassed).toBe(false);
       expect(res.body.passedTests).toBe(0);
       expect(res.body.totalTests).toBe(5);
-      expect(res.body.pointsEarned).toBe(0);
+      expect(res.body.pointsEarned).toBe(0.00);
     });
   });
 
@@ -643,7 +642,7 @@ describe("POST /api/code/submitCode", () => {
 
       const res = await request(app)
         .post("/api/code/submitCode")
-        .set("Authorization", `Bearer ${authToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: code,
