@@ -51,7 +51,7 @@ function gradeQuestion(questionId, questionType, userAnswer, allAnswers, pointsP
     case 'Multiple Choice':
       result = gradeMultipleChoice(userAnswer, allAnswers);
       break;
-    case 'Fill In the Blanks':
+    case 'Fill in the Blanks':
       result = gradeFillInTheBlanks(userAnswer, correctAnswers);
       break;
     case 'Select All That Apply':
