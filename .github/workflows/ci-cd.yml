@@ -66,6 +66,7 @@ jobs:
           MJ_APIKEY_PUBLIC: ${{ secrets.MJ_APIKEY_PUBLIC_TEST }}
           MJ_APIKEY_PRIVATE: ${{ secrets.MJ_APIKEY_PRIVATE_TEST }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY_TEST }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY_TEST }}
 
   test-frontend:
     name: test frontend
