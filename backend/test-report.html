@@ -274,92 +274,341 @@ header {
   font-size: 1rem;
   padding: 0 0.5rem;
 }
-</style></head><body><main class="jesthtml-content"><header><h1 id="title">Test Report</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-02-08 13:46:04</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (7)</div><div class="summary-passed ">7 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (54)</div><div class="summary-passed ">54 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/auth.test.js</div><div class="suite-time">3.47s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  send OTP for signup</div><div class="test-status">passed</div><div class="test-duration">0.261s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if email is already registered during signup</div><div class="test-status">passed</div><div class="test-duration">0.203s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if user does not exist during reset</div><div class="test-status">passed</div><div class="test-duration">0.142s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  verify correct OTP</div><div class="test-status">passed</div><div class="test-duration">0.276s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail with wrong OTP</div><div class="test-status">passed</div><div class="test-duration">0.184s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if OTP expired</div><div class="test-status">passed</div><div class="test-duration">0.173s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if no OTP record found</div><div class="test-status">passed</div><div class="test-duration">0.131s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">signup -  succeed if email verified</div><div class="test-status">passed</div><div class="test-duration">0.384s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">login -  login with correct credentials</div><div class="test-status">passed</div><div class="test-duration">0.354s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">resetPassword -  reset password after verify</div><div class="test-status">passed</div><div class="test-duration">0.621s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
+</style></head><body><main class="jesthtml-content"><header><h1 id="title">Test Report</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-01-30 12:51:26</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (3)</div><div class="summary-passed ">3 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (29)</div><div class="summary-passed ">29 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/code.test.js</div><div class="suite-time">1.907s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Validation Tests</div><div class="test-title">should require auth token</div><div class="test-status">passed</div><div class="test-duration">0.025s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Validation Tests</div><div class="test-title">should reject missing code field</div><div class="test-status">passed</div><div class="test-duration">0.011s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Validation Tests</div><div class="test-title">should reject empty code field</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Validation Tests</div><div class="test-title">should reject missing languageId field</div><div class="test-status">passed</div><div class="test-duration">0.009s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Validation Tests</div><div class="test-title">should reject code exceeding max code length</div><div class="test-status">passed</div><div class="test-duration">0.007s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Validation Tests</div><div class="test-title">should reject invalid language ID</div><div class="test-status">passed</div><div class="test-duration">0.007s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Successful Execution Tests</div><div class="test-title">should accept correct code and return success</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Successful Execution Tests</div><div class="test-title">should detect wrong output</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Error Handling Tests</div><div class="test-title">should handle syntax errors properly</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Error Handling Tests</div><div class="test-title">should handle runtime errors</div><div class="test-status">passed</div><div class="test-duration">0.005s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Error Handling Tests</div><div class="test-title">should handle Judge0 service failures</div><div class="test-status">passed</div><div class="test-duration">0.012s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Multi-Language Support</div><div class="test-title">should execute Python code</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Multi-Language Support</div><div class="test-title">should execute C code</div><div class="test-status">passed</div><div class="test-duration">0.003s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Multi-Language Support</div><div class="test-title">should execute C++ code</div><div class="test-status">passed</div><div class="test-duration">0.006s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">POST /api/code/submitCode &gt; Multi-Language Support</div><div class="test-title">should execute Java code</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
     at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
     at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
     at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
     at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
-    at async runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:74:17)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:81:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at async Object.worker (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:74:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:86:11)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/auth.test.js:47:3)</pre><pre class="suite-consolelog-item-message">Database check passed: Using KW_Testing</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:273:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">Email sent successfully: { Messages: [ { Status: 'success' } ] }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/code.test.js:47:3)</pre><pre class="suite-consolelog-item-message">Database check passed: Using KW_Testing</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at authMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:44:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
-    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Signup attempt with existing email: existing@example.com
-    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:186:13
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
-  statusCode: 400,
-  userMessage: 'Email already registered'
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, or languageId
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:40:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
-    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Password reset failed, email not registered: unknown@example.com
-    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:194:13
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
-  statusCode: 404,
-  userMessage: 'User not found'
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  statusCode: 400,
+  userMessage: 'Missing required fields'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, or languageId
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:40:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
-    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Verify failed, incorrect OTP: 000000
-    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:309:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
   statusCode: 400,
-  userMessage: 'Invalid OTP'
+  userMessage: 'Missing required fields'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, or languageId
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:40:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
-    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: OTP expired for email: expiredotp@example.com
-    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:313:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
   statusCode: 400,
-  userMessage: 'OTP expired'
+  userMessage: 'Missing required fields'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Code submission too long, exceeds 10000 bytes
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:47:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
-    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
-    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Verify failed, no OTP for email: notfound@example.com
-    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:303:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
   statusCode: 400,
-  userMessage: 'No record'
-}</pre></div></div></details><details id="suite-2" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/test.test.js</div><div class="suite-time">2.483s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/topic/:topicName</div><div class="test-status">passed</div><div class="test-duration">0.287s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/topic/:topicName requires auth</div><div class="test-status">passed</div><div class="test-duration">0.14s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/mocktest</div><div class="test-status">passed</div><div class="test-duration">1.206s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/mocktest requires auth</div><div class="test-status">passed</div><div class="test-duration">0.135s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
+  userMessage: 'Code submission too long'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: languageId unsupported by KnightWise: 999
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:58:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:101:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:87:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  statusCode: 400,
+  userMessage: 'Unsupported programming language'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Judge0 API unavailable
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/code.test.js:318:9)
+    at Promise.then.completed (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:121:9)
+    at run (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/testWorker.js:106:12) {
+  statusCode: 502,
+  userMessage: 'Code submission failed'
+}</pre></div></div></details><details id="suite-2" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/test.test.js</div><div class="suite-time">3.567s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/topic/:topicName</div><div class="test-status">passed</div><div class="test-duration">0.307s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/topic/:topicName requires auth</div><div class="test-status">passed</div><div class="test-duration">0.147s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/mocktest</div><div class="test-status">passed</div><div class="test-duration">1.196s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename"> </div><div class="test-title">GET /api/test/mocktest requires auth</div><div class="test-status">passed</div><div class="test-duration">0.123s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
     at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
     at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
     at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
     at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
-    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:74:17)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:81:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at async Object.worker (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:74:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:86:11)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/test.test.js:32:3)</pre><pre class="suite-consolelog-item-message">Database check passed: Using KW_Testing</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
@@ -637,29 +886,85 @@ header {
     at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
   statusCode: 401,
   userMessage: 'Unauthorized'
-}</pre></div></div></details><details id="suite-3" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/graderTests/dragAndDrop.test.js</div><div class="suite-time">0.061s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Perfect Placement Tests</div><div class="test-title">should return 1.0 for all correct placements</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Perfect Placement Tests</div><div class="test-title">should be case insensitive</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Perfect Placement Tests</div><div class="test-title">should trim whitespace</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Partial Credit Tests</div><div class="test-title">should give partial credit for some correct placements</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Partial Credit Tests</div><div class="test-title">should give partial credit for one correct placement</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Zero Score Tests</div><div class="test-title">should return 0.0 for all incorrect placements</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Empty User Placement Tests</div><div class="test-title">should return 0.0 when userPlacements is empty</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Empty User Placement Tests</div><div class="test-title">should return 0.0 when userPlacements is null/undefined</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Drag and Drop Grader &gt; Error Handling Tests</div><div class="test-title">should throw error if no mappings provided</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
+}</pre></div></div></details><details id="suite-3" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/auth.test.js</div><div class="suite-time">4.087s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  send OTP for signup</div><div class="test-status">passed</div><div class="test-duration">0.274s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if email is already registered during signup</div><div class="test-status">passed</div><div class="test-duration">0.185s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">sendotp -  fail if user does not exist during reset</div><div class="test-status">passed</div><div class="test-duration">0.129s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  verify correct OTP</div><div class="test-status">passed</div><div class="test-duration">0.261s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail with wrong OTP</div><div class="test-status">passed</div><div class="test-duration">0.189s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if OTP expired</div><div class="test-status">passed</div><div class="test-duration">0.181s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">verify -  fail if no OTP record found</div><div class="test-status">passed</div><div class="test-duration">0.131s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">signup -  succeed if email verified</div><div class="test-status">passed</div><div class="test-duration">0.383s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">login -  login with correct credentials</div><div class="test-status">passed</div><div class="test-duration">0.347s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Auth Routes</div><div class="test-title">resetPassword -  reset password after verify</div><div class="test-status">passed</div><div class="test-duration">0.579s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
     at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
     at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
     at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
     at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
-    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div></div></details><details id="suite-4" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/graderTests/fillInTheBlanks.test.js</div><div class="suite-time">0.034s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Correct Answer Tests</div><div class="test-title">should return 1.0 for exact match</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Correct Answer Tests</div><div class="test-title">should accept any valid answer</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Correct Answer Tests</div><div class="test-title">should be case insensitive</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Correct Answer Tests</div><div class="test-title">should trim whitespace</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Incorrect/Fuzzy Answer Tests</div><div class="test-title">should return 0.0 for wrong answer</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Incorrect/Fuzzy Answer Tests</div><div class="test-title">should return partial credit for close answer</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Incorrect/Fuzzy Answer Tests</div><div class="test-title">should give lower score for worse close answer</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Incorrect/Fuzzy Answer Tests</div><div class="test-title">should display first acceptable answer in feedback</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Incorrect/Fuzzy Answer Tests</div><div class="test-title">should return 0.0 for empty input</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Fill-In-The-Blanks Grader &gt; Error Handling Tests</div><div class="test-title">should throw error if no acceptable answers exist</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
-    at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
-    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
-    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div></div></details><details id="suite-5" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/graderTests/rankedChoice.test.js</div><div class="suite-time">0.03s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Ranked Choice Grader &gt; Perfect Ranking Tests</div><div class="test-title">should return 1.0 for perfect ranking</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Ranked Choice Grader &gt; Perfect Ranking Tests</div><div class="test-title">should be case insensitive</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Ranked Choice Grader &gt; Perfect Ranking Tests</div><div class="test-title">should trim whitespace</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Ranked Choice Grader &gt; Partial Credit Tests</div><div class="test-title">should give partial credit for one swap</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Ranked Choice Grader &gt; Partial Credit Tests</div><div class="test-title">should give lower score for multiple swaps</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Ranked Choice Grader &gt; Zero Score Tests</div><div class="test-title">should return 0.0 for completely reversed ranking</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
-    at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
-    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
-    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div></div></details><details id="suite-6" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/graderTests/multipleChoice.test.js</div><div class="suite-time">0.04s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Multiple Choice Grader &gt; Correct Answer Tests</div><div class="test-title">should return 1.0 for correct answer</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Multiple Choice Grader &gt; Correct Answer Tests</div><div class="test-title">should be case insensitive</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Multiple Choice Grader &gt; Correct Answer Tests</div><div class="test-title">should trim whitespace</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Multiple Choice Grader &gt; Incorrect Answer Tests</div><div class="test-title">should return 0.0 for wrong answer</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Multiple Choice Grader &gt; Incorrect Answer Tests</div><div class="test-title">should provide correct answer in feedback</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Multiple Choice Grader &gt; Error Handling Tests</div><div class="test-title">should throw error if no correct answer exists</div><div class="test-status">passed</div><div class="test-duration">0.003s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
-    at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
-    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
-    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div></div></details><details id="suite-7" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/graderTests/selectAllThatApply.test.js</div><div class="suite-time">0.027s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Perfect Score Tests</div><div class="test-title">should return 1.0 for all correct selections</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Perfect Score Tests</div><div class="test-title">should be case insensitive</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Perfect Score Tests</div><div class="test-title">should trim whitespace</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Partial Credit Tests</div><div class="test-title">should give 0.5 for selecting only one correct answer</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Partial Credit Tests</div><div class="test-title">should penalize incorrect selections</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Partial Credit Tests</div><div class="test-title">should handle mixed correct and incorrect</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Zero Score Tests</div><div class="test-title">should return 0.0 for all incorrect selections</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Zero Score Tests</div><div class="test-title">should return 0.0 for empty selection</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Select-All-That-Apply Grader &gt; Zero Score Tests</div><div class="test-title">should not return 1.0 when incorrect answers are included</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
-    at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
-    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
-    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div></div></details></main></body></html>
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)
+    at async Object.worker (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/testWorker.js:106:12)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:74:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:86:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/auth.test.js:47:3)</pre><pre class="suite-consolelog-item-message">Database check passed: Using KW_Testing</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:273:15)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">Email sent successfully: { Messages: [ { Status: 'success' } ] }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Signup attempt with existing email: existing@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:186:13
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'Email already registered'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Password reset failed, email not registered: unknown@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:194:13
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 404,
+  userMessage: 'User not found'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Verify failed, incorrect OTP: 000000
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:309:11
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'Invalid OTP'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: OTP expired for email: expiredotp@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:313:11
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'OTP expired'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Verify failed, no OTP for email: notfound@example.com
+    at /root/code/KW_Workspace/knightwise/backend/routes/authRoutes.js:303:11
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 400,
+  userMessage: 'No record'
+}</pre></div></div></details></main></body></html>
