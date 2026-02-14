@@ -28,6 +28,7 @@ type Props = {
   handleNext: () => void; // click next
   showFeedback: boolean; // check if the last question or not
   isCorrect: boolean; // check correct answer
+  isSubmitting: boolean; // currently processing submit
 };
 
 const MockTestProblem: React.FC<Props> = ({
@@ -40,6 +41,7 @@ const MockTestProblem: React.FC<Props> = ({
   handleNext,
   showFeedback,
   isCorrect,
+  isSubmitting,
 }) => (
   <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 mt-12 sm:mt-16 md:mt-20">
     {/* top: section, category, subcategory, exam date */}
@@ -96,11 +98,12 @@ const MockTestProblem: React.FC<Props> = ({
     <div className="mt-6">
       <button
         onClick={showFeedback ? handleNext : handleSubmit}
+        disabled={isSubmitting}
         className={`px-5 sm:px-6 py-2 sm:py-3 rounded shadow font-semibold text-sm sm:text-base md:text-lg ${
           showFeedback
             ? "bg-yellow-400 hover:bg-yellow-500 text-black"
             : "bg-yellow-600 hover:bg-yellow-700 text-white"
-        }`}
+        } disabled:opacity-60 disabled:cursor-not-allowed`}
       >
         {showFeedback
           ? currentIndex + 1 === total
