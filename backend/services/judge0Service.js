@@ -115,11 +115,15 @@ const getSubmission = async (token) => {
   );
 
   const data = await response.json();
-  
+
   if (!response.ok) 
   {
+    console.error('Judge0 API error:', {
+        status: response.status,
+        body: data
+    });
     throw new AppError(
-      `Failed to get submission results: ${data.message || 'Unknown error'}`,
+      `Failed to get submission results (HTTP ${response.status}): ${data.error || JSON.stringify(data)}`,
       502,
       "Failure to get code results"
     );
