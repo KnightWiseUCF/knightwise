@@ -5,7 +5,8 @@
 //  Author(s):     KnightWise Team
 //  File:          TopicTestPage.tsx
 //  Description:   Handles Topic Practice operations such as
-//                 answer submission, grading, and feedback.
+//                 submitting user responses and displaying
+//                 grading feedback.
 //
 //  Dependencies:  react
 //                 api instance
@@ -33,6 +34,8 @@ const TopicTestPage: React.FC = () => {
   const [answered, setAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [feedback, setFeedback] = useState<string>("");
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean>(false);
   const navigate = useNavigate();
 
   // get question from DB
@@ -78,19 +81,16 @@ const TopicTestPage: React.FC = () => {
   const handleSubmit = async () => {
     if (!selectedAnswer) return;
     const current = problems[currentIndex];
-    const isCorrect = selectedAnswer === current.answerCorrect;
-
-    if (isCorrect) setCorrectCount((prev) => prev + 1);
-    setAnswered(true);
 
     try {
       const token = localStorage.getItem("token");
 
-      await api.post(
+      // Get grading results
+      const result = await api.post(
         "/api/test/submit",
         {
           problem_id: current.ID,
-          isCorrect,
+          userAnswer: selectedAnswer,
           category: current.CATEGORY,
           topic: current.SUBCATEGORY,
         },
@@ -100,6 +100,12 @@ const TopicTestPage: React.FC = () => {
           },
         }
       );
+
+      const isCorrect = result.data.isCorrect;
+      setIsCorrectAnswer(isCorrect);
+      setFeedback(result.data.feedback);
+      if (isCorrect) setCorrectCount((prev) => prev + 1);
+      setAnswered(true);
     } 
     catch
     {
@@ -234,14 +240,9 @@ const TopicTestPage: React.FC = () => {
         {/* Feedback */}
         {answered && (
           <div className="mt-6 p-4 bg-gray-100 text-center rounded text-sm sm:text-base md:text-lg font-medium">
-            {selectedAnswer === current.answerCorrect ? (
-              <p className="text-black">Correct answer!</p>
-            ) : (
-              <p className="text-red-600">
-                Incorrect. Correct answer:{" "}
-                <strong>{current.answerCorrect}</strong>
-              </p>
-            )}
+            <p className={isCorrectAnswer ? "text-green-600" : "text-red-600"}>
+              {feedback}
+            </p>
           </div>
         )}
       </div>
