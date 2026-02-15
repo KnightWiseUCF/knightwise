@@ -118,7 +118,24 @@ const Programming: React.FC<Props> = ({
         setConsoleOutput(errorLines.join("\n\n"));
       }
     } catch (error) {
-      setConsoleOutput("Failed to run code. Please try again.");
+      // Log full error details for debugging
+      console.error("Code execution error:", error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+        console.error("Backend response:", {
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+        });
+        const errorMsg = axiosError.response?.data?.error 
+          || axiosError.response?.data?.message
+          || axiosError.response?.statusText
+          || "Network error occurred";
+        setConsoleOutput(`Failed to run code (${axiosError.response?.status || 'unknown'}): ${errorMsg}`);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        setConsoleOutput(`Failed to run code: ${errorMessage}`);
+      }
     } finally {
       setIsRunning(false);
     }
