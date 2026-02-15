@@ -49,31 +49,35 @@ const STATUS_IDS = {
 };
 
 /**
- * Submit code to Judge0 for execution
- * @param {string} sourceCode - The code to execute
+ * Submit multiple test cases as a batch to Judge0
+ * @param {string} sourceCode - User code to execute
  * @param {number} languageId - Judge0 language ID
- * @param {string} stdin      - Input for the program
- * @returns {Promise<string>} - Submission token
+ * @param {Array}  testCases - Array of {INPUT, EXPECTED_OUTPUT}
+ * @returns {Promise<Array<string>>} - Array of submission tokens
  */
-const submitCode = async (sourceCode, languageId, stdin = '') => {
-  if (!API_KEY)
+const submitBatch = async (sourceCode, languageId, testCases) => {
+  if (!API_KEY) 
   {
-    throw new AppError('RAPIDAPI_KEY not set', 500, 'Code execution service unavailable');
+    throw new AppError('RAPIDAPI_KEY not set', 500, 'Code execution service unavailable.');
   }
-  const response = await fetch(`${JUDGE0_API_URL}/submissions`, {
+
+  // Create batch submissions
+  const submissions = testCases.map(testCase => (
+  {
+    source_code: sourceCode,
+    language_id: languageId,
+    stdin: testCase.INPUT || '',
+    expected_output: testCase.EXPECTED_OUTPUT
+  }));
+
+  const response = await fetch(`${JUDGE0_API_URL}/submissions/batch`, {
     method: 'POST',
-    headers: 
-    {
+    headers: {
       'Content-Type': 'application/json',
       'X-RapidAPI-Key': API_KEY,
       'X-RapidAPI-Host': API_HOST
     },
-    body: JSON.stringify(
-    {
-      source_code: sourceCode,
-      language_id: languageId,
-      stdin: stdin
-    })
+    body: JSON.stringify({ submissions })
   });
 
   const data = await response.json();
@@ -81,17 +85,19 @@ const submitCode = async (sourceCode, languageId, stdin = '') => {
   if (!response.ok) 
   {
     throw new AppError(
-      `Judge0 submission failed: ${data.message || 'Unknown error'}`,
+      `Judge0 batch submission failed: ${data.message || 'Unknown error'}`,
       502,
-      "Code submission failed"
+      "Code submission failed."
     );
   }
   
-  return data.token;
+  // Extract tokens from response
+  return data.map(item => item.token);
 };
 
 /**
  * Get submission result from Judge0
+ * Helper function for pollSubmission
  * @param {string} token      - Submission token
  * @returns {Promise<Object>} - Submission result
  */
@@ -109,11 +115,15 @@ const getSubmission = async (token) => {
   );
 
   const data = await response.json();
-  
+
   if (!response.ok) 
   {
+    console.error('Judge0 API error:', {
+        status: response.status,
+        body: data
+    });
     throw new AppError(
-      `Failed to get submission results: ${data.message || 'Unknown error'}`,
+      `Failed to get submission results (HTTP ${response.status}): ${data.error || JSON.stringify(data)}`,
       502,
       "Failure to get code results"
     );
@@ -147,11 +157,11 @@ const pollSubmission = async (token, maxAttempts = 10, delayMs = 1000) => {
   throw new AppError(
     `Submission polling exceeded maximum attempts: ${maxAttempts}`,
     408,
-    'Code execution timed out');
+    'Code execution timed out.');
 };
 
 module.exports = {
-  submitCode,
+  submitBatch,
   getSubmission,
   pollSubmission,
   LANGUAGE_IDS,

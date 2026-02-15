@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2025
+//  Year:          2025-2026
 //  Author(s):     Daniel Landsman
 //  File:          codeController.js
 //  Description:   Controller functions for routes/codeSubmission.js.
@@ -17,6 +17,79 @@ const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY } = require('../config/codeLimits'); 
 
 /**
+ * Grade test case results, calculate score
+ * @param {Array}  results        - Judge0 results from polling
+ * @param {Array}  testCases      - Test cases from database
+ * @param {number} pointsPossible - Total points for the problem
+ * @returns {Object}              - Grading summary and detailed results
+ */
+const gradeCodeSubmission = (results, testCases, pointsPossible) => {
+  let passedTests = 0;
+  
+  const testResults = results.map((result, index) => {
+    const testCase = testCases[index];
+    
+    // Check if execution succeeded
+    const executionSuccess = result.status.id === judge0Service.STATUS_IDS.ACCEPTED;
+    
+    // Check if output matches
+    const outputMatches = executionSuccess && 
+      result.stdout?.trim() === testCase.EXPECTED_OUTPUT.trim();
+    
+    if (outputMatches) passedTests++;
+    
+    return {
+      testCaseId: testCase.ID,
+      input: testCase.INPUT,
+      expectedOutput: testCase.EXPECTED_OUTPUT,
+      actualOutput: result.stdout?.trim() || null,
+      passed: outputMatches,
+      status: result.status.description,
+      executionTime: result.time,
+      memory: result.memory,
+      error: result.stderr || result.compile_output || null
+    };
+  });
+
+  // Partial credit for number of test cases passed
+  const totalTests = testCases.length;
+  const normalizedScore = (totalTests === 0 // Let's not divide by 0
+    ? 0.0
+    : passedTests/totalTests
+  )
+  const pointsEarned = normalizedScore * pointsPossible;
+  const allPassed = (passedTests === totalTests);
+
+  return {
+    passedTests,
+    totalTests,
+    allPassed,
+    pointsEarned,
+    testResults
+  };
+};
+
+/**
+ * Checks Judge0 results for compilation or runtime errors
+ * @param {Array} results - Judge0 results from polling
+ * @returns {boolean}     - True if results have error, false otherwise
+ */
+const hasError = (results) => {
+  // Check for compilation errors
+  const hasCompilationError = results.some(r =>
+    r.status.id === judge0Service.STATUS_IDS.COMPILATION_ERROR
+  );
+
+  // Check for runtime errors
+  const hasRuntimeError = results.some(r =>
+    r.status.id >= judge0Service.STATUS_IDS.RUNTIME_ERROR_SIGSEGV &&
+    r.status.id <= judge0Service.STATUS_IDS.RUNTIME_ERROR_OTHER
+  );
+
+  return (hasCompilationError || hasRuntimeError);
+}
+
+/**
  * @route   POST /api/codeSubmission/submitCode
  * @desc    Submit code to Judge0, receive output and grade against test cases.
  * @access  Protected
@@ -29,25 +102,39 @@ const submitCode = asyncHandler(async (req, res) => {
   // Code can only be submitted by account owner
   const userId = req.user.id; // Set by authMiddleware.js
 
-  // TODO: Check if user has exceeded MAX_SUBMISSIONS_PER_DAY
-  //       Requires a new column in schema for user's daily submissions
-  //       Throw a 429 error in this case
+  // Check if user has exceeded max daily programming question submissions
+  const [[{ numDailyResponses }]] = await req.db.query(
+    `SELECT COUNT(*) as numDailyResponses 
+    FROM Response r
+    JOIN Question q ON r.PROBLEM_ID = q.ID 
+    WHERE r.USERID = ? 
+    AND q.TYPE = 'Programming'
+    AND DATE(DATETIME) = CURDATE()`,
+    [userId]
+  );
+  if (numDailyResponses >= MAX_SUBMISSIONS_PER_DAY)
+  {
+    throw new AppError(
+      `User ${userId} has ${numDailyResponses} daily submissions, exceeds max`, 
+      429, 
+      "Daily submission limit exceeded."
+    );
+  }
 
   const { problemId, code, languageId } = req.body;
 
   if (!problemId || !code || !languageId || code.trim().length === 0)
   {
-    throw new AppError('Empty problemId, code, or languageId', 400, 'Missing required fields');
+    throw new AppError('Empty problemId, code, or languageId', 400, 'Missing required fields.');
   }
 
-  // Limit code size/resource usage
-  // Currently 10KB, may need to be adjusted
+  // Check if user code submissions exceeds max size
   if (code.length > MAX_CODE_BYTES) 
   {
     throw new AppError(
       `Code submission too long, exceeds ${MAX_CODE_BYTES} bytes`,
       400,
-      'Code submission too long'
+      'Code submission too long.'
     );
   }
   
@@ -58,47 +145,85 @@ const submitCode = asyncHandler(async (req, res) => {
     throw new AppError(
       `languageId unsupported by KnightWise: ${languageId}`,
       400,
-      'Unsupported programming language'
+      'Unsupported programming language.'
     );
   }
 
-  // TODO: Track and prevent exceeding submission count, less than 50 per day
+  // Get question from database
+  const [questions] = await req.db.query(
+    `SELECT ID, POINTS_POSSIBLE, CATEGORY, SUBCATEGORY FROM Question WHERE ID = ? AND TYPE = 'Programming'`,
+    [problemId]
+  );
+  if (!questions || questions.length === 0)
+  {
+    throw new AppError(`No programming question found: ID ${problemId}`, 404, 'Programming question not found.');
+  }
+  const question = questions[0];
 
-  // TODO: Get problem from database to get expectedOutput
-  const stdin = ""; // Start as empty
-  const expectedOutput = "Hello World"; // Hardcoded for test
+  // Get test cases associated with question
+  const [testCases] = await req.db.query(
+    `SELECT ID, INPUT, EXPECTED_OUTPUT FROM TestCase WHERE QUESTION_ID = ?
+    ORDER BY ID ASC`,
+    [problemId]
+  );
+  if (!testCases || testCases.length === 0)
+  {
+    throw new AppError(`No test cases found for problem ${problemId}`, 404, 'Test cases not found.');
+  }
 
-  // Submit to Judge0
-  const token = await judge0Service.submitCode(code, languageId, stdin);
+  // Batch submit to Judge0
+  const tokens = await judge0Service.submitBatch(code, languageId, testCases);
 
   // Poll for results
-  const result = await judge0Service.pollSubmission(token);
+  const pollResults = await Promise.all(
+    tokens.map(token => judge0Service.pollSubmission(token))
+  );
 
-  // Check for execution success
-  if (result.status.id !== judge0Service.STATUS_IDS.ACCEPTED)
+  // Check for compilation/runtime errors
+  if (hasError(pollResults))
   {
-    // Failed
+    // Find first error, used for feedback
+    const errorResult = pollResults.find(r =>
+      r.status.id !== judge0Service.STATUS_IDS.ACCEPTED &&
+      r.status.id !== judge0Service.STATUS_IDS.WRONG_ANSWER
+    );
+
     return res.status(200).json({
       success: false,
-      status: result.status.description,
-      stdout: result.stdout,
-      stderr: result.stderr,
-      compile_output: result.compile_output
+      status: errorResult.status.description,
+      error: errorResult.stderr || errorResult.compile_output || 'Execution failed',
+      message: 'Your code failed to execute. Please check for errors.'
     });
   }
 
-  // Grade against expected output
-  const isCorrect = (result.stdout?.trim() === expectedOutput.trim());
+  // Grade results
+  const gradingResults = gradeCodeSubmission(pollResults, testCases, question.POINTS_POSSIBLE);
 
-  // TODO: Save submission to database
+  // Save submission to database
+  await req.db.query(
+    `INSERT INTO Response (USERID, PROBLEM_ID, CODE, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      userId, 
+      problemId, 
+      code, 
+      gradingResults.allPassed, 
+      gradingResults.pointsEarned, 
+      question.POINTS_POSSIBLE, 
+      question.CATEGORY, 
+      question.SUBCATEGORY
+    ]
+  );
 
+  // Return results
   return res.status(200).json({
     success: true,
-    correct: isCorrect,
-    stdout: result.stdout,
-    expectedOutput: expectedOutput,
-    executionTime: result.time,
-    memory: result.memory
+    allPassed: gradingResults.allPassed,
+    passedTests: gradingResults.passedTests,
+    totalTests: gradingResults.totalTests,
+    pointsEarned: gradingResults.pointsEarned,
+    pointsPossible: question.POINTS_POSSIBLE,
+    testResults: gradingResults.testResults
   });
 });
 

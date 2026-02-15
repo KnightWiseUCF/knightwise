@@ -81,6 +81,7 @@ CREATE TABLE `Response` (
   `ID` int NOT NULL AUTO_INCREMENT,
   `USERID` int DEFAULT NULL,
   `PROBLEM_ID` int DEFAULT NULL,
+  `CODE` text,
   `DATETIME` datetime DEFAULT CURRENT_TIMESTAMP,
   `ISCORRECT` tinyint(1) DEFAULT NULL,
   `CATEGORY` varchar(100) DEFAULT NULL,
@@ -92,7 +93,21 @@ CREATE TABLE `Response` (
   KEY `PROBLEM_ID` (`PROBLEM_ID`),
   CONSTRAINT `Response_ibfk_1` FOREIGN KEY (`USERID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
   CONSTRAINT `Response_ibfk_2` FOREIGN KEY (`PROBLEM_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=131 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `TestCase`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `TestCase` (
+  `ID` int NOT NULL AUTO_INCREMENT,
+  `QUESTION_ID` int NOT NULL,
+  `INPUT` text,
+  `EXPECTED_OUTPUT` text NOT NULL,
+  PRIMARY KEY (`ID`),
+  KEY `idx_question_id` (`QUESTION_ID`),
+  CONSTRAINT `TestCase_ibfk_1` FOREIGN KEY (`QUESTION_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `User`;
