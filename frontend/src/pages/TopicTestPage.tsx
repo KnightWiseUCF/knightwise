@@ -325,14 +325,6 @@ const TopicTestPage: React.FC = () => {
         topic: String(current.SUBCATEGORY || ""),
       };
 
-      // Log the payload for debugging
-      console.log("Submitting answer:", {
-        ...payload,
-        userAnswerType: typeof userAnswer,
-        userAnswerIsArray: Array.isArray(userAnswer),
-        questionType,
-      });
-
       // Ensure payload can be JSON serialized
       try {
         JSON.stringify(payload);

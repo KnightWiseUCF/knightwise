@@ -57,18 +57,7 @@ const DragAndDrop: React.FC<Props> = ({
   const [draggedAnswer, setDraggedAnswer] = useState<string | null>(null);
   const [availableAnswers, setAvailableAnswers] = useState<string[]>([]);
 
-  // Debug: log what data we're receiving
-  React.useEffect(() => {
-    console.log("🔵 DragAndDrop received:", {
-      answerObjects: current.answerObjects,
-      options: current.options,
-      dropZones: current.dropZones,
-    });
-    // Log each answer's PLACEMENT value
-    current.answerObjects?.forEach((ans, idx) => {
-      console.log(`  Answer ${idx}: TEXT="${ans.TEXT}", PLACEMENT="${ans.PLACEMENT}" (type: ${typeof ans.PLACEMENT})`);
-    });
-  }, [current.answerObjects, current.options, current.dropZones]);
+
 
   // Group answers by their PLACEMENT field - create zones for UNIQUE placements only
   const answersByPlacement = React.useMemo(() => {
@@ -83,9 +72,6 @@ const DragAndDrop: React.FC<Props> = ({
           ? answer.PLACEMENT
           : String(answer.PLACEMENT ?? "");
         const placement = rawPlacement.trim();
-        
-        console.log(`  Answer "${answer.TEXT}": PLACEMENT="${answer.PLACEMENT}" (type: ${typeof answer.PLACEMENT})`);
-        
         if (placement) {
           uniquePlacements.add(placement);
         }
@@ -98,7 +84,6 @@ const DragAndDrop: React.FC<Props> = ({
       
       // If no valid placements found, fall back to creating generic drop zones
       if (uniquePlacements.size === 0) {
-        console.log("⚠️ No valid PLACEMENT values found, creating generic drop zones");
         answerObjects.forEach((_, idx) => {
           grouped[`Drop Zone ${idx + 1}`] = [];
         });
@@ -110,14 +95,11 @@ const DragAndDrop: React.FC<Props> = ({
       });
     } else if (current.options && current.options.length > 0) {
       // Last resort: create zones based on options
-      console.log("⚠️ No answerObjects or dropZones, creating zones from options");
       current.options.forEach((_, idx) => {
         grouped[`Drop Zone ${idx + 1}`] = [];
       });
     }
 
-    console.log("✅ Final answersByPlacement:", grouped);
-    console.log("✅ Placement zones created:", Object.keys(grouped));
     return grouped;
   }, [current.answerObjects, current.dropZones, current.options]);
 
