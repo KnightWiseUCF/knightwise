@@ -28,6 +28,12 @@ type Props = {
   handleNext: () => void; // click next
   showFeedback: boolean; // check if the last question or not
   isCorrect: boolean; // check correct answer
+  feedbackText?: string; // optional grader feedback
+  pointsEarned?: number | null; // points earned
+  pointsPossible?: number | null; // points possible
+  normalizedScore?: number | null; // normalized score (0-1)
+  hideFeedback?: boolean; // suppress feedback box
+  feedbackContent?: React.ReactNode; // custom feedback content
 };
 
 const DragAndDrop: React.FC<Props> = ({
@@ -40,6 +46,12 @@ const DragAndDrop: React.FC<Props> = ({
   handleNext,
   showFeedback,
   isCorrect,
+  feedbackText,
+  pointsEarned,
+  pointsPossible,
+  normalizedScore,
+  hideFeedback,
+  feedbackContent,
 }) => {
   const [draggedAnswer, setDraggedAnswer] = useState<string | null>(null);
   const [availableAnswers, setAvailableAnswers] = useState<string[]>([]);
@@ -77,6 +89,7 @@ const DragAndDrop: React.FC<Props> = ({
                 onDragOver={handleDragOver}
                 onDrop={handleDropZoneDrop(currentZoneId)}
               >
+                {/* style drop zone based on correctness and fill state */}
                 {droppedAnswers[currentZoneId] ? (
                   <span className="text-sm sm:text-base font-semibold">{droppedAnswers[currentZoneId]}</span>
                 ) : (
@@ -193,14 +206,18 @@ const DragAndDrop: React.FC<Props> = ({
                   : "bg-yellow-400 hover:bg-yellow-500 text-black cursor-move"
               }`}
             >
+              {/* disable answer pool when feedback is shown */}
               {ans}
             </div>
           ))}
         </div>
       </div>
 
+      {feedbackContent}
+
       {/* button */}
       <div className="mt-6">
+        {/* switch styling between disabled/submit/next states */}
         <button
           onClick={showFeedback ? handleNext : handleSubmit}
           disabled={!showFeedback && !allFilled}
@@ -212,6 +229,7 @@ const DragAndDrop: React.FC<Props> = ({
               : "bg-yellow-600 hover:bg-yellow-700 text-white"
           }`}
         >
+          {/* label toggles between submit and next/result */}
           {showFeedback
             ? currentIndex + 1 === total
               ? "Result"
@@ -221,20 +239,41 @@ const DragAndDrop: React.FC<Props> = ({
       </div>
 
       {/* feedback */}
-      {showFeedback && (
-        <div className="mt-6 p-4 bg-gray-100 rounded text-sm sm:text-base md:text-lg">
-          {isCorrect ? (
-            <p className="text-green-600 font-medium">✓ Correct!</p>
-          ) : (
-            <div className="text-red-600">
-              <p className="font-medium mb-2">✗ Incorrect</p>
-              <p className="text-sm">
-                Check the highlighted zones for corrections.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+      {showFeedback && !hideFeedback && (() => {
+        // map score into status text and color.
+        const score = typeof normalizedScore === "number"
+          ? normalizedScore
+          : isCorrect
+          ? 1
+          : 0;
+        const statusClass = score >= 1
+          ? "text-green-600"
+          : score > 0.5
+          ? "text-yellow-600"
+          : "text-red-600";
+        const statusText = score >= 1
+          ? "✓ Correct!"
+          : score > 0.5
+          ? "△ Close"
+          : "✗ Incorrect";
+
+        return (
+          <div className="mt-6 p-4 bg-gray-100 rounded text-sm sm:text-base md:text-lg">
+            <p className={`${statusClass} font-medium`}>{statusText}</p>
+            {(feedbackText || pointsEarned !== null || normalizedScore !== null) && (
+              <div className="mt-3 text-gray-700">
+                {feedbackText && <p>{feedbackText}</p>}
+                {typeof pointsEarned === "number" && typeof pointsPossible === "number" && (
+                  <p>Points: {pointsEarned} / {pointsPossible}</p>
+                )}
+                {typeof normalizedScore === "number" && (
+                  <p>Closeness: {Math.round(normalizedScore * 100)}%</p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 };

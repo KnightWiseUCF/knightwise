@@ -47,7 +47,15 @@ const TopicTestPage: React.FC = () => {
   const [showResult, setShowResult] = useState(false);
   const [feedback, setFeedback] = useState<string>("");
   const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean>(false);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+  const [pointsPossible, setPointsPossible] = useState<number | null>(null);
+  const [normalizedScore, setNormalizedScore] = useState<number | null>(null);
   const navigate = useNavigate();
+  const programmingLanguageIds: Record<string, number> = {
+    C: 50,
+    Java: 62,
+    Python: 71,
+  };
 
   const normalizeQuestionType = (
     type?: string
@@ -200,8 +208,53 @@ const TopicTestPage: React.FC = () => {
     if (!current || !hasAnswer) return;
 
     if (questionType === "programming") {
-      setFeedback("Submission saved.");
-      setIsCorrectAnswer(false);
+      setPointsEarned(null);
+      setPointsPossible(null);
+      setNormalizedScore(null);
+      const languageId = programmingLanguageIds[programmingLanguage];
+      const token = localStorage.getItem("token");
+
+      if (!languageId) {
+        setFeedback("Unsupported language.");
+        setIsCorrectAnswer(false);
+        setAnswered(true);
+        return;
+      }
+
+      try {
+        const result = await api.post(
+          "/api/code/submitCode",
+          {
+            problemId: current.ID,
+            code: programmingAnswer,
+            languageId,
+          },
+          token ? {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          } : undefined
+        );
+
+        const data = result.data;
+        if (data.success) {
+          const statusText = data.correct ? "Accepted" : "Incorrect";
+          const outputText = data.stdout ? `Output: ${data.stdout}` : "Output: (none)";
+          const expectedText = data.expectedOutput ? `Expected: ${data.expectedOutput}` : "";
+          setFeedback([statusText, outputText, expectedText].filter(Boolean).join(" | "));
+          setIsCorrectAnswer(Boolean(data.correct));
+        } else {
+          const statusText = `Status: ${data.status || "Execution failed"}`;
+          const stderrText = data.stderr ? `Error: ${data.stderr}` : "";
+          const compileText = data.compile_output ? `Compile: ${data.compile_output}` : "";
+          setFeedback([statusText, compileText, stderrText].filter(Boolean).join(" | "));
+          setIsCorrectAnswer(false);
+        }
+      } catch {
+        setFeedback("Failed to submit programming response.");
+        setIsCorrectAnswer(false);
+      }
+
       setAnswered(true);
       return;
     }
@@ -229,6 +282,15 @@ const TopicTestPage: React.FC = () => {
       const isCorrect = result.data.isCorrect;
       setIsCorrectAnswer(isCorrect);
       setFeedback(result.data.feedback);
+      setPointsEarned(
+        typeof result.data.pointsEarned === "number" ? result.data.pointsEarned : null
+      );
+      setPointsPossible(
+        typeof result.data.pointsPossible === "number" ? result.data.pointsPossible : null
+      );
+      setNormalizedScore(
+        typeof result.data.normalizedScore === "number" ? result.data.normalizedScore : null
+      );
       if (isCorrect) setCorrectCount((prev) => prev + 1);
       setAnswered(true);
     } 
@@ -248,6 +310,9 @@ const TopicTestPage: React.FC = () => {
     setAnswered(false);
     setFeedback("");
     setIsCorrectAnswer(false);
+    setPointsEarned(null);
+    setPointsPossible(null);
+    setNormalizedScore(null);
     if (currentIndex + 1 < problems.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -257,6 +322,61 @@ const TopicTestPage: React.FC = () => {
 
   const current = problems[currentIndex];
   const questionType = current?.QUESTION_TYPE || 'multiple_choice';
+
+  const sharedFeedback = answered && feedback ? (() => {
+    const score = typeof normalizedScore === "number"
+      ? normalizedScore
+      : isCorrectAnswer
+      ? 1
+      : 0;
+    const statusClass = score >= 1
+      ? "text-green-600"
+      : score > 0.5
+      ? "text-yellow-600"
+      : "text-red-600";
+    const boxClass = score >= 1
+      ? "bg-green-50"
+      : score > 0.5
+      ? "bg-yellow-50"
+      : "bg-red-50";
+    const borderClass = score >= 1
+      ? "border-green-500"
+      : score > 0.5
+      ? "border-yellow-500"
+      : "border-red-500";
+    const rawPointsPossible =
+      typeof pointsPossible === "number" ? pointsPossible : current?.POINTS_POSSIBLE;
+    const derivedPointsPossible =
+      typeof rawPointsPossible === "number"
+        ? rawPointsPossible
+        : Number.isFinite(Number(rawPointsPossible))
+        ? Number(rawPointsPossible)
+        : null;
+    const derivedPointsEarned =
+      typeof pointsEarned === "number"
+        ? pointsEarned
+        : typeof normalizedScore === "number" && typeof derivedPointsPossible === "number"
+        ? Math.round(normalizedScore * derivedPointsPossible * 100) / 100
+        : null;
+
+    return (
+      <div className="mt-6">
+        <div className={`p-4 ${boxClass} rounded border ${borderClass} text-sm sm:text-base md:text-lg`}>
+          <p className={statusClass}>{feedback}</p>
+          {(derivedPointsEarned !== null || normalizedScore !== null) && (
+            <div className="mt-2 text-gray-700">
+              {typeof derivedPointsEarned === "number" && typeof derivedPointsPossible === "number" && (
+                <p>Points: {derivedPointsEarned} / {derivedPointsPossible}</p>
+              )}
+              {typeof normalizedScore === "number" && (
+                <p>Closeness: {Math.round(normalizedScore * 100)}%</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  })() : null;
 
   useEffect(() => {
     if (questionType === "ranked_choice" && current) {
@@ -313,7 +433,8 @@ const TopicTestPage: React.FC = () => {
 
   return (
     <Layout>
-      {questionType === "multiple_choice" ? (
+      <div className="pb-16">
+        {questionType === "multiple_choice" ? (
         <MultipleChoice
           current={current}
           currentIndex={currentIndex}
@@ -324,6 +445,8 @@ const TopicTestPage: React.FC = () => {
           handleNext={handleNext}
           showFeedback={answered}
           isCorrect={isCorrect}
+          hideFeedback={true}
+          feedbackContent={sharedFeedback}
         />
       ) : questionType === "ranked_choice" ? (
         <RankedChoice
@@ -336,6 +459,8 @@ const TopicTestPage: React.FC = () => {
           handleNext={handleNext}
           showFeedback={answered}
           isCorrect={isCorrect}
+          hideFeedback={true}
+          feedbackContent={sharedFeedback}
         />
       ) : questionType === "drag_and_drop" ? (
         <DragAndDrop
@@ -348,6 +473,8 @@ const TopicTestPage: React.FC = () => {
           handleNext={handleNext}
           showFeedback={answered}
           isCorrect={isCorrect}
+          hideFeedback={true}
+          feedbackContent={sharedFeedback}
         />
       ) : questionType === "programming" ? (
         <Programming
@@ -372,6 +499,8 @@ const TopicTestPage: React.FC = () => {
           handleNext={handleNext}
           showFeedback={answered}
           isCorrect={isCorrect}
+          hideFeedback={true}
+          feedbackContent={sharedFeedback}
         />
       ) : (
         <FillInTheBlank
@@ -384,17 +513,11 @@ const TopicTestPage: React.FC = () => {
           handleNext={handleNext}
           showFeedback={answered}
           isCorrect={isCorrect}
+          hideFeedback={true}
+          feedbackContent={sharedFeedback}
         />
       )}
-      {answered && feedback && (
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 mt-6">
-          <div className="p-4 bg-gray-100 rounded text-sm sm:text-base md:text-lg">
-            <p className={isCorrect ? "text-green-600" : "text-red-600"}>
-              {feedback}
-            </p>
-          </div>
-        </div>
-      )}
+      </div>
     </Layout>
   );
 };

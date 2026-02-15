@@ -44,8 +44,17 @@ const MockTestPage: React.FC = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
+  const [gradingFeedback, setGradingFeedback] = useState<string>("");
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+  const [pointsPossible, setPointsPossible] = useState<number | null>(null);
+  const [normalizedScore, setNormalizedScore] = useState<number | null>(null);
   const [programmingAnswer, setProgrammingAnswer] = useState("");
   const [programmingLanguage, setProgrammingLanguage] = useState("C");
+  const programmingLanguageIds: Record<string, number> = {
+    C: 50,
+    Java: 62,
+    Python: 71,
+  };
 
   const normalizeQuestionType = (
     type?: string
@@ -149,6 +158,10 @@ const MockTestPage: React.FC = () => {
         setDroppedAnswers({});
         setShowFeedback(false);
         setIsCorrectAnswer(false);
+        setGradingFeedback("");
+        setPointsEarned(null);
+        setPointsPossible(null);
+        setNormalizedScore(null);
         setProgrammingAnswer("");
         setProgrammingLanguage("C");
       } 
@@ -217,6 +230,46 @@ const MockTestPage: React.FC = () => {
     setIsSubmitting(true);
 
     if (questionType === "programming") {
+      const languageId = programmingLanguageIds[programmingLanguage];
+      const token = localStorage.getItem("token");
+
+      setGradingFeedback("");
+      setPointsEarned(null);
+      setPointsPossible(null);
+      setNormalizedScore(null);
+
+      if (!languageId) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      try {
+        const result = await api.post(
+          "/api/code/submitCode",
+          {
+            problemId: current.ID,
+            code: programmingAnswer,
+            languageId,
+          },
+          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        );
+
+        const data = result.data;
+        const isCorrect = data.success ? data.correct : false;
+        setIsCorrectAnswer(isCorrect);
+
+        const section = current.SECTION;
+        setSectionScores((prev) => ({
+          ...prev,
+          [section]: {
+            correct: (prev[section]?.correct || 0) + (isCorrect ? 1 : 0),
+            total: (prev[section]?.total || 0) + 1,
+          },
+        }));
+      } catch {
+        console.error("Failed to submit programming response");
+      }
+
       setShowFeedback(true);
       setIsSubmitting(false);
       return;
@@ -240,6 +293,16 @@ const MockTestPage: React.FC = () => {
 
       const isCorrect = result.data.isCorrect;
       setIsCorrectAnswer(isCorrect);
+      setGradingFeedback(result.data.feedback || "");
+      setPointsEarned(
+        typeof result.data.pointsEarned === "number" ? result.data.pointsEarned : null
+      );
+      setPointsPossible(
+        typeof result.data.pointsPossible === "number" ? result.data.pointsPossible : null
+      );
+      setNormalizedScore(
+        typeof result.data.normalizedScore === "number" ? result.data.normalizedScore : null
+      );
 
       const section = current.SECTION;
       setSectionScores((prev) => ({
@@ -270,6 +333,10 @@ const MockTestPage: React.FC = () => {
       setShowFeedback(false);
       setIsSubmitting(false);
       setIsCorrectAnswer(false);
+      setGradingFeedback("");
+      setPointsEarned(null);
+      setPointsPossible(null);
+      setNormalizedScore(null);
       setProgrammingAnswer("");
       setProgrammingLanguage("C");
       setCurrentIndex((prev) => prev + 1);
@@ -287,7 +354,8 @@ const MockTestPage: React.FC = () => {
     <Layout>
       {step === "info" && <MockTestInfo onStart={() => setStep("test")} />}
 
-      {step === "test" && current && (
+      <div className="pb-16">
+        {step === "test" && current && (
         questionType === 'multiple_choice' ? (
           <MultipleChoice
             current={current}
@@ -299,6 +367,10 @@ const MockTestPage: React.FC = () => {
             handleNext={handleNext}
             showFeedback={showFeedback}
             isCorrect={isCorrectAnswer}
+            feedbackText={gradingFeedback}
+            pointsEarned={pointsEarned}
+            pointsPossible={pointsPossible}
+            normalizedScore={normalizedScore}
           />
         ) : questionType === 'ranked_choice' ? (
           <RankedChoice
@@ -311,6 +383,10 @@ const MockTestPage: React.FC = () => {
             handleNext={handleNext}
             showFeedback={showFeedback}
             isCorrect={isCorrectAnswer}
+            feedbackText={gradingFeedback}
+            pointsEarned={pointsEarned}
+            pointsPossible={pointsPossible}
+            normalizedScore={normalizedScore}
           />
         ) : questionType === 'drag_and_drop' ? (
           <DragAndDrop
@@ -323,6 +399,10 @@ const MockTestPage: React.FC = () => {
             handleNext={handleNext}
             showFeedback={showFeedback}
             isCorrect={isCorrectAnswer}
+            feedbackText={gradingFeedback}
+            pointsEarned={pointsEarned}
+            pointsPossible={pointsPossible}
+            normalizedScore={normalizedScore}
           />
         ) : questionType === 'programming' ? (
           <Programming
@@ -347,6 +427,10 @@ const MockTestPage: React.FC = () => {
             handleNext={handleNext}
             showFeedback={showFeedback}
             isCorrect={isCorrectAnswer}
+            feedbackText={gradingFeedback}
+            pointsEarned={pointsEarned}
+            pointsPossible={pointsPossible}
+            normalizedScore={normalizedScore}
           />
         ) : (
           <FillInTheBlank
@@ -359,13 +443,18 @@ const MockTestPage: React.FC = () => {
             handleNext={handleNext}
             showFeedback={showFeedback}
             isCorrect={isCorrectAnswer}
+            feedbackText={gradingFeedback}
+            pointsEarned={pointsEarned}
+            pointsPossible={pointsPossible}
+            normalizedScore={normalizedScore}
           />
         )
       )}
 
-      {step === "result" && (
-        <MockTestResult sectionScores={sectionScores} onRetry={restartTest} />
-      )}
+        {step === "result" && (
+          <MockTestResult sectionScores={sectionScores} onRetry={restartTest} />
+        )}
+      </div>
     </Layout>
   );
 };

@@ -28,6 +28,12 @@ type Props = {
   handleNext: () => void; // click next
   showFeedback: boolean; // check if the last question or not
   isCorrect: boolean; // check correct answer
+  feedbackText?: string; // optional grader feedback
+  pointsEarned?: number | null; // points earned
+  pointsPossible?: number | null; // points possible
+  normalizedScore?: number | null; // normalized score (0-1)
+  hideFeedback?: boolean; // suppress feedback box
+  feedbackContent?: React.ReactNode; // custom feedback content
 };
 
 const RankedChoice: React.FC<Props> = ({
@@ -40,9 +46,14 @@ const RankedChoice: React.FC<Props> = ({
   handleNext,
   showFeedback,
   isCorrect,
+  feedbackText,
+  pointsEarned,
+  pointsPossible,
+  normalizedScore,
+  hideFeedback,
+  feedbackContent,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const positions = useRef<Map<string, DOMRect>>(new Map());
   const prevOrderRef = useRef<string[]>(selectedOrder);
@@ -121,9 +132,7 @@ const RankedChoice: React.FC<Props> = ({
     });
 
     if (hasAnimation) {
-      setIsAnimating(true);
       setTimeout(() => {
-        setIsAnimating(false);
         prevOrderRef.current = selectedOrder;
       }, 180);
     } else {
@@ -190,6 +199,7 @@ const RankedChoice: React.FC<Props> = ({
             onDrop={handleDrop(idx)}
             onDragEnd={handleDragEnd}
           >
+            {/* style rows based on drag state and feedback lock */}
             <span className="flex-1 flex items-center gap-3">
               <span className="text-gray-400 select-none">⋮</span>
               <span className="mr-2 text-gray-500 transition-all duration-[180ms]">{getDisplayIndex(ans)}.</span>
@@ -199,9 +209,12 @@ const RankedChoice: React.FC<Props> = ({
         ))}
       </div>
 
+      {feedbackContent}
+
       {/* button */}
       {/* if it's the last question, show the result button, otherwise show submit/next */}
       <div className="mt-6">
+        {/* switch styling between disabled/submit/next states */}
         <button
           onClick={showFeedback ? handleNext : handleSubmit}
           disabled={!showFeedback && selectedOrder.length === 0}
@@ -213,6 +226,7 @@ const RankedChoice: React.FC<Props> = ({
               : "bg-yellow-600 hover:bg-yellow-700 text-white"
           }`}
         >
+          {/* label toggles between submit and next/result */}
           {showFeedback
             ? currentIndex + 1 === total
               ? "Result"
@@ -222,23 +236,41 @@ const RankedChoice: React.FC<Props> = ({
       </div>
 
       {/* feedback */}
-      {showFeedback && (
-        <div className="mt-6 p-4 bg-gray-100 rounded text-sm sm:text-base md:text-lg">
-          {isCorrect ? (
-            <p className="text-green-600 font-medium">✓ Correct order!</p>
-          ) : (
-            <div className="text-red-600">
-              <p className="font-medium mb-2">✗ Incorrect order</p>
-              <p>
-                The correct order is:{" "}
-                <strong className="text-gray-900">
-                  {(current.correctOrder || []).join(" > ")}
-                </strong>
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+      {showFeedback && !hideFeedback && (() => {
+        // map score into status text and color.
+        const score = typeof normalizedScore === "number"
+          ? normalizedScore
+          : isCorrect
+          ? 1
+          : 0;
+        const statusClass = score >= 1
+          ? "text-green-600"
+          : score > 0.5
+          ? "text-yellow-600"
+          : "text-red-600";
+        const statusText = score >= 1
+          ? "✓ Correct order!"
+          : score > 0.5
+          ? "△ Close order"
+          : "✗ Incorrect order";
+
+        return (
+          <div className="mt-6 p-4 bg-gray-100 rounded text-sm sm:text-base md:text-lg">
+            <p className={`${statusClass} font-medium`}>{statusText}</p>
+            {(feedbackText || pointsEarned !== null || normalizedScore !== null) && (
+              <div className="mt-3 text-gray-700">
+                {feedbackText && <p>{feedbackText}</p>}
+                {typeof pointsEarned === "number" && typeof pointsPossible === "number" && (
+                  <p>Points: {pointsEarned} / {pointsPossible}</p>
+                )}
+                {typeof normalizedScore === "number" && (
+                  <p>Closeness: {Math.round(normalizedScore * 100)}%</p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 };
