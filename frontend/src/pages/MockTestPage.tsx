@@ -120,8 +120,10 @@ const MockTestPage: React.FC = () => {
               : correctAnswer?.TEXT || "",
             options:        shuffledOptions,
             QUESTION_TYPE:  normalizedType,
-            correctOrder:   correctOrder,
-            // drag_and_drop: map each answer to a drop zone with id and correctAnswer
+            correctOrder:   correctOrder,            // drag_and_drop (new placement-based): store full answer objects with placement field
+            answerObjects:  normalizedType === "drag_and_drop"
+              ? question.answers || []
+              : undefined,            // drag_and_drop: map each answer to a drop zone with id and correctAnswer
             dropZones:      normalizedType === "drag_and_drop"
               ? [...(question.answers || [])].map((ans, idx) => ({
                   id: `zone-${idx}`,
@@ -197,9 +199,14 @@ const MockTestPage: React.FC = () => {
       case "ranked_choice":
         return selectedOrder;
       case "drag_and_drop":
-        return Object.entries(droppedAnswers).reduce((acc, [zoneId, answer]) => {
+        return Object.entries(droppedAnswers).reduce((acc, [key, answer]) => {
           if (answer) {
-            acc[answer] = zoneId;
+            // Extract placement from key (e.g., "6_0" -> "6")
+            const placement = key.split('_').slice(0, -1).join('_');
+            const answerText = typeof answer === "string" ? answer : String(answer);
+            if (answerText.length > 0) {
+              acc[answerText] = placement;
+            }
           }
           return acc;
         }, {} as Record<string, string>);
@@ -218,8 +225,7 @@ const MockTestPage: React.FC = () => {
       : questionType === "ranked_choice"
         ? selectedOrder.length === (current?.options.length || 0)
         : questionType === "drag_and_drop"
-          ? (current?.dropZones || []).length > 0 &&
-            Object.keys(droppedAnswers).length === (current?.dropZones || []).length
+          ? Object.keys(droppedAnswers).length > 0
           : questionType === "programming"
             ? programmingAnswer.trim().length > 0
             : selectedAnswers.length > 0;

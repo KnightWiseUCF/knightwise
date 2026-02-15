@@ -127,7 +127,11 @@ const TopicTestPage: React.FC = () => {
             options:        shuffledOptions,
             QUESTION_TYPE:  normalizedType,
             correctOrder:   correctOrder,
-            // drag_and_drop: map each answer to a drop zone with id and correctAnswer
+            // drag_and_drop (new placement-based): store full answer objects with placement field
+            answerObjects:  normalizedType === "drag_and_drop"
+              ? question.answers || []
+              : undefined,
+            // drag_and_drop (old inline style): map each answer to a drop zone with id and correctAnswer
             dropZones:      normalizedType === "drag_and_drop"
               ? [...(question.answers || [])].map((ans, idx) => ({
                   id: `zone-${idx}`,
@@ -157,9 +161,9 @@ const TopicTestPage: React.FC = () => {
 
         setProblems(withOptions);
       } 
-      catch 
+      catch (error: unknown)
       {
-        console.error("Failed to load topic problems");
+        console.error("Failed to load topic problems:", error);
       }
     };
 
@@ -176,9 +180,16 @@ const TopicTestPage: React.FC = () => {
       case "ranked_choice":
         return selectedOrder;
       case "drag_and_drop":
-        return Object.entries(droppedAnswers).reduce((acc, [zoneId, answer]) => {
+        return Object.entries(droppedAnswers).reduce((acc, [key, answer]) => {
           if (answer) {
-            acc[answer] = zoneId;
+            // Extract placement from key (e.g., "6_0" -> "6")
+            const placement = key.split('_').slice(0, -1).join('_');
+            // Preserve exact answer text for backend lookup, but validate trimmed content
+            const answerText = typeof answer === "string" ? answer : String(answer);
+            const placementText = typeof placement === "string" ? placement : String(placement);
+            if (answerText.trim().length > 0 && placementText.trim().length > 0) {
+              acc[answerText] = placementText.trim();
+            }
           }
           return acc;
         }, {} as Record<string, string>);
@@ -194,13 +205,13 @@ const TopicTestPage: React.FC = () => {
     const current = problems[currentIndex];
     const questionType = current?.QUESTION_TYPE || "multiple_choice";
 
+    // Gate submit until the current question has a valid response.
     const hasAnswer = questionType === "multiple_choice" || questionType === "fill_in_blank"
       ? selectedAnswer?.trim()
       : questionType === "ranked_choice"
         ? selectedOrder.length === (current?.options.length || 0)
         : questionType === "drag_and_drop"
-          ? (current?.dropZones || []).length > 0 &&
-            Object.keys(droppedAnswers).length === (current?.dropZones || []).length
+          ? Object.keys(droppedAnswers).length > 0
           : questionType === "programming"
             ? programmingAnswer.trim().length > 0
             : selectedAnswers.length > 0;
@@ -229,29 +240,47 @@ const TopicTestPage: React.FC = () => {
             code: programmingAnswer,
             languageId,
           },
-          token ? {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          } : undefined
+          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
         );
 
         const data = result.data;
         if (data.success) {
+          // Show accepted vs incorrect based on judge response.
           const statusText = data.correct ? "Accepted" : "Incorrect";
+          // Build optional output lines only when provided.
           const outputText = data.stdout ? `Output: ${data.stdout}` : "Output: (none)";
           const expectedText = data.expectedOutput ? `Expected: ${data.expectedOutput}` : "";
           setFeedback([statusText, outputText, expectedText].filter(Boolean).join(" | "));
           setIsCorrectAnswer(Boolean(data.correct));
         } else {
           const statusText = `Status: ${data.status || "Execution failed"}`;
+          // Include compiler/runtime errors when present.
           const stderrText = data.stderr ? `Error: ${data.stderr}` : "";
           const compileText = data.compile_output ? `Compile: ${data.compile_output}` : "";
           setFeedback([statusText, compileText, stderrText].filter(Boolean).join(" | "));
           setIsCorrectAnswer(false);
         }
-      } catch {
-        setFeedback("Failed to submit programming response.");
+      } catch (error: unknown) {
+        console.error("Failed to submit programming response:", error);
+        
+        // Log the full error details for debugging
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+          console.error("Backend response:", {
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText,
+            data: axiosError.response?.data,
+          });
+          
+          const errorMsg = axiosError.response?.data?.error 
+            || axiosError.response?.data?.message
+            || axiosError.response?.statusText
+            || "Unknown error";
+          setFeedback(`Failed to submit programming response (${axiosError.response?.status || 'unknown'}): ${errorMsg}`);
+        } else {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          setFeedback(`Failed to submit programming response: ${errorMessage}`);
+        }
         setIsCorrectAnswer(false);
       }
 
@@ -263,25 +292,69 @@ const TopicTestPage: React.FC = () => {
       const token = localStorage.getItem("token");
       const userAnswer = buildUserAnswer(questionType);
 
+      // Additional validation for drag_and_drop
+      if (questionType === "drag_and_drop") {
+        if (typeof userAnswer !== 'object' || Array.isArray(userAnswer)) {
+          console.error("Invalid drag_and_drop answer format:", userAnswer);
+          setFeedback("Error: Invalid answer format for drag and drop question");
+          setIsCorrectAnswer(false);
+          setAnswered(true);
+          return;
+        }
+        
+        // Ensure all values are non-empty strings
+        const hasInvalidValues = Object.entries(userAnswer as Record<string, string>)
+          .some(([key, value]) => {
+            return !key || !value || typeof key !== 'string' || typeof value !== 'string';
+          });
+          
+        if (hasInvalidValues) {
+          console.error("Invalid key/value pairs in drag_and_drop answer:", userAnswer);
+          setFeedback("Error: Some answer placements are invalid");
+          setIsCorrectAnswer(false);
+          setAnswered(true);
+          return;
+        }
+      }
+
+      // Sanitize data to ensure it can be safely serialized
+      const payload = {
+        problem_id: Number(current.ID),
+        userAnswer,
+        category: String(current.CATEGORY || ""),
+        topic: String(current.SUBCATEGORY || ""),
+      };
+
+      // Log the payload for debugging
+      console.log("Submitting answer:", {
+        ...payload,
+        userAnswerType: typeof userAnswer,
+        userAnswerIsArray: Array.isArray(userAnswer),
+        questionType,
+      });
+
+      // Ensure payload can be JSON serialized
+      try {
+        JSON.stringify(payload);
+      } catch (e) {
+        console.error("Payload cannot be JSON serialized:", e);
+        setFeedback("Error: Unable to serialize answer data");
+        setIsCorrectAnswer(false);
+        setAnswered(true);
+        return;
+      }
+
       // Get grading results
       const result = await api.post(
         "/api/test/submit",
-        {
-          problem_id: current.ID,
-          userAnswer,
-          category: current.CATEGORY,
-          topic: current.SUBCATEGORY,
-        },
-        token ? {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        } : undefined
+        payload,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
       );
 
       const isCorrect = result.data.isCorrect;
       setIsCorrectAnswer(isCorrect);
       setFeedback(result.data.feedback);
+      // Guard against non-numeric values in API payloads.
       setPointsEarned(
         typeof result.data.pointsEarned === "number" ? result.data.pointsEarned : null
       );
@@ -294,9 +367,31 @@ const TopicTestPage: React.FC = () => {
       if (isCorrect) setCorrectCount((prev) => prev + 1);
       setAnswered(true);
     } 
-    catch
+    catch (error: unknown)
     {
-      console.error("Failed to submit response");
+      console.error("Failed to submit response:", error);
+      
+      // Log the full error details for debugging
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+        console.error("Backend response:", {
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+        });
+        console.error("Full backend error data:", JSON.stringify(axiosError.response?.data, null, 2));
+        
+        const errorMsg = axiosError.response?.data?.error 
+          || axiosError.response?.data?.message
+          || axiosError.response?.statusText
+          || "Network error occurred";
+        setFeedback(`Submission failed (${axiosError.response?.status || 'unknown'}): ${errorMsg}`);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        setFeedback(`Submission failed: ${errorMessage}`);
+      }
+      setIsCorrectAnswer(false);
+      setAnswered(true);
     }
   };
 
@@ -324,6 +419,7 @@ const TopicTestPage: React.FC = () => {
   const questionType = current?.QUESTION_TYPE || 'multiple_choice';
 
   const sharedFeedback = answered && feedback ? (() => {
+    // Map score to status styling for text and box.
     const score = typeof normalizedScore === "number"
       ? normalizedScore
       : isCorrectAnswer
@@ -344,14 +440,17 @@ const TopicTestPage: React.FC = () => {
       : score > 0.5
       ? "border-yellow-500"
       : "border-red-500";
+    // Prefer explicit points, but fall back to question points when needed.
     const rawPointsPossible =
       typeof pointsPossible === "number" ? pointsPossible : current?.POINTS_POSSIBLE;
+    // Coerce string values from the API into numbers when possible.
     const derivedPointsPossible =
       typeof rawPointsPossible === "number"
         ? rawPointsPossible
         : Number.isFinite(Number(rawPointsPossible))
         ? Number(rawPointsPossible)
         : null;
+    // Derive points when only a normalized score is available.
     const derivedPointsEarned =
       typeof pointsEarned === "number"
         ? pointsEarned
@@ -407,6 +506,7 @@ const TopicTestPage: React.FC = () => {
           <p className="text-lg sm:text-xl md:text-2xl mb-4 sm:mb-6">
             You got {correctCount} out of {problems.length} questions correct!
           </p>
+          {/* Message varies with score threshold */}
           <p className="text-lg sm:text-xl md:text-2xl mb-4 sm:mb-6 font-bold">
             {percentage < 50 ? "Keep practicing!" : "Great job!"}
           </p>
@@ -434,6 +534,7 @@ const TopicTestPage: React.FC = () => {
   return (
     <Layout>
       <div className="pb-16">
+        {/* Render the appropriate question component by type */}
         {questionType === "multiple_choice" ? (
         <MultipleChoice
           current={current}

@@ -144,6 +144,16 @@ const MultipleChoice: React.FC<Props> = ({
         : score > 0.5
         ? "text-yellow-600"
         : "text-red-600";
+      const boxClass = score >= 1
+        ? "bg-green-50"
+        : score > 0.5
+        ? "bg-yellow-50"
+        : "bg-red-50";
+      const borderClass = score >= 1
+        ? "border-green-500"
+        : score > 0.5
+        ? "border-yellow-500"
+        : "border-red-500";
       const statusText = score >= 1
         ? "✓ Correct answer!"
         : score > 0.5
@@ -151,7 +161,7 @@ const MultipleChoice: React.FC<Props> = ({
         : "✗ Incorrect answer";
 
       return (
-        <div className="mt-6 p-4 bg-gray-100 rounded text-sm sm:text-base md:text-lg">
+        <div className={`mt-6 p-4 ${boxClass} rounded border ${borderClass} text-sm sm:text-base md:text-lg`}>
           <p className={`${statusClass} font-medium`}>{statusText}</p>
           {(feedbackText || pointsEarned !== null || normalizedScore !== null) && (
             <div className="mt-3 text-gray-700">

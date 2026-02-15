@@ -3,9 +3,10 @@
 //  Project:       KnightWise
 //  Year:          2025-2026
 //  Author(s):     KnightWise Team
-//  File:          DragAndDrop.tsx
-//  Description:   Placement-based drag and drop question component.
-//                 Answers are organized by PLACEMENT field into separate drop zones.
+//  File:          DragAndDropInline.tsx
+//  Description:   [ARCHIVED] Inline drag and drop question component.
+//                 This version uses [blank] markers in question text.
+//                 Use DragAndDrop.tsx for the new placement-based approach.
 //
 //  Dependencies:  react
 //                 html-react-parser
@@ -23,7 +24,7 @@ type Props = {
   current: Question; // current question
   currentIndex: number; // current index
   total: number; // total number of question
-  droppedAnswers: Record<string, string>; // placement -> answer text (or similar mapping)
+  droppedAnswers: Record<string, string>; // zone id -> answer text
   setDroppedAnswers: (val: Record<string, string>) => void; // update dropped answers
   handleSubmit: () => void; // click submit
   handleNext: () => void; // click next
@@ -37,7 +38,7 @@ type Props = {
   feedbackContent?: React.ReactNode; // custom feedback content
 };
 
-const DragAndDrop: React.FC<Props> = ({
+const DragAndDropInline: React.FC<Props> = ({
   current,
   currentIndex,
   total,
@@ -57,81 +58,60 @@ const DragAndDrop: React.FC<Props> = ({
   const [draggedAnswer, setDraggedAnswer] = useState<string | null>(null);
   const [availableAnswers, setAvailableAnswers] = useState<string[]>([]);
 
-  // Debug: log what data we're receiving
-  React.useEffect(() => {
-    console.log("🔵 DragAndDrop received:", {
-      answerObjects: current.answerObjects,
-      options: current.options,
-      dropZones: current.dropZones,
-    });
-    // Log each answer's PLACEMENT value
-    current.answerObjects?.forEach((ans, idx) => {
-      console.log(`  Answer ${idx}: TEXT="${ans.TEXT}", PLACEMENT="${ans.PLACEMENT}" (type: ${typeof ans.PLACEMENT})`);
-    });
-  }, [current.answerObjects, current.options, current.dropZones]);
+  // Split question text by blanks and interleave with drop zones
+  // Render question text with inline drop zones replacing [blank] placeholders
+  const renderInlineQuestion = () => {
+    const parts = current.QUESTION_TEXT.split(/(\[blank\])/i);
+    let zoneIndex = 0;
 
-  // Group answers by their PLACEMENT field - create zones for UNIQUE placements only
-  const answersByPlacement = React.useMemo(() => {
-    const grouped: Record<string, string[]> = {};
-    const answerObjects = current.answerObjects || [];
-
-    if (answerObjects.length > 0) {
-      // First, collect all unique PLACEMENT values
-      const uniquePlacements = new Set<string>();
-      answerObjects.forEach((answer) => {
-        const rawPlacement = typeof answer.PLACEMENT === "string"
-          ? answer.PLACEMENT
-          : String(answer.PLACEMENT ?? "");
-        const placement = rawPlacement.trim();
-        
-        console.log(`  Answer "${answer.TEXT}": PLACEMENT="${answer.PLACEMENT}" (type: ${typeof answer.PLACEMENT})`);
-        
-        if (placement) {
-          uniquePlacements.add(placement);
-        }
-      });
-      
-      // Create a zone for each UNIQUE placement
-      uniquePlacements.forEach((placement) => {
-        grouped[placement] = [];
-      });
-      
-      // If no valid placements found, fall back to creating generic drop zones
-      if (uniquePlacements.size === 0) {
-        console.log("⚠️ No valid PLACEMENT values found, creating generic drop zones");
-        answerObjects.forEach((_, idx) => {
-          grouped[`Drop Zone ${idx + 1}`] = [];
-        });
-      }
-    } else if (current.dropZones && current.dropZones.length > 0) {
-      // Fallback to dropZones if answerObjects not available
-      current.dropZones.forEach((_, idx) => {
-        grouped[`Drop Zone ${idx + 1}`] = [];
-      });
-    } else if (current.options && current.options.length > 0) {
-      // Last resort: create zones based on options
-      console.log("⚠️ No answerObjects or dropZones, creating zones from options");
-      current.options.forEach((_, idx) => {
-        grouped[`Drop Zone ${idx + 1}`] = [];
-      });
-    }
-
-    console.log("✅ Final answersByPlacement:", grouped);
-    console.log("✅ Placement zones created:", Object.keys(grouped));
-    return grouped;
-  }, [current.answerObjects, current.dropZones, current.options]);
-
-  const placementKeys = Object.keys(answersByPlacement).sort();
+    return (
+      <div className="text-base sm:text-lg md:text-xl font-medium mb-6 leading-relaxed">
+        {parts.map((part, idx) => {
+          // Replace [blank] markers with draggable drop zones
+          if (part.toLowerCase() === "[blank]") {
+            const zone = current.dropZones?.[zoneIndex];
+            if (!zone) return null;
+            
+            const currentZoneId = zone.id;
+            zoneIndex++;
+            
+            return (
+              <div
+                key={zone.id}
+                className={`inline-block px-3 sm:px-4 py-0.5 sm:py-1 mx-1 min-w-[90px] sm:min-w-[110px] text-center border-2 border-dashed rounded transition ${
+                  // Visual feedback: green if correct, red if wrong after submission
+                  showFeedback
+                    ? droppedAnswers[currentZoneId] === zone.correctAnswer
+                      ? "border-green-500 bg-green-50"
+                      : "border-red-500 bg-red-50"
+                    : droppedAnswers[currentZoneId]
+                    ? "border-yellow-500 bg-yellow-50"
+                    : "border-gray-400 bg-white"
+                }`}
+                onDragOver={handleDragOver}
+                onDrop={handleDropZoneDrop(currentZoneId)}
+              >
+                {/* style drop zone based on correctness and fill state */}
+                {droppedAnswers[currentZoneId] ? (
+                  <span className="text-sm sm:text-base font-semibold">{droppedAnswers[currentZoneId]}</span>
+                ) : (
+                  <span className="text-xs sm:text-sm text-gray-400 italic">...</span>
+                )}
+              </div>
+            );
+          }
+          // Return non-blank text parts with HTML sanitization
+          return <span key={idx}>{parse(DOMPurify.sanitize(part))}</span>;
+        })}
+      </div>
+    );
+  };
 
   useEffect(() => {
     const dropped = Object.values(droppedAnswers);
-    // Use current.options if available, otherwise extract from answerObjects
-    const allAnswers = current.options && current.options.length > 0
-      ? current.options
-      : current.answerObjects?.map((a) => a.TEXT) || [];
-    const available = allAnswers.filter((ans) => !dropped.includes(ans));
+    const available = current.options.filter((ans) => !dropped.includes(ans));
     setAvailableAnswers(available);
-  }, [droppedAnswers, current.options, current.answerObjects]);
+  }, [droppedAnswers, current.options]);
 
   // Handle drag start - store the dragged answer
   const handleDragStart = (answer: string) => (event: React.DragEvent<HTMLDivElement>) => {
@@ -145,24 +125,40 @@ const DragAndDrop: React.FC<Props> = ({
     event.dataTransfer.dropEffect = "move";
   };
 
-  // Handle drop in placement zone - place answer in zone
-  const handleDropZoneDrop = (placement: string) => (event: React.DragEvent<HTMLDivElement>) => {
+  // Handle drop in zone - place answer in zone, remove from previous zone if applicable
+  const handleDropZoneDrop = (zoneId: string) => (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     if (!draggedAnswer) return;
 
     const newAnswers = { ...droppedAnswers };
-    // Simple placement-based key: placement_0, placement_1, etc.
-    const existingCount = Object.entries(newAnswers).filter(
-      ([key]) => key.startsWith(placement)
-    ).length;
-    const zoneKey = `${placement}_${existingCount}`;
-    newAnswers[zoneKey] = draggedAnswer;
+    // If zone already has an answer, return it to the pool
+    if (newAnswers[zoneId]) {
+      setAvailableAnswers([...availableAnswers, newAnswers[zoneId]]);
+    }
+    newAnswers[zoneId] = draggedAnswer;
     setDroppedAnswers(newAnswers);
     setDraggedAnswer(null);
   };
 
-  // Check if all answers are placed
-  const allPlaced = availableAnswers.length === 0;
+  // Handle drop back to answer pool - remove from zone
+  const handleAnswerPoolDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!draggedAnswer) return;
+
+    const newAnswers = { ...droppedAnswers };
+    // Find which zone has this answer and remove it
+    for (const [zoneId, answer] of Object.entries(newAnswers)) {
+      if (answer === draggedAnswer) {
+        delete newAnswers[zoneId];
+        setDroppedAnswers(newAnswers);
+        break;
+      }
+    }
+    setDraggedAnswer(null);
+  };
+
+  // Check if all zones are filled
+  const allFilled = (current.dropZones || []).length === Object.keys(droppedAnswers).length;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 mt-12 sm:mt-16 md:mt-20">
@@ -187,52 +183,19 @@ const DragAndDrop: React.FC<Props> = ({
         Question {currentIndex + 1} of {total}
       </h2>
 
-      <div className="text-base sm:text-lg md:text-xl font-medium mb-6">
-        {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
-      </div>
+      {renderInlineQuestion()}
 
-      {/* placement-based drop zones */}
-      <div className="mb-6 space-y-4">
-        {placementKeys.map((placement) => (
-          <div
-            key={placement}
-            className="border rounded-lg p-4 bg-gray-50"
-          >
-            <p className="text-sm font-semibold text-gray-700 mb-3">
-              Placement: {placement}
-            </p>
-            {/* drop zone for this placement */}
-            <div
-              className="min-h-[100px] p-4 bg-white border-2 border-dashed border-gray-300 rounded transition"
-              onDragOver={handleDragOver}
-              onDrop={handleDropZoneDrop(placement)}
-            >
-              {/* show answers in this placement zone */}
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(droppedAnswers)
-                  .filter(([key]) => key.startsWith(placement))
-                  .map(([key, answer]) => (
-                    <div
-                      key={key}
-                      className="px-3 py-2 bg-yellow-100 border border-yellow-400 rounded"
-                    >
-                      {answer}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* drop zones section removed - zones now embedded in question */}
 
       {/* answer pool */}
       <div className="mb-6">
         <p className="text-sm sm:text-base text-gray-600 mb-3 italic">
-          drag answers to placement zones
+          drag answers to drop zones
         </p>
         <div
           className="flex flex-wrap gap-3 p-4 bg-gray-50 rounded-lg min-h-[100px]"
           onDragOver={handleDragOver}
+          onDrop={handleAnswerPoolDrop}
         >
           {availableAnswers.map((ans, idx) => (
             <div
@@ -245,6 +208,7 @@ const DragAndDrop: React.FC<Props> = ({
                   : "bg-yellow-400 hover:bg-yellow-500 text-black cursor-move"
               }`}
             >
+              {/* disable answer pool when feedback is shown */}
               {ans}
             </div>
           ))}
@@ -258,11 +222,11 @@ const DragAndDrop: React.FC<Props> = ({
         {/* switch styling between disabled/submit/next states */}
         <button
           onClick={showFeedback ? handleNext : handleSubmit}
-          disabled={!showFeedback && !allPlaced}
+          disabled={!showFeedback && !allFilled}
           className={`px-5 sm:px-6 py-2 sm:py-3 rounded shadow font-semibold text-sm sm:text-base md:text-lg ${
             showFeedback
               ? "bg-yellow-400 hover:bg-yellow-500 text-black"
-              : !allPlaced
+              : !allFilled
               ? "bg-gray-300 text-gray-500 cursor-not-allowed"
               : "bg-yellow-600 hover:bg-yellow-700 text-white"
           }`}
@@ -289,16 +253,6 @@ const DragAndDrop: React.FC<Props> = ({
           : score > 0.5
           ? "text-yellow-600"
           : "text-red-600";
-        const boxClass = score >= 1
-          ? "bg-green-50"
-          : score > 0.5
-          ? "bg-yellow-50"
-          : "bg-red-50";
-        const borderClass = score >= 1
-          ? "border-green-500"
-          : score > 0.5
-          ? "border-yellow-500"
-          : "border-red-500";
         const statusText = score >= 1
           ? "✓ Correct!"
           : score > 0.5
@@ -306,7 +260,7 @@ const DragAndDrop: React.FC<Props> = ({
           : "✗ Incorrect";
 
         return (
-          <div className={`mt-6 p-4 ${boxClass} rounded border ${borderClass} text-sm sm:text-base md:text-lg`}>
+          <div className="mt-6 p-4 bg-gray-100 rounded text-sm sm:text-base md:text-lg">
             <p className={`${statusClass} font-medium`}>{statusText}</p>
             {(feedbackText || pointsEarned !== null || normalizedScore !== null) && (
               <div className="mt-3 text-gray-700">
@@ -326,4 +280,4 @@ const DragAndDrop: React.FC<Props> = ({
   );
 };
 
-export default DragAndDrop;
+export default DragAndDropInline;
