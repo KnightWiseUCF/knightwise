@@ -5,7 +5,8 @@
 //  Author(s):     KnightWise Team
 //  File:          TopicTestPage.tsx
 //  Description:   Handles Topic Practice operations such as
-//                 answer submission, grading, and feedback.
+//                 submitting user responses and displaying
+//                 grading feedback.
 //
 //  Dependencies:  react
 //                 api instance
@@ -42,6 +43,8 @@ const TopicTestPage: React.FC = () => {
   const [answered, setAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [feedback, setFeedback] = useState<string>("");
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const normalizeQuestionType = (
@@ -156,44 +159,16 @@ const TopicTestPage: React.FC = () => {
   // submit response and send to server
   const handleSubmit = async () => {
     const current = problems[currentIndex];
-    const questionType = current?.QUESTION_TYPE || 'multiple_choice';
-    
-    // Check if answer(s) provided based on question type
-    const hasAnswer = questionType === 'multiple_choice' || questionType === 'fill_in_blank'
-      ? selectedAnswer
-      : questionType === 'ranked_choice'
-        ? selectedOrder.length === (current?.options.length || 0)
-        : questionType === 'drag_and_drop'
-          ? (current?.dropZones || []).length > 0 && Object.keys(droppedAnswers).length === (current?.dropZones || []).length
-          : selectedAnswers.length > 0;
-    
-    if (!hasAnswer) {
-      console.warn("No answer provided for question type:", questionType);
-      return;
-    }
-
-    // Determine if answer is correct
-    const isCorrect = 
-      questionType === 'multiple_choice'
-        ? selectedAnswer === current?.answerCorrect
-        : questionType === 'select_all_that_apply'
-          ? selectedAnswers.sort().join(", ") ===
-            current.answerCorrect?.split(", ").sort().join(", ")
-          : questionType === 'ranked_choice'
-            ? (current?.correctOrder || []).join("|") === selectedOrder.join("|")
-            : selectedAnswer === current.answerCorrect;
-
-    if (isCorrect) setCorrectCount((prev) => prev + 1);
-    setAnswered(true);
 
     try {
       const token = localStorage.getItem("token");
 
-      await api.post(
+      // Get grading results
+      const result = await api.post(
         "/api/test/submit",
         {
           problem_id: current.ID,
-          isCorrect,
+          userAnswer: selectedAnswer,
           category: current.CATEGORY,
           topic: current.SUBCATEGORY,
         },
@@ -203,6 +178,12 @@ const TopicTestPage: React.FC = () => {
           },
         }
       );
+
+      const isCorrect = result.data.isCorrect;
+      setIsCorrectAnswer(isCorrect);
+      setFeedback(result.data.feedback);
+      if (isCorrect) setCorrectCount((prev) => prev + 1);
+      setAnswered(true);
     } 
     catch
     {
@@ -297,75 +278,82 @@ const TopicTestPage: React.FC = () => {
 
   return (
     <Layout>
-      {questionType === 'multiple_choice' ? (
-        <MultipleChoice
-          current={current}
-          currentIndex={currentIndex}
-          total={problems.length}
-          selectedAnswer={selectedAnswer}
-          setSelectedAnswer={setSelectedAnswer}
-          handleSubmit={handleSubmit}
-          handleNext={handleNext}
-          showFeedback={answered}
-          isCorrect={isCorrect}
-        />
-      ) : questionType === 'ranked_choice' ? (
-        <RankedChoice
-          current={current}
-          currentIndex={currentIndex}
-          total={problems.length}
-          selectedOrder={selectedOrder}
-          setSelectedOrder={setSelectedOrder}
-          handleSubmit={handleSubmit}
-          handleNext={handleNext}
-          showFeedback={answered}
-          isCorrect={isCorrect}
-        />
-      ) : questionType === 'drag_and_drop' ? (
-        <DragAndDrop
-          current={current}
-          currentIndex={currentIndex}
-          total={problems.length}
-          droppedAnswers={droppedAnswers}
-          setDroppedAnswers={setDroppedAnswers}
-          handleSubmit={handleSubmit}
-          handleNext={handleNext}
-          showFeedback={answered}
-          isCorrect={isCorrect}
-        />
-      ) : questionType === 'programming' ? (
-        <Programming
-          current={current}
-          currentIndex={currentIndex}
-          total={problems.length}
-          handleSubmit={handleSubmit}
-          handleNext={handleNext}
-        />
-      ) : questionType === 'select_all_that_apply' ? (
-        <SelectAllThatApply
-          current={current}
-          currentIndex={currentIndex}
-          total={problems.length}
-          selectedAnswers={selectedAnswers}
-          setSelectedAnswers={setSelectedAnswers}
-          handleSubmit={handleSubmit}
-          handleNext={handleNext}
-          showFeedback={answered}
-          isCorrect={isCorrect}
-        />
-      ) : (
-        <FillInTheBlank
-          current={current}
-          currentIndex={currentIndex}
-          total={problems.length}
-          selectedAnswer={selectedAnswer}
-          setSelectedAnswer={setSelectedAnswer}
-          handleSubmit={handleSubmit}
-          handleNext={handleNext}
-          showFeedback={answered}
-          isCorrect={isCorrect}
-        />
-      )}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 mt-10 sm:mt-16">
+        {/* Header: subcategory + date + number */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h1 className="text-xl sm:text-3xl md:text-5xl font-bold text-gray-900">
+            {current.SUBCATEGORY}
+            <span className="block text-sm sm:text-xl md:text-2xl text-gray-500 font-normal">
+              (Exam Date: {current.AUTHOR_EXAM_ID})
+            </span>
+          </h1>
+          <p className="text-sm sm:text-lg md:text-xl font-medium">
+            Question {currentIndex + 1} of {problems.length}
+          </p>
+        </div>
+
+        {/* Question */}
+        <div className="mb-4">
+          <h2 className="text-base sm:text-xl md:text-2xl font-bold mb-2">
+            Q{currentIndex + 1}.
+          </h2>
+          <div className="text-base sm:text-lg md:text-xl font-medium mb-4">
+            {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
+          </div>
+        </div>
+
+        {/* Options */}
+        <div className="space-y-3">
+          {current.options.map((ans, idx) => (
+            <label
+              key={idx}
+              className={`block p-3 sm:p-4 rounded-lg border transition cursor-pointer text-sm sm:text-lg md:text-xl ${
+                selectedAnswer === ans
+                  ? "bg-yellow-100 border-yellow-500"
+                  : "bg-white border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="answer"
+                value={ans}
+                checked={selectedAnswer === ans}
+                onChange={() => setSelectedAnswer(ans)}
+                className="mr-3"
+              />
+              {ans}
+            </label>
+          ))}
+        </div>
+
+        {/* Buttons */}
+        <div className="mt-6 flex space-x-4">
+          {!answered ? (
+            <button
+              onClick={handleSubmit}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded shadow text-sm sm:text-base md:text-lg"
+            >
+              Submit
+            </button>
+          ) : (
+            <button
+              onClick={handleNext}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-3 rounded shadow text-sm sm:text-base md:text-lg"
+            >
+              {currentIndex + 1 === problems.length ? "Result" : "Next"}
+            </button>
+          )}
+        </div>
+
+        {/* Feedback */}
+        {answered && (
+          <div className="mt-6 p-4 bg-gray-100 text-center rounded text-sm sm:text-base md:text-lg font-medium">
+            <p className={isCorrectAnswer ? "text-green-600" : "text-red-600"}>
+              {feedback}
+            </p>
+          </div>
+        )}
+      </div>
     </Layout>
   );
 };

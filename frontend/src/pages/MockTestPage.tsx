@@ -42,6 +42,7 @@ const MockTestPage: React.FC = () => {
     Record<string, { correct: number; total: number }>
   >({});
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const normalizeQuestionType = (
     type?: string
@@ -187,22 +188,11 @@ const MockTestPage: React.FC = () => {
             : selectedAnswer?.trim().toLowerCase() ===
               current?.answerCorrect?.trim().toLowerCase();
 
-  const handleSubmit = () => {
-    if (!current) return;
-    
-    // Check if answer(s) provided based on question type
-    const hasAnswer = questionType === 'multiple_choice' || questionType === 'fill_in_blank'
-      ? selectedAnswer
-      : questionType === 'ranked_choice'
-        ? selectedOrder.length === (current?.options.length || 0)
-        : questionType === 'drag_and_drop'
-          ? (current?.dropZones || []).length > 0 && Object.keys(droppedAnswers).length === (current?.dropZones || []).length
-          : selectedAnswers.length > 0;
-    
-    if (!hasAnswer) {
-      console.warn("No answer provided for question type:", questionType);
-      return;
-    }
+  const handleSubmit = async () => {
+    if (!selectedAnswer || !current || isSubmitting) return;
+
+    // Disable submit button (prevents spam)
+    setIsSubmitting(true);
 
     const section = current.SECTION;
     setSectionScores((prev) => ({
@@ -212,7 +202,25 @@ const MockTestPage: React.FC = () => {
         total: (prev[section]?.total || 0) + 1,
       },
     }));
+
+    // Submit to database
+    try
+    {
+      await api.post('/api/test/submit',
+      {
+        problem_id: current.ID,
+        isCorrect,
+        category: current.CATEGORY,
+        topic: current.SUBCATEGORY,
+      });
+    }
+    catch
+    {
+      console.error('Failed to submit mock test response');
+    }
+
     setShowFeedback(true);
+    setIsSubmitting(false); // Re-enable submit button
   };
 
   const handleNext = () => {
@@ -224,6 +232,7 @@ const MockTestPage: React.FC = () => {
       setSelectedOrder([]);
       setDroppedAnswers({});
       setShowFeedback(false);
+      setIsSubmitting(false);
       setCurrentIndex((prev) => prev + 1);
     }
   };
