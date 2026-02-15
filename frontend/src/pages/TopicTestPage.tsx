@@ -12,6 +12,8 @@
 //                 html-react-parser
 //                 dompurify
 //                 Layout component
+//                 FillInTheBlank component
+//                 SelectAllThatApply component
 //                 models (RawQuestion, Question)
 //
 ////////////////////////////////////////////////////////////////
@@ -20,9 +22,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
+import MultipleChoice from "../components/MultipleChoice";
+import FillInTheBlank from "../components/FillInTheBlank";
+import SelectAllThatApply from "../components/SelectAllThatApply";
+import RankedChoice from "../components/RankedChoice";
+import DragAndDrop from "../components/DragAndDrop";
+import Programming from "../components/Programming";
 import api from "../api";
-import parse from "html-react-parser";
-import DOMPurify from "dompurify";
 import { RawQuestion, Question } from "../models";
 
 const TopicTestPage: React.FC = () => {
@@ -30,10 +36,34 @@ const TopicTestPage: React.FC = () => {
   const [problems, setProblems] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
+  const [droppedAnswers, setDroppedAnswers] = useState<Record<string, string>>({});
   const [answered, setAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const navigate = useNavigate();
+
+  const normalizeQuestionType = (
+    type?: string
+  ): Question["QUESTION_TYPE"] => {
+    switch (type) {
+      case "Multiple Choice":
+        return "multiple_choice";
+      case "Fill in the Blanks":
+        return "fill_in_blank";
+      case "Select All That Apply":
+        return "select_all_that_apply";
+      case "Ranked Choice":
+        return "ranked_choice";
+      case "Drag and Drop":
+        return "drag_and_drop";
+      case "Programming":
+        return "programming";
+      default:
+        return undefined;
+    }
+  };
 
   // get question from DB
   useEffect(() => {
@@ -46,22 +76,71 @@ const TopicTestPage: React.FC = () => {
         const shuffledProblems = data.sort(() => 0.5 - Math.random());
 
         // shuffle choices
-        const withOptions = shuffledProblems.map((question) => {
+        const withOptions = shuffledProblems
+          .map((question) => {
+          // Extract answer data
           const correctAnswer = question.answers?.find((a) => a.IS_CORRECT_ANSWER);
+          const normalizedType = normalizeQuestionType(question.TYPE);
           const allAnswerTexts = question.answers?.map((a) => a.TEXT) || [];
-          const shuffledOptions = allAnswerTexts.sort(() => 0.5 - Math.random());
+          
+          // For ranked_choice: sort answers by RANK field
+          const correctOrder = normalizedType === "ranked_choice"
+            ? [...(question.answers || [])]
+              .sort((a, b) => (a.RANK ?? 0) - (b.RANK ?? 0))
+              .map((a) => a.TEXT)
+            : undefined;
+          
+          // Shuffle options for most types (except ranked_choice and drag_and_drop which maintain order)
+          const shuffledOptions = normalizedType === "ranked_choice"
+            ? correctOrder || []
+            : normalizedType === "drag_and_drop"
+            ? allAnswerTexts.sort(() => 0.5 - Math.random())
+            : allAnswerTexts.sort(() => 0.5 - Math.random());
      
-          return {
+          // Transform RawQuestion to Question interface
+          const newQuestion: Question = {
             ID:             question.ID,
+            TYPE:           question.TYPE,
             SECTION:        question.SECTION,
             CATEGORY:       question.CATEGORY,
             SUBCATEGORY:    question.SUBCATEGORY,
             AUTHOR_EXAM_ID: question.AUTHOR_EXAM_ID,
+            POINTS_POSSIBLE: question.POINTS_POSSIBLE,
             QUESTION_TEXT:  question.QUESTION_TEXT,
-            answerCorrect:  correctAnswer?.TEXT || "",
+            OWNER_ID:       question.OWNER_ID,
+            answerCorrect:  normalizedType === "ranked_choice"
+              ? (correctOrder || []).join(", ")
+              : correctAnswer?.TEXT || "",
             options:        shuffledOptions,
+            QUESTION_TYPE:  normalizedType,
+            correctOrder:   correctOrder,
+            // drag_and_drop: map each answer to a drop zone with id and correctAnswer
+            dropZones:      normalizedType === "drag_and_drop"
+              ? [...(question.answers || [])].map((ans, idx) => ({
+                  id: `zone-${idx}`,
+                  correctAnswer: ans.TEXT,
+                }))
+              : undefined,
+            // programming: use standard languages (C, Java, Python)
+            problem:        normalizedType === "programming"
+              ? {
+                  description: question.QUESTION_TEXT,
+                  languages: ["C", "Java", "Python"],
+                }
+              : undefined,
+            problemCode:    normalizedType === "programming"
+              ? (question.answers || []).reduce((acc, ans) => {
+                  acc[ans.TEXT] = { code: ans.IS_CORRECT_ANSWER ? "// Solution" : "// Code", output: "" };
+                  return acc;
+                }, {} as { [lang: string]: { code: string; output?: string } })
+              : undefined,
           };
-        });
+          return newQuestion;
+        })
+          .filter(
+            (question): question is Question =>
+              question.QUESTION_TYPE !== undefined
+          );
 
         setProblems(withOptions);
       } 
@@ -76,9 +155,33 @@ const TopicTestPage: React.FC = () => {
 
   // submit response and send to server
   const handleSubmit = async () => {
-    if (!selectedAnswer) return;
     const current = problems[currentIndex];
-    const isCorrect = selectedAnswer === current.answerCorrect;
+    const questionType = current?.QUESTION_TYPE || 'multiple_choice';
+    
+    // Check if answer(s) provided based on question type
+    const hasAnswer = questionType === 'multiple_choice' || questionType === 'fill_in_blank'
+      ? selectedAnswer
+      : questionType === 'ranked_choice'
+        ? selectedOrder.length === (current?.options.length || 0)
+        : questionType === 'drag_and_drop'
+          ? (current?.dropZones || []).length > 0 && Object.keys(droppedAnswers).length === (current?.dropZones || []).length
+          : selectedAnswers.length > 0;
+    
+    if (!hasAnswer) {
+      console.warn("No answer provided for question type:", questionType);
+      return;
+    }
+
+    // Determine if answer is correct
+    const isCorrect = 
+      questionType === 'multiple_choice'
+        ? selectedAnswer === current?.answerCorrect
+        : questionType === 'select_all_that_apply'
+          ? selectedAnswers.sort().join(", ") ===
+            current.answerCorrect?.split(", ").sort().join(", ")
+          : questionType === 'ranked_choice'
+            ? (current?.correctOrder || []).join("|") === selectedOrder.join("|")
+            : selectedAnswer === current.answerCorrect;
 
     if (isCorrect) setCorrectCount((prev) => prev + 1);
     setAnswered(true);
@@ -109,6 +212,9 @@ const TopicTestPage: React.FC = () => {
 
   const handleNext = () => {
     setSelectedAnswer(null);
+    setSelectedAnswers([]);
+    setSelectedOrder([]);
+    setDroppedAnswers({});
     setAnswered(false);
     if (currentIndex + 1 < problems.length) {
       setCurrentIndex((prev) => prev + 1);
@@ -116,6 +222,17 @@ const TopicTestPage: React.FC = () => {
       setShowResult(true);
     }
   };
+
+  const current = problems[currentIndex];
+  const questionType = current?.QUESTION_TYPE || 'multiple_choice';
+
+  useEffect(() => {
+    if (questionType === "ranked_choice" && current) {
+      setSelectedOrder(current.options);
+    } else if (questionType === "drag_and_drop" && current) {
+      setDroppedAnswers({});
+    }
+  }, [currentIndex, questionType, current?.options]);
 
   if (!problems.length) {
     return (
@@ -160,91 +277,95 @@ const TopicTestPage: React.FC = () => {
     );
   }
 
-  const current = problems[currentIndex];
+  // Determine if answer is correct based on question type
+  const isCorrect = 
+    questionType === 'multiple_choice'
+      ? selectedAnswer === current?.answerCorrect
+      : questionType === 'select_all_that_apply'
+      ? selectedAnswers.length > 0 &&
+        selectedAnswers.sort().join(", ") ===
+        current?.answerCorrect?.split(", ").sort().join(", ")
+      : questionType === 'ranked_choice'
+        ? (current?.correctOrder || []).join("|") === selectedOrder.join("|")
+        : questionType === 'drag_and_drop'
+          // For drag_and_drop: all zones must have correct answers
+          ? Object.entries(droppedAnswers).every(([zoneId, ans]) => {
+              const zone = (current?.dropZones || []).find((z) => z.id === zoneId);
+              return zone && ans === zone.correctAnswer;
+            }) && Object.keys(droppedAnswers).length === (current?.dropZones || []).length
+          : selectedAnswer === current.answerCorrect;
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 mt-10 sm:mt-16">
-        {/* Header: subcategory + date + number */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h1 className="text-xl sm:text-3xl md:text-5xl font-bold text-gray-900">
-            {current.SUBCATEGORY}
-            <span className="block text-sm sm:text-xl md:text-2xl text-gray-500 font-normal">
-              (Exam Date: {current.AUTHOR_EXAM_ID})
-            </span>
-          </h1>
-          <p className="text-sm sm:text-lg md:text-xl font-medium">
-            Question {currentIndex + 1} of {problems.length}
-          </p>
-        </div>
-
-        {/* Question */}
-        <div className="mb-4">
-          <h2 className="text-base sm:text-xl md:text-2xl font-bold mb-2">
-            Q{currentIndex + 1}.
-          </h2>
-          <div className="text-base sm:text-lg md:text-xl font-medium mb-4">
-            {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
-          </div>
-        </div>
-
-        {/* Options */}
-        <div className="space-y-3">
-          {current.options.map((ans, idx) => (
-            <label
-              key={idx}
-              className={`block p-3 sm:p-4 rounded-lg border transition cursor-pointer text-sm sm:text-lg md:text-xl ${
-                selectedAnswer === ans
-                  ? "bg-yellow-100 border-yellow-500"
-                  : "bg-white border-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              <input
-                type="radio"
-                name="answer"
-                value={ans}
-                checked={selectedAnswer === ans}
-                onChange={() => setSelectedAnswer(ans)}
-                className="mr-3"
-              />
-              {ans}
-            </label>
-          ))}
-        </div>
-
-        {/* Buttons */}
-        <div className="mt-6 flex space-x-4">
-          {!answered ? (
-            <button
-              onClick={handleSubmit}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded shadow text-sm sm:text-base md:text-lg"
-            >
-              Submit
-            </button>
-          ) : (
-            <button
-              onClick={handleNext}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-3 rounded shadow text-sm sm:text-base md:text-lg"
-            >
-              {currentIndex + 1 === problems.length ? "Result" : "Next"}
-            </button>
-          )}
-        </div>
-
-        {/* Feedback */}
-        {answered && (
-          <div className="mt-6 p-4 bg-gray-100 text-center rounded text-sm sm:text-base md:text-lg font-medium">
-            {selectedAnswer === current.answerCorrect ? (
-              <p className="text-black">Correct answer!</p>
-            ) : (
-              <p className="text-red-600">
-                Incorrect. Correct answer:{" "}
-                <strong>{current.answerCorrect}</strong>
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+      {questionType === 'multiple_choice' ? (
+        <MultipleChoice
+          current={current}
+          currentIndex={currentIndex}
+          total={problems.length}
+          selectedAnswer={selectedAnswer}
+          setSelectedAnswer={setSelectedAnswer}
+          handleSubmit={handleSubmit}
+          handleNext={handleNext}
+          showFeedback={answered}
+          isCorrect={isCorrect}
+        />
+      ) : questionType === 'ranked_choice' ? (
+        <RankedChoice
+          current={current}
+          currentIndex={currentIndex}
+          total={problems.length}
+          selectedOrder={selectedOrder}
+          setSelectedOrder={setSelectedOrder}
+          handleSubmit={handleSubmit}
+          handleNext={handleNext}
+          showFeedback={answered}
+          isCorrect={isCorrect}
+        />
+      ) : questionType === 'drag_and_drop' ? (
+        <DragAndDrop
+          current={current}
+          currentIndex={currentIndex}
+          total={problems.length}
+          droppedAnswers={droppedAnswers}
+          setDroppedAnswers={setDroppedAnswers}
+          handleSubmit={handleSubmit}
+          handleNext={handleNext}
+          showFeedback={answered}
+          isCorrect={isCorrect}
+        />
+      ) : questionType === 'programming' ? (
+        <Programming
+          current={current}
+          currentIndex={currentIndex}
+          total={problems.length}
+          handleSubmit={handleSubmit}
+          handleNext={handleNext}
+        />
+      ) : questionType === 'select_all_that_apply' ? (
+        <SelectAllThatApply
+          current={current}
+          currentIndex={currentIndex}
+          total={problems.length}
+          selectedAnswers={selectedAnswers}
+          setSelectedAnswers={setSelectedAnswers}
+          handleSubmit={handleSubmit}
+          handleNext={handleNext}
+          showFeedback={answered}
+          isCorrect={isCorrect}
+        />
+      ) : (
+        <FillInTheBlank
+          current={current}
+          currentIndex={currentIndex}
+          total={problems.length}
+          selectedAnswer={selectedAnswer}
+          setSelectedAnswer={setSelectedAnswer}
+          handleSubmit={handleSubmit}
+          handleNext={handleNext}
+          showFeedback={answered}
+          isCorrect={isCorrect}
+        />
+      )}
     </Layout>
   );
 };

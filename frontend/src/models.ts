@@ -13,17 +13,21 @@ export interface Answer
 {
   TEXT:               string;
   IS_CORRECT_ANSWER:  boolean;
+  RANK?:              number;
 }
 
 // What API returns, before processing
 export interface RawQuestion
 {
   ID:             number;
+  TYPE:           string;
   SECTION:        string;
   CATEGORY:       string;
   SUBCATEGORY:    string;
   AUTHOR_EXAM_ID: string;
+  POINTS_POSSIBLE: number;
   QUESTION_TEXT:  string;
+  OWNER_ID:       number;
   answers?:       Answer[];
 }
 
@@ -31,13 +35,21 @@ export interface RawQuestion
 export interface Question 
 {
   ID:             number;
+  TYPE:           string;
   SECTION:        string;
   CATEGORY:       string;
   SUBCATEGORY:    string;
   AUTHOR_EXAM_ID: string;
+  POINTS_POSSIBLE: number;
   QUESTION_TEXT:  string;
+  OWNER_ID:       number;
   options:        string[];
   answerCorrect:  string;
+  QUESTION_TYPE: 'multiple_choice' | 'fill_in_blank' | 'select_all_that_apply' | 'ranked_choice' | 'drag_and_drop' | 'programming' | undefined;
+  correctOrder:   string[] | undefined;                                          // For ranked_choice: correct ordering of answers
+  dropZones?:     { id: string; correctAnswer: string }[];                       // For drag_and_drop: drop zones with correct answers
+  problem?:       { description: string; languages: string[] };                  // For programming: problem metadata
+  problemCode?:   { [language: string]: { code: string; output?: string } };     // For programming: code/output by language
 }
 
 // History types
