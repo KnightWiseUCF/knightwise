@@ -164,6 +164,16 @@ const TopicTestPage: React.FC = () => {
       catch (error: unknown)
       {
         console.error("Failed to load topic problems:", error);
+        
+        // Log detailed error info for debugging
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+          console.error("Backend response:", {
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText,
+            data: axiosError.response?.data,
+          });
+        }
       }
     };
 
