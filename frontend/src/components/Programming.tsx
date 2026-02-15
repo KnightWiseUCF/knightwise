@@ -13,15 +13,21 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Editor from "@monaco-editor/react";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 import { Question } from "../models";
+import api from "../api";
 
 type Props = {
   current: Question; // current question
   currentIndex: number; // current index
   total: number; // total number of question
+  editorContent: string; // editor content for submission
+  setEditorContent: (val: string) => void; // update editor content
+  selectedLanguage: string; // language selection for compiler
+  setSelectedLanguage: (val: string) => void; // update selected language
   handleSubmit: () => void; // click submit
   handleNext: () => void; // click next
 };
@@ -30,50 +36,94 @@ const Programming: React.FC<Props> = ({
   current,
   currentIndex,
   total,
+  editorContent,
+  setEditorContent,
+  selectedLanguage,
+  setSelectedLanguage,
   handleSubmit,
   handleNext,
 }) => {
-  const [activeTab, setActiveTab] = useState<string>(
-    current.problem?.languages[0] || "main.c"
-  );
-  const [editorContent, setEditorContent] = useState<string>("");
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("C");
   const [consoleOutput, setConsoleOutput] = useState<string>("");
+  const [isRunning, setIsRunning] = useState(false);
   const [tabSize, setTabSize] = useState<number>(2);
   const [useSpaces, setUseSpaces] = useState<boolean>(true);
 
   const languages = current.problem?.languages || [];
+  const languageOptions = languages.length ? languages : ["C", "Python", "Java"];
 
-  // Calculate line numbers
-  const lineCount = editorContent.split("\n").length;
-  const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
-
-  const handleRun = () => {
-    // Placeholder - actual execution will be handled separately
-    setConsoleOutput(`Program executed in ${selectedLanguage}...\nNo output yet.`);
+  const languageIds: Record<string, number> = {
+    C: 50,
+    Java: 62,
+    Python: 71,
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
+  const monacoLanguageIds: Record<string, string> = {
+    C: "cpp",
+    Java: "java",
+    Python: "python",
+  };
 
-      // Use tab character or spaces based on preference
-      const indent = useSpaces ? " ".repeat(tabSize) : "\t";
+  useEffect(() => {
+    setConsoleOutput("");
+    setIsRunning(false);
+  }, [current.ID]);
 
-      // Insert indent at cursor position
-      const newContent =
-        editorContent.substring(0, start) + indent + editorContent.substring(end);
-      setEditorContent(newContent);
+  const handleRun = async () => {
+    const code = editorContent.trim();
+    const languageId = languageIds[selectedLanguage];
 
-      // Move cursor after the inserted indent
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + indent.length;
-      }, 0);
+    if (!code) {
+      setConsoleOutput("Please enter code before running.");
+      return;
+    }
+
+    if (!languageId) {
+      setConsoleOutput(`Unsupported language: ${selectedLanguage}`);
+      return;
+    }
+
+    setIsRunning(true);
+    setConsoleOutput("Running code...");
+
+    try {
+      const token = localStorage.getItem("token");
+      const result = await api.post(
+        "/api/code/submitCode",
+        {
+          problemId: current.ID,
+          code: editorContent,
+          languageId,
+        },
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+
+      const data = result.data;
+      if (data.success) {
+        const outputLines = [
+          "Status: Accepted",
+          `Correct: ${data.correct ? "Yes" : "No"}`,
+          data.stdout ? `Output:\n${data.stdout}` : "Output: (none)",
+          data.expectedOutput ? `Expected:\n${data.expectedOutput}` : "",
+          data.executionTime ? `Time: ${data.executionTime}s` : "",
+          data.memory ? `Memory: ${data.memory} KB` : "",
+        ].filter(Boolean);
+        setConsoleOutput(outputLines.join("\n\n"));
+      } else {
+        const errorLines = [
+          `Status: ${data.status || "Execution failed"}`,
+          data.compile_output ? `Compile Output:\n${data.compile_output}` : "",
+          data.stderr ? `Error Output:\n${data.stderr}` : "",
+          data.stdout ? `Output:\n${data.stdout}` : "",
+        ].filter(Boolean);
+        setConsoleOutput(errorLines.join("\n\n"));
+      }
+    } catch (error) {
+      setConsoleOutput("Failed to run code. Please try again.");
+    } finally {
+      setIsRunning(false);
     }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 mt-12 sm:mt-16 md:mt-20 mb-12">
@@ -103,26 +153,6 @@ const Programming: React.FC<Props> = ({
         {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
       </div>
 
-      {/* language tabs */}
-      <div className="mb-4 border-b border-gray-300">
-        <div className="flex gap-1 sm:gap-2 overflow-x-auto">
-          {languages.map((lang) => (
-            <button
-              key={lang}
-              onClick={() => setActiveTab(lang)}
-              className={`px-3 sm:px-4 py-2 sm:py-3 font-semibold text-xs sm:text-sm whitespace-nowrap transition ${
-                activeTab === lang
-                  ? "bg-yellow-400 text-black border-b-2 border-yellow-600"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              {lang}
-            </button>
-          ))}
-        </div>
-      </div>
-
-
       {/* code editor */}
       <div className="mb-6 border-t-2 border-gray-300 pt-6">
         <h3 className="text-lg font-semibold mb-3">Your Solution</h3>
@@ -131,7 +161,7 @@ const Programming: React.FC<Props> = ({
         <div className="mb-4 flex flex-wrap justify-between items-center gap-4">
           {/* language buttons */}
           <div className="flex gap-2">
-            {["C", "Python", "Java"].map((lang) => (
+            {languageOptions.map((lang) => (
               <button
                 key={lang}
                 onClick={() => setSelectedLanguage(lang)}
@@ -190,25 +220,22 @@ const Programming: React.FC<Props> = ({
         </div>
 
         {/* editor */}
-        <div className="border border-gray-400 rounded-lg overflow-hidden bg-gray-900 flex mb-4">
-          {/* line numbers */}
-          <div className="bg-gray-800 px-4 py-3 text-right min-w-fit">
-            <pre className="text-gray-500 font-mono text-xs sm:text-sm leading-6">
-              {lineNumbers.map((num) => (
-                <div key={num}>{num}</div>
-              ))}
-            </pre>
-          </div>
-
-          {/* editor */}
-          <textarea
+        <div className="border border-gray-400 rounded-lg overflow-hidden bg-gray-900 mb-4">
+          <Editor
+            height="320px"
+            theme="vs-dark"
             value={editorContent}
-            onChange={(e) => setEditorContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            spellCheck="false"
-            placeholder="// Write your solution here..."
-            className="flex-1 px-4 py-3 bg-gray-900 text-green-400 font-mono text-xs sm:text-sm resize-none focus:outline-none border-l border-gray-700"
-            rows={10}
+            language={monacoLanguageIds[selectedLanguage] || "plaintext"}
+            onChange={(value) => setEditorContent(value ?? "")}
+            options={{
+              tabSize,
+              insertSpaces: useSpaces,
+              minimap: { enabled: false },
+              fontSize: 14,
+              wordWrap: "on",
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+            }}
           />
         </div>
 
@@ -216,9 +243,12 @@ const Programming: React.FC<Props> = ({
         <div className="mb-6">
           <button
             onClick={handleRun}
-            className="px-6 sm:px-8 py-2 sm:py-3 rounded font-semibold text-sm bg-blue-500 hover:bg-blue-600 text-white"
+            disabled={isRunning}
+            className={`px-6 sm:px-8 py-2 sm:py-3 rounded font-semibold text-sm text-white ${
+              isRunning ? "bg-blue-300 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
+            }`}
           >
-            Run
+            {isRunning ? "Running..." : "Run"}
           </button>
         </div>
 

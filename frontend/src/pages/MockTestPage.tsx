@@ -43,6 +43,9 @@ const MockTestPage: React.FC = () => {
   >({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
+  const [programmingAnswer, setProgrammingAnswer] = useState("");
+  const [programmingLanguage, setProgrammingLanguage] = useState("C");
 
   const normalizeQuestionType = (
     type?: string
@@ -145,6 +148,9 @@ const MockTestPage: React.FC = () => {
         setSelectedOrder([]);
         setDroppedAnswers({});
         setShowFeedback(false);
+        setIsCorrectAnswer(false);
+        setProgrammingAnswer("");
+        setProgrammingLanguage("C");
       } 
       catch 
       {
@@ -168,55 +174,85 @@ const MockTestPage: React.FC = () => {
     }
   }, [currentIndex, questionType, current?.options]);
 
-  // Determine if answer is correct based on question type
-  const isCorrect = 
-    questionType === 'multiple_choice'
-      ? selectedAnswer === current?.answerCorrect
-      : questionType === 'select_all_that_apply'
-        ? selectedAnswers.length > 0 &&
-          selectedAnswers.sort().join(", ") ===
-          current?.answerCorrect?.split(", ").sort().join(", ")
-        : questionType === 'ranked_choice'
-          ? selectedOrder.length > 0 &&
-            (current?.correctOrder || []).join("|") === selectedOrder.join("|")
-          : questionType === 'drag_and_drop'
-            // For drag_and_drop: all zones must have correct answers
-            ? Object.entries(droppedAnswers).every(([zoneId, ans]) => {
-                const zone = (current?.dropZones || []).find((z) => z.id === zoneId);
-                return zone && ans === zone.correctAnswer;
-              }) && Object.keys(droppedAnswers).length === (current?.dropZones || []).length
-            : selectedAnswer?.trim().toLowerCase() ===
-              current?.answerCorrect?.trim().toLowerCase();
+  const buildUserAnswer = () => {
+    switch (questionType) {
+      case "multiple_choice":
+      case "fill_in_blank":
+        return selectedAnswer?.trim() || "";
+      case "select_all_that_apply":
+        return selectedAnswers;
+      case "ranked_choice":
+        return selectedOrder;
+      case "drag_and_drop":
+        return Object.entries(droppedAnswers).reduce((acc, [zoneId, answer]) => {
+          if (answer) {
+            acc[answer] = zoneId;
+          }
+          return acc;
+        }, {} as Record<string, string>);
+      case "programming":
+        return { language: programmingLanguage, code: programmingAnswer };
+      default:
+        return "";
+    }
+  };
 
   const handleSubmit = async () => {
-    if (!selectedAnswer || !current || isSubmitting) return;
+    if (!current || isSubmitting) return;
+
+    const hasAnswer = questionType === "multiple_choice" || questionType === "fill_in_blank"
+      ? selectedAnswer?.trim()
+      : questionType === "ranked_choice"
+        ? selectedOrder.length === (current?.options.length || 0)
+        : questionType === "drag_and_drop"
+          ? (current?.dropZones || []).length > 0 &&
+            Object.keys(droppedAnswers).length === (current?.dropZones || []).length
+          : questionType === "programming"
+            ? programmingAnswer.trim().length > 0
+            : selectedAnswers.length > 0;
+
+    if (!hasAnswer) return;
 
     // Disable submit button (prevents spam)
     setIsSubmitting(true);
 
-    const section = current.SECTION;
-    setSectionScores((prev) => ({
-      ...prev,
-      [section]: {
-        correct: (prev[section]?.correct || 0) + (isCorrect ? 1 : 0),
-        total: (prev[section]?.total || 0) + 1,
-      },
-    }));
+    if (questionType === "programming") {
+      setShowFeedback(true);
+      setIsSubmitting(false);
+      return;
+    }
 
-    // Submit to database
+    const userAnswer = buildUserAnswer();
+    const token = localStorage.getItem("token");
+
     try
     {
-      await api.post('/api/test/submit',
-      {
-        problem_id: current.ID,
-        isCorrect,
-        category: current.CATEGORY,
-        topic: current.SUBCATEGORY,
-      });
+      const result = await api.post(
+        "/api/test/submit",
+        {
+          problem_id: current.ID,
+          userAnswer,
+          category: current.CATEGORY,
+          topic: current.SUBCATEGORY,
+        },
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+
+      const isCorrect = result.data.isCorrect;
+      setIsCorrectAnswer(isCorrect);
+
+      const section = current.SECTION;
+      setSectionScores((prev) => ({
+        ...prev,
+        [section]: {
+          correct: (prev[section]?.correct || 0) + (isCorrect ? 1 : 0),
+          total: (prev[section]?.total || 0) + 1,
+        },
+      }));
     }
     catch
     {
-      console.error('Failed to submit mock test response');
+      console.error("Failed to submit mock test response");
     }
 
     setShowFeedback(true);
@@ -233,6 +269,9 @@ const MockTestPage: React.FC = () => {
       setDroppedAnswers({});
       setShowFeedback(false);
       setIsSubmitting(false);
+      setIsCorrectAnswer(false);
+      setProgrammingAnswer("");
+      setProgrammingLanguage("C");
       setCurrentIndex((prev) => prev + 1);
     }
   };
@@ -259,7 +298,7 @@ const MockTestPage: React.FC = () => {
             handleSubmit={handleSubmit}
             handleNext={handleNext}
             showFeedback={showFeedback}
-            isCorrect={isCorrect}
+            isCorrect={isCorrectAnswer}
           />
         ) : questionType === 'ranked_choice' ? (
           <RankedChoice
@@ -271,7 +310,7 @@ const MockTestPage: React.FC = () => {
             handleSubmit={handleSubmit}
             handleNext={handleNext}
             showFeedback={showFeedback}
-            isCorrect={isCorrect}
+            isCorrect={isCorrectAnswer}
           />
         ) : questionType === 'drag_and_drop' ? (
           <DragAndDrop
@@ -283,13 +322,17 @@ const MockTestPage: React.FC = () => {
             handleSubmit={handleSubmit}
             handleNext={handleNext}
             showFeedback={showFeedback}
-            isCorrect={isCorrect}
+            isCorrect={isCorrectAnswer}
           />
         ) : questionType === 'programming' ? (
           <Programming
             current={current}
             currentIndex={currentIndex}
             total={questions.length}
+            editorContent={programmingAnswer}
+            setEditorContent={setProgrammingAnswer}
+            selectedLanguage={programmingLanguage}
+            setSelectedLanguage={setProgrammingLanguage}
             handleSubmit={handleSubmit}
             handleNext={handleNext}
           />
@@ -303,7 +346,7 @@ const MockTestPage: React.FC = () => {
             handleSubmit={handleSubmit}
             handleNext={handleNext}
             showFeedback={showFeedback}
-            isCorrect={isCorrect}
+            isCorrect={isCorrectAnswer}
           />
         ) : (
           <FillInTheBlank
@@ -315,7 +358,7 @@ const MockTestPage: React.FC = () => {
             handleSubmit={handleSubmit}
             handleNext={handleNext}
             showFeedback={showFeedback}
-            isCorrect={isCorrect}
+            isCorrect={isCorrectAnswer}
           />
         )
       )}
