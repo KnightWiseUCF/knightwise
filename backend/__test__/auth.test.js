@@ -272,4 +272,30 @@ describe("Auth Routes", () => {
     const isMatch = await bcrypt.compare("newpass123", records[0].PASSWORD);
     expect(isMatch).toBe(true);
   });
+
+  test("resetPassword - fail if new password is same as current password", async () => {
+    // give: verified email
+    const email = "test5@example.com";
+    const currPassword = "currpass";
+    const hashed = await bcrypt.hash(currPassword, 10);
+    await pool.query(
+      'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME) VALUES (?, ?, ?, ?, ?)',
+      ["samepassuser", email, hashed, "Same", "Pass"]
+    );
+
+    await pool.query(
+      'INSERT INTO EmailCode (EMAIL, OTP, EXPIRES, IS_VERIFIED) VALUES (?, ?, ?, TRUE)',
+      [email, "000000", new Date(Date.now() + 5 * 60 * 1000)] 
+    );
+
+    // when: request /resetPassword
+    const res = await request(app).post("/api/auth/resetPassword").send({
+      email,
+      password: currPassword,
+    });
+
+    // then: statusCode, message and match reset password
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe("Your new password cannot be the same as your current password.");
+  });
 });

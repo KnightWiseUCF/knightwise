@@ -1,7 +1,46 @@
 swagger: "2.0"
 info:
-  title: KnightPrep
-  description: API documentation for Team 1's COP 4331 UCF Foundation Exam study tool application, KnightPrep
+  title: KnightWise
+  description: |
+    API documentation for KnightWise, the computer science guided learning platform.
+
+    ## Question Types and Grading
+    
+    KnightWise supports five non-programming question types, each with its own grading algorithm:
+    
+    ### Multiple Choice
+    - **Input Format**: String (e.g., `"Paris"`)
+    - **Grading**: Exact match (case-insensitive, trimmed)
+    - **Normalized Score**: 1.0 (correct) or 0.0 (incorrect)
+    
+    ### Fill-In-the-Blanks
+    - **Input Format**: String (e.g., `"Paris"`)
+    - **Grading**: Exact or fuzzy matching using Levenshtein distance
+    - **Normalized Score**: 0.0 to 1.0 based on similarity (1 - distance/maxLength)
+    - **Partial Credit**: Yes (>= 50% similarity, API feedback says "Almost correct!")
+    
+    ### Select-All-That-Apply
+    - **Input Format**: Array of strings (e.g., `["Python", "JavaScript"]`)
+    - **Grading**: (correct selections - incorrect selections) / total correct options
+    - **Normalized Score**: 0.0 to 1.0 based on how many correct selections
+    - **Partial Credit**: Yes
+    
+    ### Ranked Choice
+    - **Input Format**: Array of strings in ranked order (e.g., `["First", "Second", "Third"]`)
+    - **Grading**: Kendall tau distance (counts pairwise inversions)
+    - **Normalized Score**: 0.0 to 1.0, based on 1.0 - (inversions / maxInversions)
+    - **Partial Credit**: Yes
+    
+    ### Drag-and-Drop
+    - **Input Format**: Object mapping items to placements (e.g., `{"item": "category"}`)
+    - **Grading**: Correct placements / total items
+    - **Normalized Score**: 0.0 to 1.0
+    - **Partial Credit**: Yes
+    
+    ## Scoring System
+    
+    All graders return a **normalized score** (0.0 to 1.0) which is multiplied by the question's point value to calculate points earned.
+
   version: 1.0.0
   contact:
     email: da606808@ucf.edu
@@ -166,6 +205,84 @@ paths:
           description: URL Not Found
         500:
           description: Server Error
+  
+  /test/topic/{topicName}:
+    get:
+      tags:
+      - Problems
+      summary: Fetch questions for a specific topic.
+      operationId: getTopicQuestions
+      description: Retrieves all questions for a given subcategory (e.g., Backtracking, Recursion).
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: topicName
+        in: path
+        required: true
+        type: string
+        description: The name of the topic/subcategory (e.g. Backtracking).
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        404:
+          description: Topic Not Found
+        500:
+          description: Server Error
+  
+  /test/mocktest:
+    get:
+      tags:
+      - Problems
+      summary: Generate a mock test.
+      operationId: getMockTest
+      description: Retrieves a randomly generated mock test with questions from all sections (A, B, C, D).
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        404:
+          description: Questions Not Found
+        500:
+          description: Server Error
+  
+  /test/submit:
+    post:
+      tags:
+      - Problems
+      summary: Submit answer to a question.
+      operationId: submitAnswer
+      description: |
+        Submits user's answer to a question, grades it based on question type, and records the response. Supports multiple question types: Multiple Choice, Fill-In-the-Blanks, Select-All-That-Apply, Ranked Choice, and Drag-and-Drop.
+      security:
+        - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: submitItem
+        description: Answer submission details.
+        schema:
+          $ref: '#/definitions/SubmitAnswer'
+      responses:
+        201:
+          description: Answer submitted successfully
+          schema:
+            $ref: '#/definitions/SubmitResponse'
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        404:
+          description: Question Not Found
+        500:
+          description: Server Error
           
   /problems/{id}:
     get:
@@ -265,6 +382,7 @@ definitions:
       password:
         type: string
         example: "COP4331"
+  
   SignUp:
     type: object
     required:
@@ -289,6 +407,7 @@ definitions:
       lastName:
         type: string
         example: "Leinecker"
+  
   SendOTP:
     type: object
     required:
@@ -301,6 +420,7 @@ definitions:
       purpose:
         type: string
         example: "reset"
+  
   Verify:
     type: object
     required:
@@ -313,6 +433,7 @@ definitions:
       otp:
         type: integer
         example: 856923
+  
   ResetPassword:
     type: object
     required:
@@ -325,8 +446,59 @@ definitions:
       password:
         type: string
         example: "newPass123!"
+  
+  SubmitAnswer:
+    type: object
+    required:
+    - problem_id
+    - userAnswer
+    - category
+    - topic
+    properties:
+      problem_id:
+        type: integer
+        example: 42
+        description: The unique ID of the question being answered.
+      userAnswer:
+        description: "User's answer. Format varies by question type: string for Multiple Choice/Fill In Blanks, array of strings for Select All/Ranked Choice, object for Drag-and-Drop."
+        example: "Paris"
+      category:
+        type: string
+        example: "Programming Languages"
+        description: The category of the question.
+      topic:
+        type: string
+        example: "I/O"
+        description: The subcategory/topic of the question.
+  
+  SubmitResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Answer submitted"
+      isCorrect:
+        type: boolean
+        example: true
+        description: Whether the answer was completely correct.
+      pointsEarned:
+        type: number
+        example: 3.5
+        description: Points earned for this answer (supports partial credit).
+      pointsPossible:
+        type: number
+        example: 5
+        description: Maximum points possible for this question.
+      normalizedScore:
+        type: number
+        example: 0.7
+        description: Score as a decimal from 0.0 to 1.0.
+      feedback:
+        type: string
+        example: "Correct!"
+        description: Feedback message explaining the result.
 
-host: www.dirediredocks.xyz
+host: www.knightwise.dev
 basePath: /api
 schemes:
-  - http
+  - https

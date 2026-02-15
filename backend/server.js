@@ -111,6 +111,7 @@ app.use('/api/progress', require('./routes/myProgress'));
 app.use('/api/problems', require('./routes/problems'));
 app.use('/api/test', require('./routes/testRoutes'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/code', require('./routes/codeSubmission'));
 
 // Error handler
