@@ -132,7 +132,8 @@ describe("Admin Routes", () => {
         owner_id: null,
         answer_text: ['a'],
         answer_correctness: [1],
-        answer_priority: [1],
+        answer_rank: [1],
+        answer_placement: ['a'],
       }
 
       const res = await request(app)
