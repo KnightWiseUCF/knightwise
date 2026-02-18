@@ -179,8 +179,8 @@ router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) =>
   }
 
   const [result] = await req.db.query(
-    'INSERT INTO AnswerText (QUESTION_ID, IS_CORRECT_ANSWER, `TEXT`, `RANK`, PLACEMENT) VALUES (?, ?, ?, ?, ?)',
-    [questionId, answer_correctness[i], answer_text[i], answer_rank[i], answer_placement[i]]
+    'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id]
   );
 
   const questionId = result.insertId;
@@ -190,8 +190,8 @@ router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) =>
     for (let i = 0; i < answer_text.length; i++)
     {
       await req.db.query(
-        'INSERT INTO AnswerText (QUESTION_ID, IS_CORRECT_ANSWER, TEXT, PRIORITY) VALUES (?, ?, ?, ?)',
-        [questionId, answer_correctness[i], answer_text[i], answer_priority[i]]
+        'INSERT INTO AnswerText (QUESTION_ID, IS_CORRECT_ANSWER, `TEXT`, `RANK`, PLACEMENT) VALUES (?, ?, ?, ?, ?)',
+        [questionId, answer_correctness[i], answer_text[i], answer_rank[i], answer_placement[i]]
       );
     }
   }
