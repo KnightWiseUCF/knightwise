@@ -167,7 +167,7 @@ const TopicTestPage: React.FC = () => {
         
         // Log detailed error info for debugging
         if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+          const axiosError = error as { response?: { status?: number; data?: { error?: string; message?: string }; statusText?: string } };
           console.error("Backend response:", {
             status: axiosError.response?.status,
             statusText: axiosError.response?.statusText,
@@ -275,7 +275,8 @@ const TopicTestPage: React.FC = () => {
         
         // Log the full error details for debugging
         if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+          // Type-cast the error to axios error shape for safe access to response properties
+          const axiosError = error as { response?: { status?: number; data?: { error?: string; message?: string }; statusText?: string } };
           console.error("Backend response:", {
             status: axiosError.response?.status,
             statusText: axiosError.response?.statusText,
@@ -375,7 +376,7 @@ const TopicTestPage: React.FC = () => {
       
       // Log the full error details for debugging
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+        const axiosError = error as { response?: { status?: number; data?: { error?: string; message?: string }; statusText?: string } };
         console.error("Backend response:", {
           status: axiosError.response?.status,
           statusText: axiosError.response?.statusText,
@@ -480,9 +481,9 @@ const TopicTestPage: React.FC = () => {
   })() : null;
 
   useEffect(() => {
-    if (questionType === "ranked_choice" && current) {
+    if (questionType === "ranked_choice" && current?.options) {
       setSelectedOrder(current.options);
-    } else if (questionType === "drag_and_drop" && current) {
+    } else if (questionType === "drag_and_drop") {
       setDroppedAnswers({});
     }
   }, [currentIndex, questionType, current?.options]);

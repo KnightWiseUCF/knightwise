@@ -13,7 +13,7 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 import { Question } from "../models";
@@ -57,20 +57,16 @@ const RankedChoice: React.FC<Props> = ({
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const positions = useRef<Map<string, DOMRect>>(new Map());
   const prevOrderRef = useRef<string[]>(selectedOrder);
-  const originalOrderRef = useRef<Map<string, number>>(new Map());
-
-  // capture original positions when question first loads
-  React.useEffect(() => {
-    if (originalOrderRef.current.size !== selectedOrder.length) {
-      originalOrderRef.current.clear();
-      selectedOrder.forEach((ans, idx) => {
-        originalOrderRef.current.set(ans, idx + 1);
-      });
-    }
-  }, [selectedOrder, currentIndex]);
+  const originalOrderMap = useMemo(() => {
+    const orderMap = new Map<string, number>();
+    (current.options ?? []).forEach((ans, idx) => {
+      orderMap.set(ans, idx + 1);
+    });
+    return orderMap;
+  }, [current.options]);
 
   const getDisplayIndex = (ans: string): number => {
-    return originalOrderRef.current.get(ans) ?? 1;
+    return originalOrderMap.get(ans) ?? 1;
   };
 
   const moveItem = (fromIndex: number, toIndex: number) => {

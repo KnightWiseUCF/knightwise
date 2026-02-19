@@ -182,9 +182,9 @@ const MockTestPage: React.FC = () => {
   const questionType = current?.QUESTION_TYPE || 'multiple_choice';
 
   useEffect(() => {
-    if (questionType === "ranked_choice" && current) {
+    if (questionType === "ranked_choice" && current?.options) {
       setSelectedOrder(current.options);
-    } else if (questionType === "drag_and_drop" && current) {
+    } else if (questionType === "drag_and_drop") {
       setDroppedAnswers({});
     }
   }, [currentIndex, questionType, current?.options]);

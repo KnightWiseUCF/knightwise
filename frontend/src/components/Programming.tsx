@@ -121,7 +121,7 @@ const Programming: React.FC<Props> = ({
       // Log full error details for debugging
       console.error("Code execution error:", error);
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: any; statusText?: string } };
+        const axiosError = error as { response?: { status?: number; data?: { error?: string; message?: string }; statusText?: string } };
         console.error("Backend response:", {
           status: axiosError.response?.status,
           statusText: axiosError.response?.statusText,
