@@ -13,7 +13,8 @@
 const MAX_CODE_BYTES = 10000;
 
 // Maximum allowed code submissions a day for an individual user
-const MAX_SUBMISSIONS_PER_DAY = 50;
+// Judge0's free cloud tier supports 50 free code submissions per day.
+const MAX_SUBMISSIONS_PER_DAY = 10;
 
 /*
  * Judge0 already enforces the following runtime and memory limits:
