@@ -22,7 +22,7 @@ CREATE TABLE `AnswerText` (
   PRIMARY KEY (`ID`),
   KEY `QUESTION_ID` (`QUESTION_ID`),
   CONSTRAINT `AnswerText_ibfk_1` FOREIGN KEY (`QUESTION_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=279 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=731 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `EmailCode`;
@@ -68,11 +68,11 @@ CREATE TABLE `Question` (
   `POINTS_POSSIBLE` decimal(5,2) DEFAULT NULL,
   `QUESTION_TEXT` text,
   `OWNER_ID` int DEFAULT NULL,
-  `IS_PUBLISHED` smallint NOT NULL DEFAULT 1,
+  `IS_PUBLISHED` smallint NOT NULL DEFAULT '1',
   PRIMARY KEY (`ID`),
   KEY `FK_Question_Owner` (`OWNER_ID`),
   CONSTRAINT `FK_Question_Owner` FOREIGN KEY (`OWNER_ID`) REFERENCES `User` (`ID`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=201 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `Response`;
@@ -94,7 +94,7 @@ CREATE TABLE `Response` (
   KEY `PROBLEM_ID` (`PROBLEM_ID`),
   CONSTRAINT `Response_ibfk_1` FOREIGN KEY (`USERID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
   CONSTRAINT `Response_ibfk_2` FOREIGN KEY (`PROBLEM_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=343 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `TestCase`;
@@ -108,6 +108,22 @@ CREATE TABLE `TestCase` (
   PRIMARY KEY (`ID`),
   KEY `idx_question_id` (`QUESTION_ID`),
   CONSTRAINT `TestCase_ibfk_1` FOREIGN KEY (`QUESTION_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `TestRun`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `TestRun` (
+  `ID` int NOT NULL AUTO_INCREMENT,
+  `USERID` int NOT NULL,
+  `QUESTION_ID` int NOT NULL,
+  `DATETIME` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ID`),
+  KEY `USERID` (`USERID`),
+  KEY `PROBLEM_ID` (`QUESTION_ID`),
+  CONSTRAINT `TestRun_ibfk_1` FOREIGN KEY (`USERID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
+  CONSTRAINT `TestRun_ibfk_2` FOREIGN KEY (`QUESTION_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

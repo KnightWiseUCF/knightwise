@@ -205,6 +205,44 @@ paths:
           description: URL Not Found
         500:
           description: Server Error
+
+  /code/submitCode:
+    post:
+      tags:
+      - Problems
+      summary: Submit or test code against a programming question.
+      operationId: submitCode
+      description: |
+        Submits code to Judge0 for execution. Supports two modes:
+        - **Graded Submission** (`isTestRun: false`): Runs code against all test cases, grades the result, and records the response. Counts toward the daily submission limit (10/day).
+        - **Test Run** (`isTestRun: true`): Runs code against only the first test case and returns raw output without grading or saving a response. Limited to 3 runs per problem per day.
+      security:
+        - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: submitCodeItem
+        description: Code submission details.
+        schema:
+          $ref: '#/definitions/SubmitCode'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        404:
+          description: Question or Test Cases Not Found
+        429:
+          description: Submission or Test Run Limit Exceeded
+        500:
+          description: Server Error
+        502:
+          description: Judge0 Service Unavailable
   
   /test/topic/{topicName}:
     get:
@@ -446,6 +484,31 @@ definitions:
       password:
         type: string
         example: "newPass123!"
+
+  SubmitCode:
+    type: object
+    required:
+    - problemId
+    - code
+    - languageId
+    - isTestRun
+    properties:
+      problemId:
+        type: integer
+        example: 42
+        description: The unique ID of the programming question.
+      code:
+        type: string
+        example: "print('Hello World')"
+        description: The code to execute.
+      languageId:
+        type: integer
+        example: 71
+        description: Judge0 language ID for the submitted code.
+      isTestRun:
+        type: boolean
+        example: false
+        description: If true, runs against first test case only without grading or saving. If false, runs full graded submission.
   
   SubmitAnswer:
     type: object
