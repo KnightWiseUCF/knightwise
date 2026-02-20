@@ -166,14 +166,14 @@ module.exports = router;
  * @returns {Promise<void>} - JSON response to confirm successful submission
  */
 router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) => {
-  const { type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id, answer_text, answer_correctness, answer_priority } = req.body;
+  const { type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id, answer_text, answer_correctness, answer_rank, answer_placement } = req.body;
 
-  if (!type || !author_exam_id || !section || !category || !subcategory || !points_possible || !question_text || !answer_text || !answer_correctness || !answer_priority)
+  if (!type || !author_exam_id || !section || !category || !subcategory || !points_possible || !question_text || !answer_text || !answer_correctness || !answer_rank || !answer_placement)
   {
     throw new AppError("Missing required fields", 400, "Invalid fields");
   }
 
-  if (!(answer_correctness.length === answer_priority.length && answer_correctness.length === answer_text.length))
+  if (!(answer_correctness.length === answer_rank.length && answer_correctness.length === answer_text.length && answer_correctness.length === answer_placement.length))
   {
     throw new AppError("Answer arrays are not equal length.", 400, "Invalid fields");
   }
@@ -190,8 +190,8 @@ router.post("/createquestion", adminMiddleware, asyncHandler(async (req, res) =>
     for (let i = 0; i < answer_text.length; i++)
     {
       await req.db.query(
-        'INSERT INTO AnswerText (QUESTION_ID, IS_CORRECT_ANSWER, TEXT, PRIORITY) VALUES (?, ?, ?, ?)',
-        [questionId, answer_correctness[i], answer_text[i], answer_priority[i]]
+        'INSERT INTO AnswerText (QUESTION_ID, IS_CORRECT_ANSWER, `TEXT`, `RANK`, PLACEMENT) VALUES (?, ?, ?, ?, ?)',
+        [questionId, answer_correctness[i], answer_text[i], answer_rank[i], answer_placement[i]]
       );
     }
   }

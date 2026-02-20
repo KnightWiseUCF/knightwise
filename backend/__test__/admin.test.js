@@ -38,6 +38,17 @@ afterEach(async () => {
   await pool.query("DELETE FROM User");
 });
 
+afterAll(async () => {
+  try
+  {
+    await pool.end();
+  }
+  catch (err)
+  {
+    console.error("Error closing pool in /admin unit test:", err);
+  }
+});
+
 describe("Admin Routes", () => {
 
     // user endpoints
@@ -132,7 +143,8 @@ describe("Admin Routes", () => {
         owner_id: null,
         answer_text: ['a'],
         answer_correctness: [1],
-        answer_priority: [1],
+        answer_rank: [1],
+        answer_placement: ['a'],
       }
 
       const res = await request(app)
