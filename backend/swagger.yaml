@@ -205,6 +205,298 @@ paths:
           description: URL Not Found
         500:
           description: Server Error
+
+  /profauth/signup:
+    post:
+      tags:
+      - Professors
+      summary: Register professor.
+      operationId: signupProfessor
+      description: Registers a new professor account. Requires email OTP verification first. Account is created with VERIFIED = 0 and requires admin approval before login is permitted.
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: signupItem
+        description: Professor registration details.
+        schema:
+          $ref: '#/definitions/SignUp'
+      responses:
+        201:
+          description: Created
+        400:
+          description: Bad Request
+        500:
+          description: Server Error
+
+  /profauth/login:
+    post:
+      tags:
+      - Professors
+      summary: Login professor.
+      operationId: loginProfessor
+      description: Authenticates a verified professor and returns a JWT with professor role attached. Unverified professors will receive 403.
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: loginItem
+        description: Login credentials.
+        schema:
+          $ref: '#/definitions/Login'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        403:
+          description: Forbidden - Account pending admin verification
+        500:
+          description: Server Error
+
+  /profauth/resetPassword:
+    post:
+      tags:
+      - Professors
+      summary: Reset professor password.
+      operationId: resetProfessorPassword
+      description: Resets a professor's password after email OTP verification. Uses the shared /auth/sendotp and /auth/verify endpoints.
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: resetItem
+        description: Password reset details.
+        schema:
+          $ref: '#/definitions/ResetPassword'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        403:
+          description: Forbidden - Email not verified
+        404:
+          description: Professor Not Found
+        500:
+          description: Server Error
+
+  /admin/createquestion:
+    post:
+      tags:
+      - Admins
+      - Professors
+      summary: Create a question.
+      operationId: createQuestion
+      description: Creates a new question and its associated answer objects. Accessible by admin key or verified professor JWT. Professors can only submit questions under their own owner ID regardless of what is passed in.
+      security:
+        - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: questionItem
+        description: Question and answer details.
+        schema:
+          $ref: '#/definitions/CreateQuestion'
+      responses:
+        201:
+          description: Created
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Server Error
+
+  /admin/problems/{id}:
+    get:
+      tags:
+      - Admins
+      - Professors
+      summary: Fetch question by ID.
+      operationId: getAdminProblemById
+      description: Fetches a question and its associated answers by ID. Accessible by admin key or verified professor JWT.
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: integer
+        description: The unique ID of the question.
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        404:
+          description: Question Not Found
+        500:
+          description: Server Error
+    delete:
+      tags:
+      - Admins
+      summary: Delete question by ID.
+      operationId: deleteQuestion
+      description: Deletes a question and all associated answers and responses. Admin only.
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: integer
+        description: The unique ID of the question.
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        404:
+          description: Question Not Found
+        500:
+          description: Server Error
+
+  /admin/users/{id}:
+    delete:
+      tags:
+      - Admins
+      summary: Delete user by ID.
+      operationId: deleteUser
+      description: Deletes a user account and all associated data. Admin only.
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: integer
+        description: The unique ID of the user.
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+
+  /admin/createuser:
+    post:
+      tags:
+      - Admins
+      summary: Create a user bypassing verification.
+      operationId: createUser
+      description: Allows an admin to create a user account directly, bypassing email OTP verification. Admin only.
+      security:
+        - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: signupItem
+        description: User registration details.
+        schema:
+          $ref: '#/definitions/SignUp'
+      responses:
+        201:
+          description: Created
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /admin/getuser:
+    get:
+      tags:
+      - Admins
+      summary: Fetch user by ID or username.
+      operationId: getUser
+      description: Fetches a user by either their ID or username. Provide exactly one query parameter. Admin only.
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: id
+        in: query
+        required: false
+        type: integer
+        description: The unique ID of the user.
+      - name: username
+        in: query
+        required: false
+        type: string
+        description: The username of the user.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Provide username OR id, not both
+        401:
+          description: Unauthorized
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+
+  /admin/unverifiedprofs:
+    get:
+      tags:
+      - Admins
+      summary: Fetch unverified professors.
+      operationId: getUnverifiedProfs
+      description: Returns a list of all professor accounts pending admin verification. Admin only.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /admin/verifyprof/{id}:
+    post:
+      tags:
+      - Admins
+      summary: Verify a professor by ID.
+      operationId: verifyProfessor
+      description: Sets a professor's VERIFIED flag to true, allowing them to log in. Sends a verification approval email to the professor. Admin only.
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: integer
+        description: The unique ID of the professor.
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        404:
+          description: Professor Not Found
+        500:
+          description: Server Error
   
   /test/topic/{topicName}:
     get:
@@ -446,6 +738,70 @@ definitions:
       password:
         type: string
         example: "newPass123!"
+
+  CreateQuestion:
+    type: object
+    required:
+    - type
+    - author_exam_id
+    - section
+    - category
+    - subcategory
+    - points_possible
+    - question_text
+    - answer_text
+    - answer_correctness
+    - answer_rank
+    - answer_placement
+    properties:
+      type:
+        type: string
+        example: "Multiple Choice"
+      author_exam_id:
+        type: string
+        example: "KnightWise"
+      section:
+        type: string
+        example: "DSN"
+      category:
+        type: string
+        example: "Programming"
+      subcategory:
+        type: string
+        example: "Python"
+      points_possible:
+        type: number
+        example: 5.0
+      question_text:
+        type: string
+        example: "What is Python's print function?"
+      owner_id:
+        type: integer
+        example: null
+        description: Owner professor ID. Ignored for professor requests — always forced to the requesting professor's own ID.
+      answer_text:
+        type: array
+        items:
+          type: string
+        example: ["print", "printf", "println", "put"]
+      answer_correctness:
+        type: array
+        items:
+          type: integer
+        example: [1, 0, 0, 0]
+        description: Which answer_text is considered a correct answer.
+      answer_rank:
+        type: array
+        items:
+          type: integer
+        example: [1, 2, 3, 4]
+        description: Correct ranking of answer_text options. Only used in Ranked Choice questions.
+      answer_placement:
+        type: array
+        items:
+          type: string
+        example: ["a", "b", "c", "d"]
+        description: Correct placement field for each of answer_text options. Only used in Drag and Drop questions.
   
   SubmitAnswer:
     type: object
