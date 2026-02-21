@@ -113,6 +113,7 @@ app.use('/api/test', require('./routes/testRoutes'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/code', require('./routes/codeSubmission'));
+app.use('/api/profauth', require('./routes/profAuthRoutes'));
 
 // Error handler
 app.use(handleError);

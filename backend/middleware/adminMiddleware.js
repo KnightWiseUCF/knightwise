@@ -22,7 +22,7 @@ if (!process.env.ADMIN_KEY)
 /**
  * Middleware to protect Express routes by checking for a secret key.
  *
- * If key is valid, TODO
+ * If key is valid, attaches admin role to req.user and calls next().
  * If missing/invalid, responds with 401 Unauthorized.
  *
  * @param {import('express').Request}      req  - Express request object
@@ -49,8 +49,10 @@ const adminMiddleware = (req, res, next) => {
   }
 
   // Compare to admin key, 401 Unauthorized doesn't match
+  // Attach admin role to authorize for endpoints shared with professors
   if (token === process.env.ADMIN_KEY)
   {
+    req.user = { role: 'admin' };
     next();
   }
   else
