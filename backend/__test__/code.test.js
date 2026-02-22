@@ -20,7 +20,7 @@ const request = require('supertest');
 const { app, pool } = require('../server');
 const judge0Service = require('../services/judge0Service');
 const { TEST_USER, getAuthToken, verifyTestDatabase } = require("./testHelpers");
-const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY } = require('../config/codeLimits'); 
+const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY, MAX_TEST_RUNS_PER_PROBLEM } = require('../config/codeLimits'); 
 const { AppError } = require('../middleware/errorHandler');
 
 // Mock Discord webhook
@@ -54,6 +54,7 @@ beforeAll(async () => {
   // Cleanup
   await pool.query('DELETE FROM Response WHERE USERID IN (SELECT ID FROM User WHERE EMAIL = ?)', [TEST_USER.email]);
   await pool.query('DELETE FROM User WHERE EMAIL = ?', [TEST_USER.email]);
+  await pool.query('DELETE FROM TestRun WHERE USERID IN (SELECT ID FROM User WHERE EMAIL = ?)', [TEST_USER.email]);
 
   // Get token and set user ID
   token = await getAuthToken();
@@ -68,11 +69,13 @@ beforeAll(async () => {
 afterEach(async () => {
   jest.clearAllMocks();
   await pool.query('DELETE FROM Response WHERE USERID = ?', [testUserId]);
+  await pool.query('DELETE FROM TestRun WHERE USERID = ?', [testUserId]);
 });
 
 afterAll(async () => {
   await pool.query('DELETE FROM Response WHERE USERID = ?', [testUserId]);
   await pool.query('DELETE FROM User WHERE EMAIL = ?', [TEST_USER.email]);
+  await pool.query('DELETE FROM TestRun WHERE USERID = ?', [testUserId]);
   try 
   {
     await pool.end();
@@ -119,7 +122,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "print('Hello')",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(401);
@@ -132,7 +136,8 @@ describe("POST /api/code/submitCode", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(400);
@@ -146,7 +151,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "   ",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(400);
@@ -159,7 +165,8 @@ describe("POST /api/code/submitCode", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
-          code: "print('Hello')"
+          code: "print('Hello')",
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(400);
@@ -175,7 +182,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: longCode,
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(400);
@@ -205,7 +213,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "print('Extra Submission')",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
   
       expect(res.statusCode).toBe(429);
@@ -219,7 +228,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "print('Hello')",
-          languageId: 999 // Invalid language ID
+          languageId: 999, // Invalid language ID
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(400);
@@ -233,7 +243,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: 99999, // Non-existent 
           code: "print('Hello')",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(404);
@@ -262,11 +273,13 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "print('Hello World')",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
+      expect(res.body.isTestRun).toBe(false);
       expect(res.body.allPassed).toBe(true);
       expect(res.body.passedTests).toBe(1);
       expect(res.body.totalTests).toBe(1);
@@ -293,11 +306,13 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "print('Goodbye World')",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
+      expect(res.body.isTestRun).toBe(false);
       expect(res.body.allPassed).toBe(false);
       expect(res.body.passedTests).toBe(0);
       expect(res.body.pointsEarned).toBe(0.00);
@@ -315,13 +330,14 @@ describe("POST /api/code/submitCode", () => {
         memory: 3000
       });
 
-      await request(app)
+      const res = await request(app)
         .post("/api/code/submitCode")
         .set("Authorization", `Bearer ${token}`)
         .send({
           problemId: testProblemId,
           code: "print('Hello World')",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       // Check database
@@ -336,6 +352,7 @@ describe("POST /api/code/submitCode", () => {
       expect(responses[0].ISCORRECT).toBe(1); // All tests passed
       expect(responses[0].POINTS_EARNED).toBe('10.00');
       expect(responses[0].POINTS_POSSIBLE).toBe('10.00');
+      expect(res.body.isTestRun).toBe(false);
     });
   });
 
@@ -360,14 +377,25 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "print('Hello'",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(false);
+      expect(res.body.isTestRun).toBe(false);
       expect(res.body.status).toBe("Compilation Error");
       expect(res.body.error).toContain("SyntaxError");
       expect(res.body.message).toBe("Your code failed to execute. Please check for errors.");
+
+      // Should still be saved to database
+      const [responses] = await pool.query(
+        'SELECT * FROM Response WHERE USERID = ? AND PROBLEM_ID = ? ORDER BY ID DESC LIMIT 1',
+        [testUserId, testProblemId]
+      );
+      expect(responses.length).toBe(1);
+      expect(responses[0].ISCORRECT).toBe(0);
+      expect(responses[0].POINTS_EARNED).toBe('0.00');
     });
 
     test("should handle runtime errors", async () => {
@@ -389,13 +417,24 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "x = 1/0",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(false);
+      expect(res.body.isTestRun).toBe(false);
       expect(res.body.status).toBe("Runtime Error (NZEC)");
       expect(res.body.error).toContain("ZeroDivisionError");
+
+      // Should still be saved to database
+      const [responses] = await pool.query(
+        'SELECT * FROM Response WHERE USERID = ? AND PROBLEM_ID = ? ORDER BY ID DESC LIMIT 1',
+        [testUserId, testProblemId]
+      );
+      expect(responses.length).toBe(1);
+      expect(responses[0].ISCORRECT).toBe(0);
+      expect(responses[0].POINTS_EARNED).toBe('0.00');
     });
 
     test("should handle Judge0 service failures", async () => {
@@ -411,11 +450,19 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: "print('Hello')",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(502);
       expect(res.body.message).toBe("Code submission failed.");
+
+      // Should NOT be saved to database
+      const [responses] = await pool.query(
+        'SELECT * FROM Response WHERE USERID = ? AND PROBLEM_ID = ? ORDER BY ID DESC LIMIT 1',
+        [testUserId, testProblemId]
+      );
+      expect(responses.length).toBe(0);
     });
   });
 
@@ -495,7 +542,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: multiTestProblemId,
           code: "def is_prime(n): ...",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
@@ -551,7 +599,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: multiTestProblemId,
           code: "def is_prime(n): ...",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
@@ -586,7 +635,8 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: multiTestProblemId,
           code: "def is_prime(n): return 'Wrong'",
-          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
@@ -646,12 +696,253 @@ describe("POST /api/code/submitCode", () => {
         .send({
           problemId: testProblemId,
           code: code,
-          languageId: languageId
+          languageId: languageId,
+          isTestRun: false
         });
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.allPassed).toBe(true);
+    });
+  });
+
+  // Test "Test Run" feature, which doesn't grade and store as response,
+  // instead stores as test run and returns execution output
+  describe("Test Run Tests", () => {
+
+    test("should return stdout without grading or saving a Response", async () => {
+      judge0Service.submitBatch.mockResolvedValue(["mock-token-testrun"]);
+      judge0Service.pollSubmission.mockResolvedValue({
+        status: { id: judge0Service.STATUS_IDS.ACCEPTED, description: "Accepted" },
+        stdout: "Hello World",
+        stderr: null,
+        time: "0.008",
+        memory: 3296
+      });
+
+      const res = await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: true
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.isTestRun).toBe(true);
+      expect(res.body.stdout).toBe("Hello World");
+      expect(res.body.status).toBe("Accepted");
+
+      // Should NOT have grading fields
+      expect(res.body.allPassed).toBeUndefined();
+      expect(res.body.pointsEarned).toBeUndefined();
+      expect(res.body.testResults).toBeUndefined();
+
+      // Should NOT have saved a Response
+      const [responses] = await pool.query(
+        'SELECT * FROM Response WHERE USERID = ? AND PROBLEM_ID = ?',
+        [testUserId, testProblemId]
+      );
+      expect(responses.length).toBe(0);
+    });
+
+    test("should save a TestRun entry to the database", async () => {
+      judge0Service.submitBatch.mockResolvedValue(["mock-token-testrun-db"]);
+      judge0Service.pollSubmission.mockResolvedValue({
+        status: { id: judge0Service.STATUS_IDS.ACCEPTED, description: "Accepted" },
+        stdout: "Hello World",
+        stderr: null,
+        time: "0.008",
+        memory: 3296
+      });
+
+      await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: true
+        });
+
+      const [testRuns] = await pool.query(
+        'SELECT * FROM TestRun WHERE USERID = ? AND QUESTION_ID = ?',
+        [testUserId, testProblemId]
+      );
+      expect(testRuns.length).toBe(1);
+    });
+
+    test("should only submit first test case to Judge0 on test run", async () => {
+      judge0Service.submitBatch.mockResolvedValue(["mock-token-firstonly"]);
+      judge0Service.pollSubmission.mockResolvedValue({
+        status: { id: judge0Service.STATUS_IDS.ACCEPTED, description: "Accepted" },
+        stdout: "Hello World",
+        stderr: null,
+        time: "0.008",
+        memory: 3296
+      });
+
+      await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: true
+        });
+
+      // submitBatch should have only been called with 1 test case
+      expect(judge0Service.submitBatch).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.arrayContaining([expect.objectContaining({ ID: expect.any(Number) })])
+      );
+      expect(judge0Service.submitBatch.mock.calls[0][2]).toHaveLength(1);
+    });
+
+    test("should not count test runs against actual submission limit", async () => {
+      judge0Service.submitBatch.mockResolvedValue(["mock-token-testrun-no-sub"]);
+      judge0Service.pollSubmission.mockResolvedValue({
+        status: { id: judge0Service.STATUS_IDS.ACCEPTED, description: "Accepted" },
+        stdout: "Hello World",
+        stderr: null,
+        time: "0.008",
+        memory: 3296
+      });
+
+      // Do a test run
+      await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: true
+        });
+
+      // Test run should not save response,
+      // therefore won't count toward MAX_SUBMISSIONS_PER_DAY
+      const [responses] = await pool.query(
+        'SELECT * FROM Response WHERE USERID = ? AND PROBLEM_ID = ?',
+        [testUserId, testProblemId]
+      );
+      expect(responses.length).toBe(0);
+    });
+
+    // The reverse of the previous test
+    test("should not count actual submissions against test run limit", async () => {
+      judge0Service.submitBatch.mockResolvedValue(["mock-token-sub-no-testrun"]);
+      judge0Service.pollSubmission.mockResolvedValue({
+        status: { id: judge0Service.STATUS_IDS.ACCEPTED, description: "Accepted" },
+        stdout: "Hello World",
+        stderr: null,
+        time: "0.008",
+        memory: 3296
+      });
+
+      // Do an actual submission
+      await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: false
+        });
+
+      // Actual submission should not save test run,
+      // therefore won't count toward MAX_TEST_RUNS_PER_PROBLEM
+      const [testRuns] = await pool.query(
+        'SELECT * FROM TestRun WHERE USERID = ? AND QUESTION_ID = ?',
+        [testUserId, testProblemId]
+      );
+      expect(testRuns.length).toBe(0);
+    });
+
+    test("should reject when test run limit exceeded", async () => {
+
+      // Insert max test runs directly
+      const insertPromises = [];
+      for (let i = 0; i < MAX_TEST_RUNS_PER_PROBLEM; i++) 
+      {
+        insertPromises.push(
+          pool.query(
+            'INSERT INTO TestRun (USERID, QUESTION_ID) VALUES (?, ?)',
+            [testUserId, testProblemId]
+          )
+        );
+      }
+      await Promise.all(insertPromises);
+
+      // Try one more test run
+      const res = await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: true
+        });
+
+      // Limit has been hit!
+      expect(res.statusCode).toBe(429);
+      expect(res.body.message).toBe("Daily test run limit for this question exceeded.");
+    });
+
+    test("should handle compilation errors on test run", async () => {
+      judge0Service.submitBatch.mockResolvedValue(["mock-token-compile-err"]);
+      judge0Service.pollSubmission.mockResolvedValue({
+        status: { id: judge0Service.STATUS_IDS.COMPILATION_ERROR, description: "Compilation Error" },
+        stdout: null,
+        stderr: "SyntaxError: unexpected EOF",
+        compile_output: "SyntaxError",
+        time: null,
+        memory: null
+      });
+
+      const res = await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello'",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun: true
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(false);
+      expect(res.body.isTestRun).toBe(true);
+
+      // Should still be saved to database
+      const [testRuns] = await pool.query(
+        'SELECT * FROM TestRun WHERE USERID = ? AND QUESTION_ID = ?',
+        [testUserId, testProblemId]
+      );
+      expect(testRuns.length).toBe(1);
+    });
+
+    test("should reject missing isTestRun field", async () => {
+      const res = await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId: testProblemId,
+          code: "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON
+          // No isTestRun field...
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe("Missing required fields.");
     });
   });
 });
