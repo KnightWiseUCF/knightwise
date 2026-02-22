@@ -295,6 +295,17 @@ paths:
       summary: Create a question.
       operationId: createQuestion
       description: Creates a new question and its associated answer objects. Accessible by admin key or verified professor JWT. Professors can only submit questions under their own owner ID regardless of what is passed in.
+  
+  /code/submitCode:
+    post:
+      tags:
+      - Problems
+      summary: Submit or test code against a programming question.
+      operationId: submitCode
+      description: |
+        Submits code to Judge0 for execution. Supports two modes:
+        - **Graded Submission** (`isTestRun: false`): Runs code against all test cases, grades the result, and records the response. Counts toward the daily submission limit (10/day).
+        - **Test Run** (`isTestRun: true`): Runs code against only the first test case and returns raw output without grading or saving a response. Limited to 3 runs per problem per day.
       security:
         - BearerAuth: []
       consumes:
@@ -417,6 +428,13 @@ paths:
       responses:
         201:
           description: Created
+        name: submitCodeItem
+        description: Code submission details.
+        schema:
+          $ref: '#/definitions/SubmitCode'
+      responses:
+        200:
+          description: OK
         400:
           description: Bad Request
         401:
@@ -497,6 +515,14 @@ paths:
           description: Professor Not Found
         500:
           description: Server Error
+        404:
+          description: Question or Test Cases Not Found
+        429:
+          description: Submission or Test Run Limit Exceeded
+        500:
+          description: Server Error
+        502:
+          description: Judge0 Service Unavailable
   
   /test/topic/{topicName}:
     get:
@@ -802,6 +828,31 @@ definitions:
           type: string
         example: ["a", "b", "c", "d"]
         description: Correct placement field for each of answer_text options. Only used in Drag and Drop questions.
+        
+  SubmitCode:
+    type: object
+    required:
+    - problemId
+    - code
+    - languageId
+    - isTestRun
+    properties:
+      problemId:
+        type: integer
+        example: 42
+        description: The unique ID of the programming question.
+      code:
+        type: string
+        example: "print('Hello World')"
+        description: The code to execute.
+      languageId:
+        type: integer
+        example: 71
+        description: Judge0 language ID for the submitted code.
+      isTestRun:
+        type: boolean
+        example: false
+        description: If true, runs against first test case only without grading or saving. If false, runs full graded submission.
   
   SubmitAnswer:
     type: object

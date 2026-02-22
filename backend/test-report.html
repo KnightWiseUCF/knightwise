@@ -1952,9 +1952,46 @@ header {
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
     at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
-    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, or languageId
-    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:128:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, languageId, or isTestRun
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:112:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
   statusCode: 400,
   userMessage: 'Missing required fields.'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
@@ -1964,9 +2001,46 @@ header {
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
     at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
-    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, or languageId
-    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:128:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, languageId, or isTestRun
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:112:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
   statusCode: 400,
   userMessage: 'Missing required fields.'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
@@ -1976,9 +2050,46 @@ header {
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
     at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
-    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, or languageId
-    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:128:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, languageId, or isTestRun
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:112:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
   statusCode: 400,
   userMessage: 'Missing required fields.'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
@@ -1989,13 +2100,1097 @@ header {
     at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
     at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
     at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Code submission too long, exceeds 10000 bytes
-    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:134:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:118:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
   statusCode: 400,
   userMessage: 'Code submission too long.'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: User 69 has 10 daily submissions, exceeds max
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:166:13
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 429,
+  userMessage: 'Daily submission limit exceeded.'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: languageId unsupported by KnightWise: 999
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:129:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  statusCode: 400,
+  userMessage: 'Unsupported programming language.'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: No programming question found: ID 99999
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:181:11
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 404,
+  userMessage: 'Programming question not found.'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Judge0 API unavailable
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/code.test.js:444:9)
+    at Promise.then.completed (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:121:9)
+    at run (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34) {
+  statusCode: 502,
+  userMessage: 'Code submission failed.'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: User 69 has 3 test runs for question 309, exceeds max
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:146:13
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  statusCode: 429,
+  userMessage: 'Daily test run limit for this question exceeded.'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
+    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Empty problemId, code, languageId, or isTestRun
+    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:112:11
+    at fn (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:47:21)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/middleware/authMiddleware.js:60:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:211:14)
+    at invokeCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:238:16)
+    at done (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:227:7)
+    at IncomingMessage.onEnd (/root/code/KW_Workspace/knightwise/backend/node_modules/raw-body/index.js:287:7)
+    at IncomingMessage.emit (node:events:518:28)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  statusCode: 400,
+  userMessage: 'Missing required fields.'
+}</pre></div></div></details><details id="suite-2" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/root/code/KW_Workspace/knightwise/backend/__test__/admin.test.js</div><div class="suite-time warn">5.57s</div></summary><div class="suite-tests"><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">GET /api/admin/getuser gets a user with an id</div><div class="test-status">passed</div><div class="test-duration">0.305s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">GET /api/admin/getuser gets a user with a username</div><div class="test-status">passed</div><div class="test-duration">0.313s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">POST /api/admin/createuser creates a new user</div><div class="test-status">passed</div><div class="test-duration">0.476s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">DELETE /api/admin/users/:id deletes a user</div><div class="test-status">passed</div><div class="test-duration">0.422s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">GET /api/admin/problems/:id retieves a question</div><div class="test-status">passed</div><div class="test-duration">0.328s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">POST /api/admin/createquestion creates a question</div><div class="test-status">passed</div><div class="test-duration">0.29s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">DELETE /api/admin/problems/:id deletes a question</div><div class="test-status">passed</div><div class="test-duration">0.409s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">GET /api/admin/unverifiedprofs returns unverified profs</div><div class="test-status">passed</div><div class="test-duration">0.295s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">POST /api/admin/verifyprof/:id verifies a prof</div><div class="test-status">passed</div><div class="test-duration">0.297s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">DELETE /api/admin/users/:id requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.224s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">POST /api/admin/createuser requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.21s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">GET /api/admin/getuser requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.22s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">DELETE /api/admin/problems/:id requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.206s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">POST /api/admin/createquestion requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.212s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">GET /api/admin/problems/:id requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.209s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">GET /api/admin/unverifiedprofs requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.231s</div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">Admin Routes</div><div class="test-title">POST /api/admin/verifyprof/:id requires admin token</div><div class="test-status">passed</div><div class="test-duration">0.206s</div></div></div></div><div class="suite-consolelog"><div class="suite-consolelog-header">Console Log</div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/config/env.js:23:9)
+    at Runtime._execModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runtime/build/index.js:882:12)
+    at runTestInternal (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:296:33)
+    at runTest (/root/code/KW_Workspace/knightwise/backend/node_modules/jest-runner/build/runTest.js:444:34)</pre><pre class="suite-consolelog-item-message">Loaded environment file: .env.test</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/server.js:76:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at verifyTestDatabase (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:74:3)
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/admin.test.js:24:3)</pre><pre class="suite-consolelog-item-message">MySQL Connected</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/__test__/testHelpers.js:91:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/root/code/KW_Workspace/knightwise/backend/__test__/admin.test.js:24:3)</pre><pre class="suite-consolelog-item-message">Database check passed: Using KW_Testing</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/routes/adminRoutes.js:68:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">User 73 and all associated data deleted successfully</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/routes/adminRoutes.js:107:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</pre><pre class="suite-consolelog-item-message">Question 313 and all associated data deleted successfully</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at adminMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/adminMiddleware.js:40:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:122:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at adminMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/adminMiddleware.js:40:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:122:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at adminMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/adminMiddleware.js:40:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at adminMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/adminMiddleware.js:40:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:122:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at adminMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/adminMiddleware.js:40:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:122:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at adminMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/adminMiddleware.js:40:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:365:14)
+    at param (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:421:3)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
+}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:265:14)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:141:14)
+    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:67:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:147:13)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:97:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
     at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
@@ -2010,25 +3205,83 @@ header {
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
-    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
-    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
-    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: languageId unsupported by KnightWise: 999
-    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:145:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
-  statusCode: 400,
-  userMessage: 'Unsupported programming language.'
-}</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
-    at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
-    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
     at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
-    at Immediate.next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
-    at Immediate._onImmediate (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:646:15)
-    at processImmediate (node:internal/timers:493:21)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: No programming question found: ID 99999
-    at /root/code/KW_Workspace/knightwise/backend/controllers/codeController.js:159:11
-    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
-  statusCode: 404,
-  userMessage: 'Programming question not found.'
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17)</pre><pre class="suite-consolelog-item-message">TEST ERROR: AppError: Unauthorized access attempt: Improper token
+    at adminMiddleware (/root/code/KW_Workspace/knightwise/backend/middleware/adminMiddleware.js:40:11)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at router (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:104:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at next (/root/code/KW_Workspace/knightwise/backend/server.js:90:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/root/code/KW_Workspace/knightwise/backend/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at cors (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:188:7)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:224:17
+    at originCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:214:15)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:219:13
+    at optionsCallback (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:199:9)
+    at corsMiddleware (/root/code/KW_Workspace/knightwise/backend/node_modules/cors/lib/index.js:204:7)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at query (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:328:13)
+    at /root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:346:12)
+    at next (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/application.js:181:10)
+    at Server.app (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1153:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:117:17) {
+  statusCode: 401,
+  userMessage: 'Unauthorized'
 }</pre></div><div class="suite-consolelog-item"><pre class="suite-consolelog-item-origin">    at log (/root/code/KW_Workspace/knightwise/backend/middleware/errorHandler.js:68:13)
     at Layer.handle_error (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/layer.js:71:5)
     at trim_prefix (/root/code/KW_Workspace/knightwise/backend/node_modules/express/lib/router/index.js:326:13)

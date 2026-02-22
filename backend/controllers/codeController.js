@@ -14,7 +14,7 @@
 
 const judge0Service = require('../services/judge0Service');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY } = require('../config/codeLimits'); 
+const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY, MAX_TEST_RUNS_PER_PROBLEM } = require('../config/codeLimits'); 
 
 /**
  * Grade test case results, calculate score
@@ -92,6 +92,9 @@ const hasError = (results) => {
 /**
  * @route   POST /api/codeSubmission/submitCode
  * @desc    Submit code to Judge0, receive output and grade against test cases.
+ *          Supports test runs, which submits to Judge0 but doesn't grade output
+ *          or store as a response, just runs against first test case, shows output, 
+ *          and stores as test run.
  * @access  Protected
  * 
  * @param   {import('express').Request}  req - Express request object
@@ -102,30 +105,11 @@ const submitCode = asyncHandler(async (req, res) => {
   // Code can only be submitted by account owner
   const userId = req.user.id; // Set by authMiddleware.js
 
-  // Check if user has exceeded max daily programming question submissions
-  const [[{ numDailyResponses }]] = await req.db.query(
-    `SELECT COUNT(*) as numDailyResponses 
-    FROM Response r
-    JOIN Question q ON r.PROBLEM_ID = q.ID 
-    WHERE r.USERID = ? 
-    AND q.TYPE = 'Programming'
-    AND DATE(DATETIME) = CURDATE()`,
-    [userId]
-  );
-  if (numDailyResponses >= MAX_SUBMISSIONS_PER_DAY)
-  {
-    throw new AppError(
-      `User ${userId} has ${numDailyResponses} daily submissions, exceeds max`, 
-      429, 
-      "Daily submission limit exceeded."
-    );
-  }
+  const { problemId, code, languageId, isTestRun } = req.body;
 
-  const { problemId, code, languageId } = req.body;
-
-  if (!problemId || !code || !languageId || code.trim().length === 0)
+  if (!problemId || !code || !languageId || code.trim().length === 0 || isTestRun === undefined)
   {
-    throw new AppError('Empty problemId, code, or languageId', 400, 'Missing required fields.');
+    throw new AppError('Empty problemId, code, languageId, or isTestRun', 400, 'Missing required fields.');
   }
 
   // Check if user code submissions exceeds max size
@@ -149,6 +133,44 @@ const submitCode = asyncHandler(async (req, res) => {
     );
   }
 
+  // Check appropriate daily limit for either test run or actual submission
+  if (isTestRun)
+  {
+    // Check if user has exceeded max daily test runs for this question
+    const [[{ numTestRuns }]] = await req.db.query(
+      `SELECT COUNT(*) as numTestRuns FROM TestRun WHERE USERID = ? AND QUESTION_ID = ? AND DATE(DATETIME) = CURDATE()`,
+      [userId, problemId]
+    );
+    if (numTestRuns >= MAX_TEST_RUNS_PER_PROBLEM)
+    {
+      throw new AppError(`User ${userId} has ${numTestRuns} test runs for question ${problemId}, exceeds max`,
+        429,
+        'Daily test run limit for this question exceeded.'
+      );
+    }
+  }
+  else // Actual submission, not test run
+  {
+    // Check if user has exceeded max daily programming question submissions
+    const [[{ numDailyResponses }]] = await req.db.query(
+      `SELECT COUNT(*) as numDailyResponses 
+      FROM Response r
+      JOIN Question q ON r.PROBLEM_ID = q.ID 
+      WHERE r.USERID = ? 
+      AND q.TYPE = 'Programming'
+      AND DATE(DATETIME) = CURDATE()`,
+      [userId]
+    );
+    if (numDailyResponses >= MAX_SUBMISSIONS_PER_DAY)
+    {
+      throw new AppError(
+        `User ${userId} has ${numDailyResponses} daily submissions, exceeds max`, 
+        429, 
+        "Daily submission limit exceeded."
+      );
+    }
+  }
+
   // Get question from database
   const [questions] = await req.db.query(
     `SELECT ID, POINTS_POSSIBLE, CATEGORY, SUBCATEGORY FROM Question WHERE ID = ? AND TYPE = 'Programming'`,
@@ -161,9 +183,12 @@ const submitCode = asyncHandler(async (req, res) => {
   const question = questions[0];
 
   // Get test cases associated with question
+  // If test run, just get the first test case
+  const limitClause = isTestRun ? 'LIMIT 1' : '';
+
   const [testCases] = await req.db.query(
     `SELECT ID, INPUT, EXPECTED_OUTPUT FROM TestCase WHERE QUESTION_ID = ?
-    ORDER BY ID ASC`,
+    ORDER BY ID ASC ${limitClause}`,
     [problemId]
   );
   if (!testCases || testCases.length === 0)
@@ -188,14 +213,63 @@ const submitCode = asyncHandler(async (req, res) => {
       r.status.id !== judge0Service.STATUS_IDS.WRONG_ANSWER
     );
 
+    // Note: Saving to database here is intentional.
+    // Code with errors still counts toward our API submission limit,
+    // so we don't want users burning through it by spam-executing broken code.
+    if (isTestRun)
+    {
+      await req.db.query(
+        `INSERT INTO TestRun (USERID, QUESTION_ID) VALUES (?, ?)`,
+        [userId, problemId]
+      );
+    }
+    else // Actual submission, not test run
+    {
+      await req.db.query(
+        `INSERT INTO Response (USERID, PROBLEM_ID, CODE, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
+        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?)`,
+        [
+          userId, 
+          problemId, 
+          code,
+          question.POINTS_POSSIBLE, 
+          question.CATEGORY, 
+          question.SUBCATEGORY
+        ]
+      );
+    }
+
     return res.status(200).json({
       success: false,
+      isTestRun: isTestRun,
       status: errorResult.status.description,
       error: errorResult.stderr || errorResult.compile_output || 'Execution failed',
       message: 'Your code failed to execute. Please check for errors.'
     });
   }
 
+  // If test run, just save test run to database and return execution output
+  if (isTestRun)
+  {
+    await req.db.query(
+      `INSERT INTO TestRun (USERID, QUESTION_ID) VALUES (?, ?)`,
+      [userId, problemId]
+    );
+
+    const result = pollResults[0];
+    
+    return res.status(200).json({
+      success: true,
+      isTestRun: true,
+      status: result.status.description,
+      stdout: result.stdout?.trim() || null,
+      stderr: result.stderr || result.compile_output || null,
+      executionTime: result.time,
+      memory: result.memory
+    });
+  }
+
+  // Not a test run, continue with regular grading logic
   // Grade results
   const gradingResults = gradeCodeSubmission(pollResults, testCases, question.POINTS_POSSIBLE);
 
@@ -218,6 +292,7 @@ const submitCode = asyncHandler(async (req, res) => {
   // Return results
   return res.status(200).json({
     success: true,
+    isTestRun: false,
     allPassed: gradingResults.allPassed,
     passedTests: gradingResults.passedTests,
     totalTests: gradingResults.totalTests,
