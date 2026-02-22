@@ -1,9 +1,39 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2026
+//  Author(s):     KnightWise Team
+//  File:          admin.test.js
+//  Description:   Unit tests for admin routes.
+//
+//  Dependencies:  supertest
+//                 jsonwebtoken
+//                 node-mailjet (mocked)
+//                 discordWebhook (mocked)
+//                 mysql2 connection pool (server.js)
+//                 testHelpers
+//
+////////////////////////////////////////////////////////////////
+
 const request = require("supertest");
-const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const { app, pool } = require("../server");
 const { TEST_USER, verifyTestDatabase } = require("./testHelpers");
 
+// Mock Mailjet
+const Mailjet = require('node-mailjet');
+jest.mock("node-mailjet", () => {
+  const sendMock = jest.fn().mockResolvedValue({
+    body: { Messages: [{ Status: "success" }] },
+  });
+  const postMock = jest.fn(() => ({ request: sendMock }));
+  return {
+    apiConnect: jest.fn(() => ({ post: postMock })),
+  };
+});
+
 // Mock Discord webhook
+const { notifyUserEvent } = require('../services/discordWebhook');
 jest.mock('../services/discordWebhook', () => ({
   sendNotification: jest.fn().mockResolvedValue(true),
   notifyUserEvent: jest.fn().mockResolvedValue(true),
@@ -156,6 +186,11 @@ describe("Admin Routes", () => {
       
       expect(res.body.message).toBe("Question added");
       expect(res.statusCode).toBe(201);
+
+      // Expect Discord notification
+      expect(notifyUserEvent).toHaveBeenCalledWith(
+        expect.stringContaining("New question created")
+      );
     });
 
     test("DELETE /api/admin/problems/:id deletes a question", async () => {
@@ -201,7 +236,38 @@ describe("Admin Routes", () => {
       expect(res.statusCode).toBe(200);
     });
 
-    
+    test("POST /api/admin/verifyprof/:id sends verification email on success", async () => {
+
+      // Insert professor
+      const [result] = await pool.query(
+        'INSERT INTO Professor (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, VERIFIED) VALUES (?, ?, ?, ?, ?, ?)',
+        [TEST_USER.username, "test@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName, 0]
+      );
+
+      // Verify professor
+      await request(app)
+        .post(`/api/admin/verifyprof/${result.insertId}`)
+        .set(headers);
+
+      // Expect an email to be sent
+      const mjInstance = Mailjet.apiConnect.mock.results[0].value;
+      expect(mjInstance.post).toHaveBeenCalledWith('send', { version: 'v3.1' });
+    });
+
+    test("POST /api/admin/verifyprof/:id rejects professor JWT", async () => {
+      const profToken = jwt.sign(
+        { userId: 999, role: 'professor', verified: true },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      // Professors can't verify professors, only admins can!
+      const res = await request(app)
+        .post("/api/admin/verifyprof/1")
+        .set("Authorization", `Bearer ${profToken}`);
+
+      expect(res.statusCode).toBe(401);
+    });
 
     // admin tokens tests
     test("DELETE /api/admin/users/:id requires admin token", async () => {
