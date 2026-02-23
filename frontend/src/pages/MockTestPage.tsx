@@ -97,9 +97,9 @@ const MockTestPage: React.FC = () => {
               .map((a) => a.TEXT)
             : undefined;
           
-          // Shuffle options for most types (except ranked_choice and drag_and_drop which maintain order)
+          // Shuffle options shown to users; keep correctOrder separately for grading
           const shuffledOptions = normalizedType === "ranked_choice"
-            ? correctOrder || []
+            ? [...allAnswerTexts].sort(() => 0.5 - Math.random())
             : normalizedType === "drag_and_drop"
             ? allAnswerTexts.sort(() => 0.5 - Math.random())
             : allAnswerTexts.sort(() => 0.5 - Math.random());

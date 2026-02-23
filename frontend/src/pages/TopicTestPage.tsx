@@ -56,6 +56,8 @@ const TopicTestPage: React.FC = () => {
     Java: 62,
     Python: 71,
   };
+  const current = problems[currentIndex];
+  const questionType = current?.QUESTION_TYPE || "multiple_choice";
 
   const normalizeQuestionType = (
     type?: string
@@ -103,9 +105,9 @@ const TopicTestPage: React.FC = () => {
               .map((a) => a.TEXT)
             : undefined;
           
-          // Shuffle options for most types (except ranked_choice and drag_and_drop which maintain order)
+          // Shuffle options shown to users; keep correctOrder separately for grading
           const shuffledOptions = normalizedType === "ranked_choice"
-            ? correctOrder || []
+            ? [...allAnswerTexts].sort(() => 0.5 - Math.random())
             : normalizedType === "drag_and_drop"
             ? allAnswerTexts.sort(() => 0.5 - Math.random())
             : allAnswerTexts.sort(() => 0.5 - Math.random());
@@ -212,9 +214,6 @@ const TopicTestPage: React.FC = () => {
 
   // submit response and send to server
   const handleSubmit = async () => {
-    const current = problems[currentIndex];
-    const questionType = current?.QUESTION_TYPE || "multiple_choice";
-
     // Gate submit until the current question has a valid response.
     const hasAnswer = questionType === "multiple_choice" || questionType === "fill_in_blank"
       ? selectedAnswer?.trim()
@@ -417,9 +416,6 @@ const TopicTestPage: React.FC = () => {
       setShowResult(true);
     }
   };
-
-  const current = problems[currentIndex];
-  const questionType = current?.QUESTION_TYPE || 'multiple_choice';
 
   const sharedFeedback = answered && feedback ? (() => {
     // Map score to status styling for text and box.
