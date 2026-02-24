@@ -52,6 +52,7 @@ const MockTestPage: React.FC = () => {
   const [programmingLanguage, setProgrammingLanguage] = useState("C");
   const programmingLanguageIds: Record<string, number> = {
     C: 50,
+    "C++": 54,
     Java: 62,
     Python: 71,
   };
