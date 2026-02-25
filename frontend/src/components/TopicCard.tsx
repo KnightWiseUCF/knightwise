@@ -21,7 +21,7 @@ const topics = [
   { title: "Recursion", icon: <Repeat size={60} /> },
   { title: "Sorting", icon: <ArrowUpDown size={60} /> },
   { title: "Stacks", icon: <Layers size={60} /> },
-  { title: "Summations", icon: <Sigma size={60} /> },
+  { title: "Loops", icon: <Sigma size={60} /> },
   { title: "Tries", icon: <Share2 size={60} style={{ transform: "rotate(90deg)" }} /> },
 ];
 
