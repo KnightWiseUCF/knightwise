@@ -226,7 +226,7 @@ const submitCode = asyncHandler(async (req, res) => {
     else // Actual submission, not test run
     {
       await req.db.query(
-        `INSERT INTO Response (USERID, PROBLEM_ID, CODE, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
+        `INSERT INTO Response (USERID, PROBLEM_ID, USER_ANSWER, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
         VALUES (?, ?, ?, FALSE, 0, ?, ?, ?)`,
         [
           userId, 
@@ -275,7 +275,7 @@ const submitCode = asyncHandler(async (req, res) => {
 
   // Save submission to database
   await req.db.query(
-    `INSERT INTO Response (USERID, PROBLEM_ID, CODE, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
+    `INSERT INTO Response (USERID, PROBLEM_ID, USER_ANSWER, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId, 
