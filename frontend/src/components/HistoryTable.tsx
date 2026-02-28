@@ -22,7 +22,7 @@ import { RawQuestion, HistoryEntry, HistoryResponse } from '../models';
 
 const HistoryTable: React.FC = () => {
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
-  const [totalPages, setTotalPages]   = useState<number>(0);
+  const [totalPages, setTotalPages]   = useState<number>(1);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isLoading, setIsLoading]     = useState<boolean>(true);
 
