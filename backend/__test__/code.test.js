@@ -198,7 +198,7 @@ describe("POST /api/code/submitCode", () => {
       {
         insertPromises.push(
           pool.query(
-            `INSERT INTO Response (USERID, PROBLEM_ID, CODE, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE)
+            `INSERT INTO Response (USERID, PROBLEM_ID, USER_ANSWER, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE)
             VALUES (?, ?, ?, TRUE, 10, 10)`,
             [testUserId, testProblemId, "print('test')"]
           )
@@ -348,7 +348,7 @@ describe("POST /api/code/submitCode", () => {
 
       // Note: MySQL decimal columns are represented as strings.
       expect(responses.length).toBe(1);
-      expect(responses[0].CODE).toBe("print('Hello World')");
+      expect(responses[0].USER_ANSWER).toBe("print('Hello World')");
       expect(responses[0].ISCORRECT).toBe(1); // All tests passed
       expect(responses[0].POINTS_EARNED).toBe('10.00');
       expect(responses[0].POINTS_POSSIBLE).toBe('10.00');
