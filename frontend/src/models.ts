@@ -57,10 +57,14 @@ export interface Question
 // History types
 export interface HistoryEntry
 {
-  datetime:   string;
-  topic:      string;
-  isCorrect:  boolean;
-  problem_id: number;
+  datetime:       string;
+  topic:          string;
+  type:           string; // Question.TYPE (Multiple Choice, Programming, etc.)
+  isCorrect:      boolean;
+  problem_id:     number;
+  userAnswer:     string | null; // JSON with answer data
+  pointsEarned:   number | null;
+  pointsPossible: number | null;
 }
 
 export interface HistoryResponse
@@ -68,6 +72,39 @@ export interface HistoryResponse
   history:      HistoryEntry[];
   totalPages:   number;
   currentPage:  number;
+}
+
+// Problem view types, 
+// Used by HistoryTable's ProblemView popup
+
+// Notice how this is a type, not an interface
+// Types allow union-like behavior to support varying JSON structure
+export type UserAnswer =
+  | { type: 'MultipleChoice';     selected:   string }
+  | { type: 'FillInTheBlanks';    entered:    string }
+  | { type: 'SelectAllThatApply'; selected:   string[] }
+  | { type: 'RankedChoice';       order:      string[] }
+  | { type: 'DragAndDrop';        placements: Record<string, string> }
+  | { type: 'Programming';        language:   string; code: string };
+  
+// Payload written to localStorage by HistoryTable
+// Read by ProblemView component
+// Combines question data and user response data
+export interface PopupPayload
+{
+  // From RawQuestion
+  questionText:    string;
+  category:        string;
+  topic:           string;
+  type:            string;
+  answers:         Answer[];
+
+  // From HistoryEntry
+  userAnswer:      string | null; // JSON; parsed into UserAnswer in ProblemView
+  pointsEarned:    number | null;
+  pointsPossible:  number | null;
+  isCorrect:       boolean;
+  datetime:        string;
 }
 
 // Test types
