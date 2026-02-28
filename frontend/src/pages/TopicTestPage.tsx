@@ -53,6 +53,7 @@ const TopicTestPage: React.FC = () => {
   const navigate = useNavigate();
   const programmingLanguageIds: Record<string, number> = {
     C: 50,
+    "C++": 54,
     Java: 62,
     Python: 71,
   };
@@ -138,11 +139,11 @@ const TopicTestPage: React.FC = () => {
                   correctAnswer: ans.TEXT,
                 }))
               : undefined,
-            // programming: use standard languages (C, Java, Python)
+            // programming: use standard languages (C, C++, Java, Python)
             problem:        normalizedType === "programming"
               ? {
                   description: question.QUESTION_TEXT,
-                  languages: ["C", "Java", "Python"],
+                  languages: ["C", "C++", "Java", "Python"],
                 }
               : undefined,
             problemCode:    normalizedType === "programming"
@@ -249,6 +250,7 @@ const TopicTestPage: React.FC = () => {
             problemId: current.ID,
             code: programmingAnswer,
             languageId,
+            isTestRun: false,
           },
           token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
         );

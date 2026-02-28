@@ -3,7 +3,7 @@
 //  Project:       KnightWise
 //  Year:          2025-2026
 //  Author(s):     KnightWise Team
-//  File:          test.js
+//  File:          testRoutes.js
 //  Description:   Routes for mock test generation, topic
 //                 practice, and answer submission.
 //
@@ -43,6 +43,49 @@ const pairAnswersWithQuestions = async (questions, db) => {
     ...question,
     answers: answers.filter(answer => answer.QUESTION_ID === question.ID)
   }));
+};
+
+/**
+ * Helper function, serializes user response into JSON
+ * JSON structure depends on question type 
+ * Stored in Response.USER_ANSWER and used in History Table
+ *
+ * @param {string} questionType - Question.TYPE field from database
+ * @param {*}      userAnswer   - Raw answer sent by the client
+ * @returns {string} JSON containing relevant user response data
+ */
+const serializeUserAnswer = (questionType, userAnswer) => {
+
+  // Note that there's no case for Programming questions.
+  // This is because those take a different path
+  // through the code controller and /submitCode!
+  switch (questionType) 
+  {
+    case 'Multiple Choice':
+      // Text of the single selected answer choice
+      return JSON.stringify({ type: 'MultipleChoice', selected: userAnswer });
+
+    case 'Fill in the Blanks':
+      // Text of the user-inputted response
+      return JSON.stringify({ type: 'FillInTheBlanks', entered: userAnswer });
+
+    case 'Select All That Apply':
+      // Array of selected answer choice texts
+      return JSON.stringify({ type: 'SelectAllThatApply', selected: userAnswer });
+
+    case 'Ranked Choice':
+      // Ordered array of answer choice texts
+      return JSON.stringify({ type: 'RankedChoice', order: userAnswer });
+
+    case 'Drag and Drop':
+      // Mappings from placement zones to answer choice texts
+      // e.g. { "zone1": "answer A", "zone2": "answer B" }
+      return JSON.stringify({ type: 'DragAndDrop', placements: userAnswer });
+
+    default:
+      // Should never happen, but just store raw answer so we don't lose info
+      return JSON.stringify({ type: questionType, raw: userAnswer });
+  }
 };
 
 /**
@@ -108,7 +151,8 @@ router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
 
 /**
  * @route   POST /api/test/submit
- * @desc    Submit user answer. Note that 'SUBCATEGORY' from Question table is stored as 'TOPIC' in Response table
+ * @desc    Submit user answer. Note that Question.SUBCATEGORY is stored as Response.TOPIC
+ *          Serializes user response data as JSON, stores in Response.USER_ANSWER
  * @access  Protected
  * 
  * @param {import('express').Request}  req - Express request object
@@ -141,10 +185,35 @@ router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
   // Grade user response
   const result = gradeQuestion(problem_id, questionType, userAnswer, answers, maxPoints);
 
+  // Serialize response data into JSON
+  const serializedAnswer = serializeUserAnswer(questionType, userAnswer);
+
   // Store user response
   await req.db.query(
-    'INSERT INTO Response (USERID, PROBLEM_ID, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC, DATETIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [user_id, problem_id, result.isCorrect, result.pointsEarned, result.pointsPossible, category, topic, new Date()]
+    `INSERT INTO Response 
+    (
+      USERID,
+      PROBLEM_ID,
+      USER_ANSWER,
+      ISCORRECT,
+      POINTS_EARNED,
+      POINTS_POSSIBLE,
+      CATEGORY,
+      TOPIC,
+      DATETIME
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      user_id,
+      problem_id,
+      serializedAnswer,
+      result.isCorrect,
+      result.pointsEarned,
+      result.pointsPossible,
+      category,
+      topic,
+      new Date()
+    ]
   );
 
   res.status(201).json(

@@ -49,16 +49,18 @@ const Programming: React.FC<Props> = ({
   const [useSpaces, setUseSpaces] = useState<boolean>(true);
 
   const languages = current.problem?.languages || [];
-  const languageOptions = languages.length ? languages : ["C", "Python", "Java"];
+  const languageOptions = languages.length ? languages : ["C", "C++", "Python", "Java"];
 
   const languageIds: Record<string, number> = {
     C: 50,
+    "C++": 54,
     Java: 62,
     Python: 71,
   };
 
   const monacoLanguageIds: Record<string, string> = {
     C: "cpp",
+    "C++": "cpp",
     Java: "java",
     Python: "python",
   };
@@ -93,6 +95,7 @@ const Programming: React.FC<Props> = ({
           problemId: current.ID,
           code: editorContent,
           languageId,
+          isTestRun: true,
         },
         token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
       );
@@ -100,10 +103,9 @@ const Programming: React.FC<Props> = ({
       const data = result.data;
       if (data.success) {
         const outputLines = [
-          "Status: Accepted",
+          `Status: ${data.status}`,
           `Correct: ${data.correct ? "Yes" : "No"}`,
           data.stdout ? `Output:\n${data.stdout}` : "Output: (none)",
-          data.expectedOutput ? `Expected:\n${data.expectedOutput}` : "",
           data.executionTime ? `Time: ${data.executionTime}s` : "",
           data.memory ? `Memory: ${data.memory} KB` : "",
         ].filter(Boolean);
@@ -111,9 +113,7 @@ const Programming: React.FC<Props> = ({
       } else {
         const errorLines = [
           `Status: ${data.status || "Execution failed"}`,
-          data.compile_output ? `Compile Output:\n${data.compile_output}` : "",
-          data.stderr ? `Error Output:\n${data.stderr}` : "",
-          data.stdout ? `Output:\n${data.stdout}` : "",
+          data.error ? `Error:\n${data.error}` : "",
         ].filter(Boolean);
         setConsoleOutput(errorLines.join("\n\n"));
       }
