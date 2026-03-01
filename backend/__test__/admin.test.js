@@ -171,6 +171,7 @@ describe("Admin Routes", () => {
         points_possible: 1.0,
         question_text: 'alias',
         owner_id: null,
+        is_published: true,
         answer_text: ['a'],
         answer_correctness: [1],
         answer_rank: [1],
@@ -189,7 +190,7 @@ describe("Admin Routes", () => {
 
       // Expect Discord notification
       expect(notifyUserEvent).toHaveBeenCalledWith(
-        expect.stringContaining("New question created")
+        expect.stringContaining("New question published")
       );
     });
 
@@ -285,17 +286,17 @@ describe("Admin Routes", () => {
       expect(res.statusCode).toBe(401);
     });
 
-    test("DELETE /api/admin/problems/:id requires admin token", async () => {
+    test("DELETE /api/admin/problems/:id requires auth token", async () => {
       const res = await request(app).delete("/api/admin/problems/noauth");
       expect(res.statusCode).toBe(401);
     });
 
-    test("POST /api/admin/createquestion requires admin token", async () => {
+    test("POST /api/admin/createquestion requires auth token", async () => {
       const res = await request(app).post("/api/admin/createquestion");
       expect(res.statusCode).toBe(401);
     });
 
-    test("GET /api/admin/problems/:id requires admin token", async () => {
+    test("GET /api/admin/problems/:id requires auth token", async () => {
       const res = await request(app).get("/api/admin/problems/noauth");
       expect(res.statusCode).toBe(401);
     });

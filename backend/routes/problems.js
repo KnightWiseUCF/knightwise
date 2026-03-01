@@ -35,6 +35,7 @@ const getAnswersForQuestion = async (questionId, db) => {
 /**
  * @route   GET /api/problems/:id
  * @desc    Fetch a question by its ID with its associated answers
+ *          Only fetches published questions
  * @access  Protected
  * 
  * @param {import('express').Request}  req - Express request object
@@ -42,17 +43,17 @@ const getAnswersForQuestion = async (questionId, db) => {
  * @returns {Promise<void>} - JSON response with question and its answers
  */
 router.get('/:id', authMiddleware, asyncHandler(async (req, res) => {
-const { id } = req.params;
+  const { id } = req.params;
 
   // Find question by ID
   const [questions] = await req.db.query(
-    'SELECT * FROM Question WHERE ID = ?',
+    'SELECT * FROM Question WHERE ID = ? AND IS_PUBLISHED = 1',
     [id]
   );
 
   if (questions.length === 0) 
   {
-    throw new AppError(`No questions associated with ID: ${id}`, 404, "Question not found");
+    throw new AppError(`No published questions associated with ID: ${id}`, 404, "Question not found");
   }
 
   const question = questions[0];
