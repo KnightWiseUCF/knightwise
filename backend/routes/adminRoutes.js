@@ -168,9 +168,11 @@ router.delete("/users/:id", adminMiddleware, asyncHandler(async (req, res) => {
 /**
  * @route   DELETE /api/admin/problems/:id
  * @desc    Delete a question and associated data
- * @access  Admin
+ *          Professors can only delete their own questions
+ *          Admins can delete any question
+ * @access  Admin, Professor
  */
-router.delete("/problems/:id", adminMiddleware, asyncHandler(async (req, res) => {
+router.delete("/problems/:id", adminOrProf, asyncHandler(async (req, res) => {
   const questionId = req.params.id;
 
   // Ensure userId is a valid primary key
@@ -188,6 +190,14 @@ router.delete("/problems/:id", adminMiddleware, asyncHandler(async (req, res) =>
   if (questions.length === 0)
   { 
     throw new AppError(`Failed to delete question, questionId not found: ${questionId}`, 404, "Question not found");
+  }
+
+  const question = questions[0];
+
+  // Ensure a professor is only deleting their own question
+  if (req.user?.role === 'professor' && question.OWNER_ID !== req.user.id)
+  {
+    throw new AppError(`Professor ${req.user.id} attempted to delete question owned by ${question.OWNER_ID}`, 403, "Forbidden");
   }
 
   // Delete user and associated email code/answers
@@ -255,9 +265,9 @@ router.post("/createuser", adminMiddleware, asyncHandler(async(req, res) => {
  * @returns {Promise<void>} - JSON response to confirm successful submission
  */
 router.post("/createquestion", adminOrProf, asyncHandler(async (req, res) => {
-  const { type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id, answer_text, answer_correctness, answer_rank, answer_placement } = req.body;
+  const { type, author_exam_id, section, category, subcategory, points_possible, question_text, owner_id, is_published, answer_text, answer_correctness, answer_rank, answer_placement } = req.body;
 
-  if (!type || !author_exam_id || !section || !category || !subcategory || !points_possible || !question_text || !answer_text || !answer_correctness || !answer_rank || !answer_placement)
+  if (!type || !author_exam_id || !section || !category || !subcategory || !points_possible || !question_text || is_published === undefined || !answer_text || !answer_correctness || !answer_rank || !answer_placement)
   {
     throw new AppError("Missing required fields", 400, "Invalid fields");
   }
@@ -277,8 +287,8 @@ router.post("/createquestion", adminOrProf, asyncHandler(async (req, res) => {
     : (owner_id ?? req.user?.id);
 
   const [result] = await req.db.query(
-    'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [type, author_exam_id, section, category, subcategory, points_possible, question_text, effectiveOwnerId]
+    'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, OWNER_ID, IS_PUBLISHED) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [type, author_exam_id, section, category, subcategory, points_possible, question_text, effectiveOwnerId, is_published ? 1 : 0]
   );
 
   const questionId = result.insertId;
@@ -295,7 +305,7 @@ router.post("/createquestion", adminOrProf, asyncHandler(async (req, res) => {
   }
 
   // Notify webhook that question was created
-  notifyUserEvent(`New question created: ID ${questionId} by ${req.user?.role} (owner ID: ${effectiveOwnerId})`);
+  notifyUserEvent(`New question ${is_published ? 'published' : 'saved as draft'}: ID ${questionId} by ${req.user?.role} (owner ID: ${effectiveOwnerId})`);
 
   res.status(201).json({ message: "Question added", questionId});
 }));
@@ -454,6 +464,199 @@ router.post('/verifyprof/:id', adminMiddleware, asyncHandler(async (req, res) =>
 
   res.json({ message: "Professor verified successfully" });
   
+}));
+
+/**
+ * @route   GET /api/admin/drafts
+ * @desc    Get metadata for all draft questions
+ *          Professors can only see their own drafts
+ *          Admins see all drafts.
+ * @access  Admin, Professor
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with draft question metadata
+ */
+router.get('/drafts', adminOrProf, asyncHandler(async (req, res) => {
+
+  // Professors only see their own drafts, admins see all
+  const [drafts] = (req.user?.role === 'professor')
+    ? await req.db.query(
+        `SELECT
+          ID,
+          TYPE,
+          SECTION,
+          CATEGORY,
+          SUBCATEGORY,
+          POINTS_POSSIBLE,
+          QUESTION_TEXT,
+          OWNER_ID
+        FROM Question WHERE IS_PUBLISHED = 0 AND OWNER_ID = ?`,
+        [req.user.id]
+      )
+    : await req.db.query(
+        `SELECT
+          ID,
+          TYPE,
+          SECTION,
+          CATEGORY,
+          SUBCATEGORY,
+          POINTS_POSSIBLE,
+          QUESTION_TEXT,
+          OWNER_ID
+        FROM Question WHERE IS_PUBLISHED = 0`
+      );
+
+  res.json({ drafts });
+}));
+
+/**
+ * @route   PUT /api/admin/problems/:id
+ * @desc    Overwrites content for a question and its answers
+ *          Use with caution, this overwrites question content and deletes
+ *          all associated answer texts.
+ *          Unpublishes the question if it was published
+ *          Professors can only edit their own questions
+ *          Admins can edit any question
+ * @access  Admin, Professor
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response confirming question updated
+ */
+router.put('/problems/:id', adminOrProf, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+          type,
+          author_exam_id,
+          section,
+          category,
+          subcategory,
+          points_possible,
+          question_text,
+          answer_text,
+          answer_correctness,
+          answer_rank,
+          answer_placement
+        } = req.body;
+
+  if (!type || !author_exam_id || !section || !category || !subcategory || !points_possible || !question_text || !answer_text || !answer_correctness || !answer_rank || !answer_placement)
+  {
+    throw new AppError("Missing required fields", 400, "Invalid fields");
+  }
+
+  if (!(answer_correctness.length === answer_rank.length && answer_correctness.length === answer_text.length && answer_correctness.length === answer_placement.length))
+  {
+    throw new AppError("Answer arrays are not equal length.", 400, "Invalid fields");
+  }
+
+  // Find question
+  const [questions] = await req.db.query(
+    'SELECT * FROM Question WHERE ID = ?',
+    [id]
+  );
+
+  if (!questions || questions.length === 0)
+  {
+    throw new AppError(`Question not found: ${id}`, 404, "Question not found");
+  }
+
+  const question = questions[0];
+
+  // Professors can only edit their own questions
+  if (req.user?.role === 'professor' && question.OWNER_ID !== req.user.id)
+  {
+    throw new AppError(`Professor ${req.user.id} attempted to edit question owned by ${question.OWNER_ID}`, 403, "Forbidden");
+  }
+
+  // Update question, unpublish if currently published
+  await req.db.query(
+    `UPDATE Question SET 
+      TYPE = ?,
+      AUTHOR_EXAM_ID = ?,
+      SECTION = ?,
+      CATEGORY = ?,
+      SUBCATEGORY = ?,
+      POINTS_POSSIBLE = ?,
+      QUESTION_TEXT = ?,
+      IS_PUBLISHED = 0
+    WHERE ID = ?`,
+    [
+      type,
+      author_exam_id,
+      section,
+      category,
+      subcategory,
+      points_possible,
+      question_text,
+      id
+    ]
+  );
+
+  // Delete current answers and replace with new ones
+  await req.db.query('DELETE FROM AnswerText WHERE QUESTION_ID = ?', [id]);
+  for (let i = 0; i < answer_text.length; i++)
+  {
+    await req.db.query(
+      'INSERT INTO AnswerText (QUESTION_ID, IS_CORRECT_ANSWER, `TEXT`, `RANK`, PLACEMENT) VALUES (?, ?, ?, ?, ?)',
+      [id, answer_correctness[i], answer_text[i], answer_rank[i], answer_placement[i]]
+    );
+  }
+
+  // Notify if question was auto-unpublished
+  if (question.IS_PUBLISHED)
+  {
+    notifyUserEvent(`Question ID ${id} was edited and unpublished by ${req.user?.role} (owner ID: ${question.OWNER_ID})`);
+  }
+
+  res.json({ message: "Question updated" });
+}));
+
+/**
+ * @route   POST /api/admin/problems/:id/publish
+ * @desc    Publish draft question, flipping Question.IS_PUBLISHED to true
+ *          Professors can only publish their own questions
+ *          Admins can publish any question
+ * @access  Admin, Professor
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response confirming question published
+ */
+router.post('/problems/:id/publish', adminOrProf, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const [questions] = await req.db.query(
+    'SELECT * FROM Question WHERE ID = ?',
+    [id]
+  );
+
+  if (!questions || questions.length === 0)
+  {
+    throw new AppError(`Question not found: ${id}`, 404, "Question not found");
+  }
+
+  const question = questions[0];
+
+  // Professors can only publish their own questions
+  if (req.user?.role === 'professor' && question.OWNER_ID !== req.user.id)
+  {
+    throw new AppError(`Professor ${req.user.id} attempted to publish question owned by ${question.OWNER_ID}`, 403, "Forbidden");
+  }
+
+  if (question.IS_PUBLISHED)
+  {
+    throw new AppError(`Question ${id} is already published`, 400, "Question already published");
+  }
+
+  await req.db.query(
+    'UPDATE Question SET IS_PUBLISHED = 1 WHERE ID = ?',
+    [id]
+  );
+
+  notifyUserEvent(`Question ID ${id} published by ${req.user?.role} (owner ID: ${question.OWNER_ID})`);
+
+  res.json({ message: "Question published" });
 }));
 
 module.exports = router;

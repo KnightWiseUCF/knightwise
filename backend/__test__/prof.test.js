@@ -359,6 +359,7 @@ describe("Admin Routes - Professor Access", () => {
         points_possible: 5.0,
         question_text: "What is Python's print function?",
         owner_id: 9999, // should be overridden to profId, can't be spoofed
+        is_published: true,
         answer_text: ["printf", "put", "println", "print"],
         answer_correctness: [1, 2, 3, 4],
         answer_rank: [1, 2, 3, 4],
@@ -372,7 +373,7 @@ describe("Admin Routes - Professor Access", () => {
 
     // Expect Discord notification
     expect(notifyUserEvent).toHaveBeenCalledWith(
-      expect.stringContaining("New question created")
+      expect.stringContaining("New question published")
     );
 
     const [questions] = await pool.query(
@@ -395,6 +396,7 @@ describe("Admin Routes - Professor Access", () => {
         points_possible: 5.0,
         question_text: "What is Python's print function?",
         owner_id: 1,
+        is_published: true,
         answer_text: ["printf", "put", "println", "print"],
         answer_correctness: [1, 2, 3, 4],
         answer_rank: [1, 2, 3, 4],
@@ -422,6 +424,7 @@ describe("Admin Routes - Professor Access", () => {
         points_possible: 5.0,
         question_text: "What is Python's print function?",
         owner_id: 1,
+        is_published: true,
         answer_text: ["printf", "put", "println", "print"],
         answer_correctness: [1, 2, 3, 4],
         answer_rank: [1, 2, 3, 4],
@@ -450,6 +453,7 @@ describe("Admin Routes - Professor Access", () => {
         points_possible: 5.0,
         question_text: "What is Python's print function?",
         owner_id: 1,
+        is_published: true,
         answer_text: ["printf", "put", "println", "print"],
         answer_correctness: [1, 2, 3, 4],
         answer_rank: [1, 2, 3], // This length doesn't match!
@@ -482,6 +486,7 @@ describe("Admin Routes - Professor Access", () => {
     expect(res.body.answers).toBeDefined();
   });
 
+  // DELETE problems/:id test cases
   test("problems/:id - fail if question does not exist", async () => {
     // give: professor token
     const { token } = await insertProf(pool, "notfoundprof", "notfound@ucf.edu", 1);
@@ -504,4 +509,316 @@ describe("Admin Routes - Professor Access", () => {
     expect(res.statusCode).toBe(401);
   });
 
+  test("DELETE problems/:id - professor can delete own question", async () => {
+    const { profId, token } = await insertProf(pool, "deleteprof", "delete@ucf.edu", 1);
+
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "To be deleted", profId]
+    );
+
+    const res = await request(app)
+      .delete(`/api/admin/problems/${result.insertId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toBe("Question deleted successfully");
+
+    const [questions] = await pool.query('SELECT * FROM Question WHERE ID = ?', [result.insertId]);
+    expect(questions.length).toBe(0);
+  });
+
+  test("DELETE problems/:id - professor cannot delete another professor's question", async () => {
+    const { profId } = await insertProf(pool, "ownerdelprof", "ownerdel@ucf.edu", 1);
+    const { token: attackerToken } = await insertProf(pool, "attackerdel", "attackerdel@ucf.edu", 1);
+
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "Owner question", profId]
+    );
+
+    const res = await request(app)
+      .delete(`/api/admin/problems/${result.insertId}`)
+      .set("Authorization", `Bearer ${attackerToken}`);
+
+    expect(res.statusCode).toBe(403);
+  });
+});
+
+// Test adminRoutes.js professor-accessible draft and publishing routes
+describe("Admin Routes - Draft/Publish", () => {
+
+  test("createquestion - creates as draft when IS_PUBLISHED is false", async () => {
+    const { profId, token } = await insertProf(pool, "draftprof", "draft@ucf.edu", 1);
+
+    const res = await request(app)
+      .post("/api/admin/createquestion")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        type: "Multiple Choice",
+        author_exam_id: "KnightWise",
+        section: "DSN",
+        category: "Programming",
+        subcategory: "Python",
+        points_possible: 5.0,
+        question_text: "What is 2 + 2?",
+        is_published: false,
+        answer_text: ["4", "3"],
+        answer_correctness: [1, 0],
+        answer_rank: [1, 2],
+        answer_placement: ["a", "b"],
+      });
+
+    expect(res.statusCode).toBe(201);
+
+    const [questions] = await pool.query(
+      'SELECT IS_PUBLISHED FROM Question WHERE ID = ?',
+      [res.body.questionId]
+    );
+    expect(questions[0].IS_PUBLISHED).toBe(0);
+  });
+
+  test("createquestion - creates as published when IS_PUBLISHED is true", async () => {
+    const { token } = await insertProf(pool, "publishprof", "publish@ucf.edu", 1);
+
+    const res = await request(app)
+      .post("/api/admin/createquestion")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        type: "Multiple Choice",
+        author_exam_id: "KnightWise",
+        section: "DSN",
+        category: "Programming",
+        subcategory: "Python",
+        points_possible: 5.0,
+        question_text: "What is 2 + 2?",
+        is_published: true,
+        answer_text: ["4", "3"],
+        answer_correctness: [1, 0],
+        answer_rank: [1, 2],
+        answer_placement: ["a", "b"],
+      });
+
+    expect(res.statusCode).toBe(201);
+
+    const [questions] = await pool.query(
+      'SELECT IS_PUBLISHED FROM Question WHERE ID = ?',
+      [res.body.questionId]
+    );
+    expect(questions[0].IS_PUBLISHED).toBe(1);
+  });
+
+  test("createquestion - fails if IS_PUBLISHED not provided", async () => {
+    const { token } = await insertProf(pool, "nopubprof", "nopub@ucf.edu", 1);
+
+    const res = await request(app)
+      .post("/api/admin/createquestion")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        type: "Multiple Choice",
+        author_exam_id: "KnightWise",
+        section: "DSN",
+        category: "Programming",
+        subcategory: "Python",
+        points_possible: 5.0,
+        question_text: "What is 2 + 2?",
+        answer_text: ["4", "3"],
+        answer_correctness: [1, 0],
+        answer_rank: [1, 2],
+        answer_placement: ["a", "b"],
+      });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  test("drafts - professor sees only their own drafts", async () => {
+    const { profId, token } = await insertProf(pool, "myprof", "myprof@ucf.edu", 1);
+    const { profId: otherId } = await insertProf(pool, "otherprof", "other@ucf.edu", 1);
+
+    // Insert one draft for each professor
+    await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "My draft", profId]
+    );
+    await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "Other draft", otherId]
+    );
+
+    const res = await request(app)
+      .get("/api/admin/drafts")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.drafts.length).toBe(1);
+    expect(res.body.drafts[0].QUESTION_TEXT).toBe("My draft");
+  });
+
+  test("drafts - published questions do not appear in drafts", async () => {
+    const { profId, token } = await insertProf(pool, "pubcheckprof", "pubcheck@ucf.edu", 1);
+
+    await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 1, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "Published question", profId]
+    );
+
+    const res = await request(app)
+      .get("/api/admin/drafts")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.drafts.length).toBe(0);
+  });
+
+  test("PUT problems/:id - professor can edit own draft", async () => {
+    const { profId, token } = await insertProf(pool, "editprof", "edit@ucf.edu", 1);
+
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "KnightWise", "DSN", "Programming", "Python", 5.0, "Original text", profId]
+    );
+    const questionId = result.insertId;
+
+    const res = await request(app)
+      .put(`/api/admin/problems/${questionId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        type: "Multiple Choice",
+        author_exam_id: "KnightWise",
+        section: "DSN",
+        category: "Programming",
+        subcategory: "Python",
+        points_possible: 5.0,
+        question_text: "Updated text",
+        answer_text: ["4", "3"],
+        answer_correctness: [1, 0],
+        answer_rank: [1, 2],
+        answer_placement: ["a", "b"],
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toBe("Question updated");
+
+    const [questions] = await pool.query('SELECT QUESTION_TEXT FROM Question WHERE ID = ?', [questionId]);
+    expect(questions[0].QUESTION_TEXT).toBe("Updated text");
+  });
+
+  test("PUT problems/:id - unpublishes published question on edit", async () => {
+    const { profId, token } = await insertProf(pool, "unpubprof", "unpub@ucf.edu", 1);
+
+    // Start off as published
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)',
+      ["MCQ", "KnightWise", "DSN", "Programming", "Python", 5.0, "Published question", profId]
+    );
+    const questionId = result.insertId;
+
+    await request(app)
+      .put(`/api/admin/problems/${questionId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        type: "Multiple Choice",
+        author_exam_id: "KnightWise",
+        section: "DSN",
+        category: "Programming",
+        subcategory: "Python",
+        points_possible: 5.0,
+        question_text: "Updated text",
+        answer_text: ["4", "3"],
+        answer_correctness: [1, 0],
+        answer_rank: [1, 2],
+        answer_placement: ["a", "b"],
+      });
+
+    // No longer published!
+    const [questions] = await pool.query('SELECT IS_PUBLISHED FROM Question WHERE ID = ?', [questionId]);
+    expect(questions[0].IS_PUBLISHED).toBe(0);
+  });
+
+  test("PUT problems/:id - professor cannot edit another professor's question", async () => {
+    const { profId } = await insertProf(pool, "ownerprof", "owner@ucf.edu", 1);
+    const { token: attackerToken } = await insertProf(pool, "attackerprof", "attacker@ucf.edu", 1);
+
+    // Insert draft question for ownerprof
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, AUTHOR_EXAM_ID, SECTION, CATEGORY, SUBCATEGORY, POINTS_POSSIBLE, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "KnightWise", "DSN", "Programming", "Python", 5.0, "Owner question", profId]
+    );
+    const questionId = result.insertId;
+
+    // Have attacker try to edit
+    const res = await request(app)
+      .put(`/api/admin/problems/${questionId}`)
+      .set("Authorization", `Bearer ${attackerToken}`)
+      .send({
+        type: "Multiple Choice",
+        author_exam_id: "KnightWise",
+        section: "DSN",
+        category: "Programming",
+        subcategory: "Python",
+        points_possible: 5.0,
+        question_text: "Hacked text",
+        answer_text: ["4"],
+        answer_correctness: [1],
+        answer_rank: [1],
+        answer_placement: ["a"],
+      });
+
+    expect(res.statusCode).toBe(403);
+  });
+
+  test("publish - professor can publish own draft", async () => {
+    const { profId, token } = await insertProf(pool, "pubprof", "pub@ucf.edu", 1);
+
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "Draft question", profId]
+    );
+    const questionId = result.insertId;
+
+    const res = await request(app)
+      .post(`/api/admin/problems/${questionId}/publish`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toBe("Question published");
+
+    const [questions] = await pool.query('SELECT IS_PUBLISHED FROM Question WHERE ID = ?', [questionId]);
+    expect(questions[0].IS_PUBLISHED).toBe(1);
+  });
+
+  test("publish - fail if already published", async () => {
+    const { profId, token } = await insertProf(pool, "alreadypubprof", "alreadypub@ucf.edu", 1);
+
+    // Insert question as published
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 1, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "Already published", profId]
+    );
+
+    const res = await request(app)
+      .post(`/api/admin/problems/${result.insertId}/publish`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe("Question already published");
+  });
+
+  test("publish - professor cannot publish another professor's question", async () => {
+    const { profId } = await insertProf(pool, "ownerprof2", "owner2@ucf.edu", 1);
+    const { token: attackerToken } = await insertProf(pool, "attackerprof2", "attacker2@ucf.edu", 1);
+
+    // Insert draft question for ownerprof2
+    const [result] = await pool.query(
+      'INSERT INTO Question (TYPE, SECTION, CATEGORY, SUBCATEGORY, QUESTION_TEXT, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, 0, ?)',
+      ["MCQ", "DSN", "Programming", "Python", "Owner draft", profId]
+    );
+
+    // Attacker tries to publish it
+    const res = await request(app)
+      .post(`/api/admin/problems/${result.insertId}/publish`)
+      .set("Authorization", `Bearer ${attackerToken}`);
+
+    expect(res.statusCode).toBe(403);
+  });
 });
