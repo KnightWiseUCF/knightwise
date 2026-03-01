@@ -25,7 +25,7 @@ const ProblemViewPage: React.FC = () => {
         <div className="mb-4 p-4 bg-gray-50 border-l-4 border-yellow-500 rounded-md">
           <p className="font-semibold">Question:</p>
           <div 
-            className="mt-2 text-gray-700" 
+            className="question-rich-text mt-2 text-gray-700" 
             dangerouslySetInnerHTML={{ __html: problem.question }} 
           />
         </div>

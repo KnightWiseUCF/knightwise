@@ -15,7 +15,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
-import logo from "../assets/ucflogo.png";
+import logo from "../assets/kw_logo.png";
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -67,7 +67,7 @@ const ForgotPassword: React.FC = () => {
         <div className="flex justify-center mb-6">
           <img
             src={logo}
-            alt="KnightPrep Logo"
+            alt="KnightWise Logo"
             className="w-48 sm:w-64 md:w-80 h-auto"
           />
         </div>

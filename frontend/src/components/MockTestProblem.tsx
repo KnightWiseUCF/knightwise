@@ -65,7 +65,7 @@ const MockTestProblem: React.FC<Props> = ({
       Question {currentIndex + 1} of {total}
     </h2>
 
-    <div className="text-base sm:text-lg md:text-xl font-medium mb-4">
+    <div className="question-rich-text text-base sm:text-lg md:text-xl font-medium mb-4">
       {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
     </div>
 

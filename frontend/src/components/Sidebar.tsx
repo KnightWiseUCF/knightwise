@@ -7,11 +7,14 @@ import {
   BarChart2,
   Lightbulb,
   GraduationCap,
-  UserRoundCog
+  UserRoundCog,
+  FileCode,
 } from "lucide-react"; // for icons
 
 const Sidebar = () => {
   const location = useLocation();
+  const accountType = localStorage.getItem("account_type");
+  const isProfessor = accountType === "professor";
 
   // function: LoggedInName - get first/lastname
   const LoggedInName = () => {
@@ -61,7 +64,16 @@ const Sidebar = () => {
       name: "Account",
       icon: <UserRoundCog size={24} />,
       path: "/account"
-    }
+    },
+    ...(isProfessor
+      ? [
+          {
+            name: "Question Drafts",
+            icon: <FileCode size={24} />,
+            path: "/professor-drafts",
+          },
+        ]
+      : []),
   ];
 
   return (

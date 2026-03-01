@@ -17,7 +17,7 @@
 import React, { useEffect, useState } from "react";
 import PasswordChecklist from "react-password-checklist";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/ucflogo.png";
+import logo from "../assets/kw_logo.png";
 import api from "../api";
 import { isAxiosError } from "axios";
 
@@ -72,7 +72,7 @@ const ResetPassword: React.FC = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 py-8">
       <div className="bg-white p-12 rounded-xl shadow-xl w-full max-w-lg">
         <div className="flex justify-center mb-6">
-          <img src={logo} alt="KnightPrep Logo" className="w-80 h-80 mb-4" />
+          <img src={logo} alt="KnightWise Logo" className="w-80 h-80 mb-4" />
         </div>
         <h2 className="text-3xl font-semibold text-center text-gray-800 mb-6">
           Reset Your Password

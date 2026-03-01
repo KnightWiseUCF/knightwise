@@ -19,6 +19,8 @@ import api from "../api";
 const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  // Tracks whether the user is attempting student or professor sign-in.
+  const [accountType, setAccountType] = useState<"student" | "professor">("student");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
@@ -36,6 +38,8 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
       });
 
       localStorage.setItem("token", response.data.token);
+      // Persist selected role for downstream role-based navigation/logic.
+      localStorage.setItem("account_type", accountType);
 
       if (response.data.user) {
         localStorage.setItem("user_data", JSON.stringify(response.data.user));
@@ -91,6 +95,36 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
             />
           </div>
 
+          {/* Account type toggle for choosing student vs professor login flow */}
+          <div className="w-full flex justify-center py-2">
+            <div className="inline-flex rounded-full border border-gray-900 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setAccountType("student")}
+                className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
+                  accountType === "student"
+                    ? "bg-yellow-500 text-black"
+                    : "bg-transparent text-gray-800"
+                }`}
+                aria-pressed={accountType === "student"}
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType("professor")}
+                className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
+                  accountType === "professor"
+                    ? "bg-yellow-500 text-black"
+                    : "bg-transparent text-gray-800"
+                }`}
+                aria-pressed={accountType === "professor"}
+              >
+                Professor
+              </button>
+            </div>
+          </div>
+
           {/* button */}
           <button
             type="submit"
@@ -115,6 +149,16 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
           Not registered?{" "}
           <button onClick={onToggle} className="text-blue-500 hover:underline">
             Create an account
+          </button>
+        </p>
+        {/* move to professor application */}
+        <p className="text-sm sm:text-base text-gray-600 mt-1 text-center">
+          Professor or Teacher?{" "}
+          <button
+            onClick={() => navigate("/professor-apply")}
+            className="text-blue-500 hover:underline"
+          >
+            Apply for a professor account
           </button>
         </p>
 
