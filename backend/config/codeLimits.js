@@ -16,6 +16,10 @@ const MAX_CODE_BYTES = 10000;
 // Judge0's free cloud tier supports 50 free code submissions per day.
 const MAX_SUBMISSIONS_PER_DAY = 10;
 
+// Maximum allowed test runs per problem for an individual user
+// Resets per problem daily
+const MAX_TEST_RUNS_PER_PROBLEM = 3;
+
 /*
  * Judge0 already enforces the following runtime and memory limits:
  *   cpu_time_limit :5
@@ -33,6 +37,7 @@ const MAX_SUBMISSIONS_PER_DAY = 10;
 module.exports = {
     MAX_CODE_BYTES,
     MAX_SUBMISSIONS_PER_DAY,
+    MAX_TEST_RUNS_PER_PROBLEM,
     // MAX_RUNTIME_MS,
     // MAX_MEMORY_KB
 }
