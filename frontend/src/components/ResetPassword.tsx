@@ -28,6 +28,7 @@ const ResetPassword: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
   const email = localStorage.getItem("reset_email");
+  const accountType = localStorage.getItem("reset_account_type") === "professor" ? "professor" : "student";
 
   useEffect(() => {
     if (!email) {
@@ -47,13 +48,15 @@ const ResetPassword: React.FC = () => {
 
     try 
     {
-      await api.post("/api/auth/resetPassword", { email, password });
+      const endpoint = accountType === "professor" ? "/api/profauth/resetPassword" : "/api/auth/resetPassword";
+      await api.post(endpoint, { email, password });
       setSuccessMessage("Password changed successfully! Redirecting...");
 
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       navigate("/");
       localStorage.removeItem("reset_email");
+      localStorage.removeItem("reset_account_type");
     } 
     catch (err : unknown) 
     {

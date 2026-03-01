@@ -34,6 +34,7 @@ import { RawQuestion, Question } from "../models";
 
 const TopicTestPage: React.FC = () => {
   const { topicName } = useParams<{ topicName: string }>();
+  const isProfessorAccount = localStorage.getItem("account_type") === "professor";
   const [problems, setProblems] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -77,6 +78,45 @@ const TopicTestPage: React.FC = () => {
         return "programming";
       default:
         return undefined;
+    }
+  };
+
+  const buildProfessorAnswerKeyFeedback = (question: Question, type: Question["QUESTION_TYPE"]) => {
+    const allAnswers = question.answerObjects ?? [];
+
+    switch (type) {
+      case "multiple_choice":
+      case "fill_in_blank": {
+        const firstCorrect = allAnswers.find((answer) => answer.IS_CORRECT_ANSWER)?.TEXT ?? question.answerCorrect;
+        return `Correct answer: ${firstCorrect || "(not available)"}.`;
+      }
+      case "select_all_that_apply": {
+        const correctAnswers = allAnswers.filter((answer) => answer.IS_CORRECT_ANSWER).map((answer) => answer.TEXT);
+        if (correctAnswers.length === 0) {
+          return "No correct answers found for this question.";
+        }
+        return `Correct answers: ${correctAnswers.join(", ")}.`;
+      }
+      case "ranked_choice": {
+        const ranked = question.correctOrder ?? [];
+        if (ranked.length === 0) {
+          return "Ranking key not available.";
+        }
+        return `Correct order: ${ranked.join(" → ")}.`;
+      }
+      case "drag_and_drop": {
+        const mappings = allAnswers
+          .filter((answer) => (answer.PLACEMENT ?? "").trim().length > 0)
+          .map((answer) => `${answer.TEXT} → ${answer.PLACEMENT}`);
+        if (mappings.length === 0) {
+          return "Drag-and-drop placement key not available.";
+        }
+        return `Correct placements: ${mappings.join(" | ")}`;
+      }
+      case "programming":
+        return "Programming submissions are disabled in topic practice.";
+      default:
+        return "Answer key unavailable for this question type.";
     }
   };
 
@@ -129,10 +169,8 @@ const TopicTestPage: React.FC = () => {
             options:        shuffledOptions,
             QUESTION_TYPE:  normalizedType,
             correctOrder:   correctOrder,
-            // drag_and_drop (new placement-based): store full answer objects with placement field
-            answerObjects:  normalizedType === "drag_and_drop"
-              ? question.answers || []
-              : undefined,
+            // Keep answer objects for all question types to support local professor grading.
+            answerObjects:  question.answers || [],
             // drag_and_drop (old inline style): map each answer to a drop zone with id and correctAnswer
             dropZones:      normalizedType === "drag_and_drop"
               ? [...(question.answers || [])].map((ans, idx) => ({
@@ -327,6 +365,16 @@ const TopicTestPage: React.FC = () => {
         }
       }
 
+      if (isProfessorAccount) {
+        setFeedback(buildProfessorAnswerKeyFeedback(current, questionType));
+        setIsCorrectAnswer(false);
+        setPointsEarned(null);
+        setPointsPossible(null);
+        setNormalizedScore(null);
+        setAnswered(true);
+        return;
+      }
+
       // Sanitize data to ensure it can be safely serialized
       const payload = {
         problem_id: Number(current.ID),
@@ -424,17 +472,23 @@ const TopicTestPage: React.FC = () => {
       : isCorrectAnswer
       ? 1
       : 0;
-    const statusClass = score >= 1
+    const statusClass = isProfessorAccount
+      ? "text-gray-700"
+      : score >= 1
       ? "text-green-600"
       : score > 0.5
       ? "text-yellow-600"
       : "text-red-600";
-    const boxClass = score >= 1
+    const boxClass = isProfessorAccount
+      ? "bg-gray-100"
+      : score >= 1
       ? "bg-green-50"
       : score > 0.5
       ? "bg-yellow-50"
       : "bg-red-50";
-    const borderClass = score >= 1
+    const borderClass = isProfessorAccount
+      ? "border-gray-300"
+      : score >= 1
       ? "border-green-500"
       : score > 0.5
       ? "border-yellow-500"
@@ -461,7 +515,7 @@ const TopicTestPage: React.FC = () => {
       <div className="mt-6">
         <div className={`p-4 ${boxClass} rounded border ${borderClass} text-sm sm:text-base md:text-lg`}>
           <p className={statusClass}>{feedback}</p>
-          {(derivedPointsEarned !== null || normalizedScore !== null) && (
+          {!isProfessorAccount && (derivedPointsEarned !== null || normalizedScore !== null) && (
             <div className="mt-2 text-gray-700">
               {typeof derivedPointsEarned === "number" && typeof derivedPointsPossible === "number" && (
                 <p>Points: {derivedPointsEarned} / {derivedPointsPossible}</p>

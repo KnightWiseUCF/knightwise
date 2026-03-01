@@ -23,6 +23,9 @@ const ForgotPassword: React.FC = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [accountType, setAccountType] = useState<"student" | "professor">(
+    (localStorage.getItem("reset_account_type") as "student" | "professor") || "student"
+  );
   const navigate = useNavigate();
 
   // Send verification code
@@ -50,6 +53,7 @@ const ForgotPassword: React.FC = () => {
       setSuccessMessage("Email verified!");
       // Verified, redirect and send reset email
       localStorage.setItem("reset_email", email);
+      localStorage.setItem("reset_account_type", accountType);
       setTimeout(() => {
         navigate("/reset-password");
       }, 1000);
@@ -79,6 +83,35 @@ const ForgotPassword: React.FC = () => {
         <p className="text-sm md:text-lg text-center text-gray-600 mb-4">
           Enter your email to receive a verification code.
         </p>
+
+        <div className="w-full flex justify-center py-2 mb-2">
+          <div className="inline-flex rounded-full border border-gray-900 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setAccountType("student")}
+              className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
+                accountType === "student"
+                  ? "bg-yellow-500 text-black"
+                  : "bg-transparent text-gray-800"
+              }`}
+              aria-pressed={accountType === "student"}
+            >
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType("professor")}
+              className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
+                accountType === "professor"
+                  ? "bg-yellow-500 text-black"
+                  : "bg-transparent text-gray-800"
+              }`}
+              aria-pressed={accountType === "professor"}
+            >
+              Professor
+            </button>
+          </div>
+        </div>
 
         {/* Enter email */}
         <div className="mb-4">

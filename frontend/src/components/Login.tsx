@@ -12,7 +12,7 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 
@@ -23,15 +23,27 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
   const [accountType, setAccountType] = useState<"student" | "professor">("student");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const sessionExpired = localStorage.getItem("session_expired") === "1";
+    if (sessionExpired) {
+      setSessionExpiredMessage("Session expired. Please sign in again.");
+      localStorage.removeItem("session_expired");
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccessMessage("");
+    setSessionExpiredMessage("");
 
     try {
-      const response = await api.post("/api/auth/login", 
+      const loginEndpoint = accountType === "professor" ? "/api/profauth/login" : "/api/auth/login";
+
+      const response = await api.post(loginEndpoint, 
       {
         username,
         password,
@@ -138,6 +150,9 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
         {error && (
           <p className="text-red-500 text-base text-center mt-2">{error}</p>
         )}
+        {sessionExpiredMessage && (
+          <p className="text-amber-600 text-base text-center mt-2">{sessionExpiredMessage}</p>
+        )}
         {successMessage && (
           <p className="text-green-500 text-sm text-center mt-2">
             {successMessage}
@@ -166,7 +181,10 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
         <p className="text-sm sm:text-base text-gray-600 mt-4 text-center">
           Forgot password?{" "}
           <button
-            onClick={() => navigate("/forgot-password")}
+            onClick={() => {
+              localStorage.setItem("reset_account_type", accountType);
+              navigate("/forgot-password");
+            }}
             className="text-blue-500 hover:underline"
           >
             Reset Password

@@ -100,7 +100,7 @@ const ProfessorApplyPage = () => {
     setIsLoading(true);
     setLoadingAction("submit");
     try {
-      const response = await api.post("/api/auth/professor-apply", {
+      const response = await api.post("/api/profauth/signup", {
         username,
         email,
         password,
