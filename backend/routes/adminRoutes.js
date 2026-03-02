@@ -158,6 +158,7 @@ router.delete("/users/:id", adminMiddleware, asyncHandler(async (req, res) => {
   await req.db.query('DELETE FROM EmailCode WHERE EMAIL = ?', [user.EMAIL]);
   await req.db.query('DELETE FROM Response WHERE USERID = ?', [userId]);
   console.log(`User ${userId} and all associated data deleted successfully`);
+  notifyUserEvent(`Admin deleted user: ${user.USERNAME}`);
 
   return res
     .status(200)
@@ -205,6 +206,7 @@ router.delete("/problems/:id", adminOrProf, asyncHandler(async (req, res) => {
   await req.db.query('DELETE FROM AnswerText WHERE QUESTION_ID = ?', [questionId]);
   await req.db.query('DELETE FROM Response WHERE PROBLEM_ID = ?', [questionId]);
   console.log(`Question ${questionId} and all associated data deleted successfully`);
+  notifyUserEvent(`Question ${questionId} and all associated data deleted by ${req.user?.role} (owner ID: ${question.OWNER_ID})`);
 
   return res
     .status(200)
