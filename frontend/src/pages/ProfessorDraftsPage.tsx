@@ -1,8 +1,9 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, Bold, Code, FileCode, GripVertical, Italic, List, ListOrdered, Pilcrow, Trash2, Underline } from "lucide-react";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 import { isAxiosError } from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import api from "../api";
 import { RawQuestion } from "../models";
@@ -190,9 +191,13 @@ const buildDraftFromPublishedQuestion = (
   );
 
   const fallbackTitle = `${question.CATEGORY || "Question"} #${question.ID}`;
+  const parsedExistingDraftId = Number(existingDraft?.id);
+  const linkedDraftId = Number.isFinite(parsedExistingDraftId) && parsedExistingDraftId > 0
+    ? String(parsedExistingDraftId)
+    : String(question.ID);
 
   return {
-    id: existingDraft?.id || crypto.randomUUID(),
+    id: linkedDraftId,
     title: existingDraft?.title || fallbackTitle,
     section: String(question.SECTION || ""),
     category: String(question.CATEGORY || ""),
@@ -261,8 +266,18 @@ const loadDrafts = (): QuestionDraft[] => {
               .filter(Boolean)
           : [];
 
+        const parsedDraftId = Number(typedItem.id);
+        const parsedPublishedQuestionId =
+          typeof typedItem.publishedQuestionId === "number" ? typedItem.publishedQuestionId : undefined;
+        const normalizedDraftId =
+          Number.isFinite(parsedDraftId) && parsedDraftId > 0
+            ? String(parsedDraftId)
+            : typeof parsedPublishedQuestionId === "number"
+              ? String(parsedPublishedQuestionId)
+              : crypto.randomUUID();
+
         return {
-          id: typeof typedItem.id === "string" ? typedItem.id : crypto.randomUUID(),
+          id: normalizedDraftId,
           title: typeof typedItem.title === "string" ? typedItem.title : "",
           section: typeof typedItem.section === "string" ? typedItem.section : "",
           category: typeof typedItem.category === "string" ? typedItem.category : "",
@@ -275,8 +290,7 @@ const loadDrafts = (): QuestionDraft[] => {
           answers: safeAnswers.length > 0 ? safeAnswers : createDefaultAnswers(),
           dropSections: safeDropSections.length > 0 ? safeDropSections : createDefaultDropSections(),
           updatedAt: typeof typedItem.updatedAt === "string" ? typedItem.updatedAt : new Date().toISOString(),
-          publishedQuestionId:
-            typeof typedItem.publishedQuestionId === "number" ? typedItem.publishedQuestionId : undefined,
+          publishedQuestionId: parsedPublishedQuestionId,
         } as QuestionDraft;
       });
   } catch {
@@ -310,6 +324,9 @@ const emptyForm = {
 };
 
 const ProfessorDraftsPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const handledDashboardActionRef = useRef<string | null>(null);
   const accountType = localStorage.getItem("account_type");
   const isProfessor = accountType === "professor";
 
@@ -696,7 +713,7 @@ const ProfessorDraftsPage: React.FC = () => {
     );
   };
 
-  const resolveAuthorExamId = (): string => {
+  const resolveAuthorExamId = useCallback((): string => {
     try {
       const rawUserData = localStorage.getItem("user_data");
       if (!rawUserData) {
@@ -717,7 +734,7 @@ const ProfessorDraftsPage: React.FC = () => {
     } catch {
       return "Professor";
     }
-  };
+  }, []);
 
   const createQuestionFromDraft = async (
     draft: QuestionDraft,
@@ -749,6 +766,36 @@ const ProfessorDraftsPage: React.FC = () => {
 
     return response?.data?.questionId;
   };
+
+  const unpublishQuestionFromPublished = useCallback(async (question: RawQuestion): Promise<void> => {
+    const normalizedQuestionType = normalizeQuestionType(question.TYPE);
+    const sourceAnswers = Array.isArray(question.answers) ? question.answers : [];
+
+    if (sourceAnswers.length === 0) {
+      throw new Error("Published question has no answers and cannot be converted to a draft.");
+    }
+
+    await api.put(`/api/admin/problems/${question.ID}`, {
+      type: normalizedQuestionType,
+      author_exam_id: String(question.AUTHOR_EXAM_ID || resolveAuthorExamId()),
+      section: String(question.SECTION || "General"),
+      category: String(question.CATEGORY || "General"),
+      subcategory: String(question.SUBCATEGORY || "General"),
+      points_possible: Number(question.POINTS_POSSIBLE) || 1,
+      question_text: String(question.QUESTION_TEXT || ""),
+      answer_text: sourceAnswers.map((answer) => String(answer.TEXT || "").trim()),
+      answer_correctness: sourceAnswers.map((answer) => (
+        normalizedQuestionType === "Ranked Choice" || normalizedQuestionType === "Drag and Drop"
+          ? 1
+          : (parseAnswerCorrectness(answer.IS_CORRECT_ANSWER) ? 1 : 0)
+      )),
+      answer_rank: sourceAnswers.map((answer, index) => {
+        const parsedRank = Number(answer.RANK);
+        return Number.isFinite(parsedRank) && parsedRank > 0 ? parsedRank : index + 1;
+      }),
+      answer_placement: sourceAnswers.map((answer) => String(answer.PLACEMENT || "")),
+    });
+  }, [resolveAuthorExamId]);
 
   const handleSaveDraft = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -938,7 +985,7 @@ const ProfessorDraftsPage: React.FC = () => {
     }
   };
 
-  const handleEditDraft = (draft: QuestionDraft) => {
+  const handleEditDraft = useCallback((draft: QuestionDraft) => {
     setError("");
     setSuccessMessage("");
     setActiveTab("drafts");
@@ -953,7 +1000,7 @@ const ProfessorDraftsPage: React.FC = () => {
       answers: draft.answers.length > 0 ? draft.answers : createDefaultAnswers(),
       dropSections: draft.dropSections.length > 0 ? draft.dropSections : createDefaultDropSections(),
     });
-  };
+  }, []);
 
   const handleAnswerChange = (
     answerId: string,
@@ -1185,7 +1232,7 @@ const ProfessorDraftsPage: React.FC = () => {
     }
   };
 
-  const handleEditPublishedQuestion = async (questionId: number) => {
+  const handleEditPublishedQuestion = useCallback(async (questionId: number) => {
     setError("");
     setSuccessMessage("");
     setPublishedActionId(questionId);
@@ -1193,8 +1240,13 @@ const ProfessorDraftsPage: React.FC = () => {
     try {
       const response = await api.get<RawQuestion>(`/api/admin/problems/${questionId}`);
       const question = response.data;
+      await unpublishQuestionFromPublished(question);
+
       const linkedDraft = linkedDraftByPublishedId.get(questionId);
-      const nextDraft = buildDraftFromPublishedQuestion(question, linkedDraft);
+      const nextDraft = {
+        ...buildDraftFromPublishedQuestion(question, linkedDraft),
+        publishedQuestionId: undefined,
+      };
 
       const updatedDrafts = linkedDraft
         ? drafts.map((draft) => (draft.id === linkedDraft.id ? nextDraft : draft))
@@ -1202,26 +1254,28 @@ const ProfessorDraftsPage: React.FC = () => {
 
       setDrafts(updatedDrafts);
       saveDrafts(updatedDrafts);
+      setPublishedQuestions((prev) => prev.filter((item) => item.id !== questionId));
       handleEditDraft(nextDraft);
       setSuccessMessage(
         linkedDraft
-          ? `Loaded published question #${questionId} into the linked draft.`
-          : `Created a local draft from published question #${questionId}.`
+          ? `Published question #${questionId} was unpublished and loaded into the linked draft.`
+          : `Published question #${questionId} was unpublished and converted to a draft.`
       );
     } catch (err: unknown) {
+      const explicitError = err instanceof Error ? err.message : "";
       const message =
         typeof err === "object" &&
         err !== null &&
         "response" in err &&
         typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
           ? (err as { response?: { data?: { message?: string } } }).response!.data!.message!
-          : "Failed to load published question details.";
+          : (explicitError || "Failed to convert published question to draft.");
 
       setError(message);
     } finally {
       setPublishedActionId(null);
     }
-  };
+  }, [drafts, linkedDraftByPublishedId, handleEditDraft, unpublishQuestionFromPublished]);
 
   const handleDeletePublishedQuestion = async (questionId: number) => {
     setError("");
@@ -1255,6 +1309,75 @@ const ProfessorDraftsPage: React.FC = () => {
       setPublishedActionId(null);
     }
   };
+
+  useEffect(() => {
+    if (!isProfessor) {
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const draftIdParam = params.get("draftId");
+    const publishedIdParam = params.get("publishedId");
+
+    if (!draftIdParam && !publishedIdParam) {
+      handledDashboardActionRef.current = null;
+      return;
+    }
+
+    const actionKey = `${draftIdParam || ""}|${publishedIdParam || ""}`;
+    if (handledDashboardActionRef.current === actionKey) {
+      return;
+    }
+
+    handledDashboardActionRef.current = actionKey;
+
+    const runDashboardAction = async () => {
+      if (publishedIdParam) {
+        const publishedQuestionId = Number(publishedIdParam);
+        if (Number.isFinite(publishedQuestionId) && publishedQuestionId > 0) {
+          await handleEditPublishedQuestion(publishedQuestionId);
+        } else {
+          setError("Invalid published question ID provided.");
+        }
+
+        navigate("/professor-drafts", { replace: true });
+        return;
+      }
+
+      const draftQuestionId = Number(draftIdParam);
+      if (!Number.isFinite(draftQuestionId) || draftQuestionId <= 0) {
+        setError("Invalid draft question ID provided.");
+        navigate("/professor-drafts", { replace: true });
+        return;
+      }
+
+      const existingDraft = drafts.find((draft) => Number(draft.id) === draftQuestionId);
+      if (existingDraft) {
+        handleEditDraft(existingDraft);
+        navigate("/professor-drafts", { replace: true });
+        return;
+      }
+
+      try {
+        const response = await api.get<RawQuestion>(`/api/admin/problems/${draftQuestionId}`);
+        const fetchedDraft = buildDraftFromServerQuestion(response.data);
+
+        setDrafts((prev) => {
+          const next = [fetchedDraft, ...prev.filter((draft) => draft.id !== fetchedDraft.id)];
+          saveDrafts(next);
+          return next;
+        });
+
+        handleEditDraft(fetchedDraft);
+      } catch {
+        setError("Failed to load the selected draft.");
+      } finally {
+        navigate("/professor-drafts", { replace: true });
+      }
+    };
+
+    runDashboardAction();
+  }, [isProfessor, location.search, navigate, drafts, handleEditDraft, handleEditPublishedQuestion]);
 
   if (!isProfessor) {
     return (
