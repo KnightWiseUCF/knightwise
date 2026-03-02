@@ -189,7 +189,13 @@ router.post("/sendotp", asyncHandler(async (req, res) => {
   // check if the email is already registered to avoid unregistered users from reset password
   if (purpose === "reset") 
   {
-    if (users.length === 0) 
+    // If a professor is trying to reset their password
+    const [profUsers] = await req.db.query(
+      'SELECT * FROM Professor WHERE EMAIL = ?',
+      [email]
+    );
+
+    if (users.length === 0 && profUsers.length === 0) 
     {
       throw new AppError(`Password reset failed, email not registered: ${email}`, 404, "User not found");
     }

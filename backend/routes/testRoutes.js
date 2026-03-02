@@ -47,25 +47,25 @@ const pairAnswersWithQuestions = async (questions, db) => {
 
 /**
  * @route   GET /api/test/topic/:topicName
- * @desc    Fetch questions for a given subcategory (e.g. Backtracking)
+ * @desc    Fetch published questions for a given subcategory (e.g. Backtracking)
  * @access  Protected
  * 
  * @param {import('express').Request}  req - Express request object
  * @param {import('express').Response} res - Express response object
- * @returns {Promise<void>} - JSON response with the subcategory's questions and answers
+ * @returns {Promise<void>} - JSON response with the subcategory's published questions and answers
  */
 router.get("/topic/:topicName", authMiddleware, asyncHandler(async (req, res) => {
   const { topicName } = req.params;
 
   // Get all questions of this subcategory
   const [questions] = await req.db.query(
-    'SELECT * FROM Question WHERE SUBCATEGORY = ?',
+    'SELECT * FROM Question WHERE SUBCATEGORY = ? AND IS_PUBLISHED = 1',
     [topicName]
   );
 
   if (!questions || questions.length === 0) 
   {
-    throw new AppError(`No questions exist for subcategory: ${topicName}`, 404, "Question not found");
+    throw new AppError(`No published questions exist for subcategory: ${topicName}`, 404, "Question not found");
   }
 
   const questionsWithAnswers = await pairAnswersWithQuestions(questions, req.db);
@@ -85,16 +85,16 @@ router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
   const sections = ["A", "B", "C", "D"];
   const questionsBySection = {};
 
-  // shuffled problem per section and pick three question randomly
+  // shuffled problem per section and pick three published questions randomly
   for (const section of sections) {
     const [questions] = await req.db.query(
-      'SELECT * FROM Question WHERE SECTION = ?',
+      'SELECT * FROM Question WHERE SECTION = ? AND IS_PUBLISHED = 1',
       [section]
     );
 
     if (!questions || questions.length === 0) 
     {
-      throw new AppError(`Question not found in section: ${section}`, 404, "Question not found");
+      throw new AppError(`Published question not found in section: ${section}`, 404, "Question not found");
     }
     const shuffled = questions.sort(() => 0.5 - Math.random());
     questionsBySection[section] = shuffled.slice(0, 3);
