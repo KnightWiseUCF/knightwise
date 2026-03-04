@@ -414,7 +414,7 @@ router.get('/getuser', adminMiddleware, asyncHandler(async (req, res) => {
 router.get('/unverifiedprofs', adminMiddleware, asyncHandler(async (req, res) => {
   
   const [profs] = await req.db.query(
-    'SELECT * FROM Professor WHERE VERIFIED = 0'
+    'SELECT * FROM User WHERE IS_PROF = 1 AND VERIFIED = 0'
   );
 
   res.json({profs});
@@ -440,7 +440,7 @@ router.post('/verifyprof/:id', adminMiddleware, asyncHandler(async (req, res) =>
   }
 
   const [profs] = await req.db.query(
-    'SELECT * FROM Professor WHERE ID = ?',
+    'SELECT * FROM User WHERE IS_PROF = 1 AND ID = ?',
     [id]
   );
   if (!profs || profs.length === 0)
@@ -450,7 +450,7 @@ router.post('/verifyprof/:id', adminMiddleware, asyncHandler(async (req, res) =>
   const prof = profs[0];
 
   await req.db.query(
-    'UPDATE Professor SET VERIFIED = 1 WHERE ID = ?',
+    'UPDATE User SET VERIFIED = 1 WHERE IS_PROF = 1 AND ID = ?',
     [id]
   );
 
