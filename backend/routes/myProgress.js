@@ -168,6 +168,7 @@ router.get("/messageData", authMiddleware, asyncHandler(async (req, res) => {
 /**
  * @route   GET /api/progress/history
  * @desc    Get paginated user submission history
+ *          Includes question type, user answer data, and score data
  * @access  Protected
  * 
  * @param {import('express').Request}  req - Express request object
@@ -188,8 +189,22 @@ router.get('/history', authMiddleware, asyncHandler(async (req, res) => {
 
   const offset = (page - 1) * limit;  // Calculate the number of results to skip
 
+  // Join with corresponding Question to get type
   const [history] = await req.db.query(
-    'SELECT DATETIME, TOPIC, ISCORRECT, PROBLEM_ID FROM Response WHERE USERID = ? ORDER BY DATETIME DESC LIMIT ? OFFSET ?',
+    `SELECT 
+      r.DATETIME,
+      r.TOPIC,
+      r.ISCORRECT,
+      r.PROBLEM_ID,
+      r.USER_ANSWER,
+      r.POINTS_EARNED,
+      r.POINTS_POSSIBLE,
+      q.TYPE
+    FROM Response r 
+    JOIN Question q ON r.PROBLEM_ID = q.ID
+    WHERE r.USERID = ? 
+    ORDER BY r.DATETIME DESC 
+    LIMIT ? OFFSET ?`,
     [userId, limit, offset]
   );
 
@@ -202,10 +217,14 @@ router.get('/history', authMiddleware, asyncHandler(async (req, res) => {
 
   res.status(200).json({
     history: history.map(row => ({
-      datetime: row.DATETIME,
-      topic: row.TOPIC,
-      isCorrect: row.ISCORRECT,
-      problem_id: row.PROBLEM_ID
+      datetime:       row.DATETIME,
+      topic:          row.TOPIC,
+      type:           row.TYPE,
+      isCorrect:      row.ISCORRECT,
+      problem_id:     row.PROBLEM_ID,
+      userAnswer:     row.USER_ANSWER,
+      pointsEarned:   row.POINTS_EARNED,
+      pointsPossible: row.POINTS_POSSIBLE,
     })),
     totalEntries,
     currentPage: page,
