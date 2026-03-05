@@ -200,9 +200,9 @@ describe("POST /api/code/submitCode", () => {
           pool.query(
             `INSERT INTO Response (USERID, PROBLEM_ID, USER_ANSWER, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE)
             VALUES (?, ?, ?, TRUE, 10, 10)`,
-            [testUserId, testProblemId, "print('test')"]
-          )
-        );
+            [testUserId, testProblemId, "print('test')"] // Technically USER_ANSWER is a JSON and
+          )                                              // is more than just raw code, but that doesn't
+        );                                               // matter for this test.
       }
       await Promise.all(insertPromises);
 
@@ -348,11 +348,84 @@ describe("POST /api/code/submitCode", () => {
 
       // Note: MySQL decimal columns are represented as strings.
       expect(responses.length).toBe(1);
-      expect(responses[0].USER_ANSWER).toBe("print('Hello World')");
+      const stored = JSON.parse(responses[0].USER_ANSWER);
+      expect(stored.type).toBe('Programming');
+      expect(stored.code).toBe("print('Hello World')");
       expect(responses[0].ISCORRECT).toBe(1); // All tests passed
       expect(responses[0].POINTS_EARNED).toBe('10.00');
       expect(responses[0].POINTS_POSSIBLE).toBe('10.00');
       expect(res.body.isTestRun).toBe(false);
+    });
+
+    test("should serialize answer as JSON in Response.USER_ANSWER", async () => {
+      judge0Service.submitBatch.mockResolvedValue(["mock-token-serial"]);
+      judge0Service.pollSubmission.mockResolvedValue({
+        status: { id: judge0Service.STATUS_IDS.ACCEPTED, description: "Accepted" },
+        stdout: "Hello World",
+        time: "0.010",
+        memory: 3000
+      });
+
+      await request(app)
+        .post("/api/code/submitCode")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          problemId:  testProblemId,
+          code:       "print('Hello World')",
+          languageId: judge0Service.LANGUAGE_IDS.PYTHON,
+          isTestRun:  false
+        });
+
+      const [responses] = await pool.query(
+        'SELECT USER_ANSWER FROM Response WHERE USERID = ? AND PROBLEM_ID = ? ORDER BY ID DESC LIMIT 1',
+        [testUserId, testProblemId]
+      );
+
+      const stored = JSON.parse(responses[0].USER_ANSWER);
+      expect(stored.type).toBe('Programming');
+      expect(stored.language).toBe('Python');
+      expect(stored.code).toBe("print('Hello World')");
+    });
+
+    test("should serialize answer with correct language name for each language", async () => {
+      const cases = [
+        { languageId: judge0Service.LANGUAGE_IDS.PYTHON, expectedLanguage: 'Python' },
+        { languageId: judge0Service.LANGUAGE_IDS.JAVA,   expectedLanguage: 'Java'   },
+        { languageId: judge0Service.LANGUAGE_IDS.C,      expectedLanguage: 'C'      },
+        { languageId: judge0Service.LANGUAGE_IDS.CPP,    expectedLanguage: 'C++'    },
+      ];
+
+      for (const { languageId, expectedLanguage } of cases)
+      {
+        judge0Service.submitBatch.mockResolvedValue([`mock-token-lang`]);
+        judge0Service.pollSubmission.mockResolvedValue({
+          status: { id: judge0Service.STATUS_IDS.ACCEPTED, description: "Accepted" },
+          stdout: "Hello World",
+          time: "0.010",
+          memory: 3000
+        });
+
+        await request(app)
+          .post("/api/code/submitCode")
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            problemId:  testProblemId,
+            code:       "print('Hello World')",
+            languageId: languageId,
+            isTestRun:  false
+          });
+
+        const [responses] = await pool.query(
+          'SELECT USER_ANSWER FROM Response WHERE USERID = ? AND PROBLEM_ID = ? ORDER BY ID DESC LIMIT 1',
+          [testUserId, testProblemId]
+        );
+
+        const stored = JSON.parse(responses[0].USER_ANSWER);
+        expect(stored.type).toBe('Programming');
+        expect(stored.language).toBe(expectedLanguage);
+
+        await pool.query('DELETE FROM Response WHERE USERID = ?', [testUserId]);
+      }
     });
   });
 

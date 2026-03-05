@@ -131,7 +131,7 @@ paths:
       - Authentication
       summary: Send user one-time password.
       operationId: sendOtp
-      description: Sends a one-time password to the user's email for account verification during signup.
+      description: Sends a one-time password to the email for account verification. Used for both user and professor signup and password reset flows.
       consumes:
       - application/json
       produces:
@@ -306,6 +306,7 @@ paths:
         Submits code to Judge0 for execution. Supports two modes:
         - **Graded Submission** (`isTestRun: false`): Runs code against all test cases, grades the result, and records the response. Counts toward the daily submission limit (10/day).
         - **Test Run** (`isTestRun: true`): Runs code against only the first test case and returns raw output without grading or saving a response. Limited to 3 runs per problem per day.
+        Serializes user answer into JSON.
       security:
         - BearerAuth: []
       consumes:
@@ -317,18 +318,22 @@ paths:
         name: questionItem
         description: Question and answer details.
         schema:
-          $ref: '#/definitions/CreateQuestion'
+          $ref: '#/definitions/SubmitCode'
       responses:
-        201:
-          description: Created
+        200:
+          description: OK
         400:
           description: Bad Request
         401:
           description: Unauthorized
-        403:
-          description: Forbidden
+        404:
+          description: Question or Test Cases Not Found
+        429:
+          description: Submission or Test Run Limit Exceeded
         500:
           description: Server Error
+        502:
+          description: Judge0 Service Unavailable
 
   /admin/problems/{id}:
     get:
@@ -357,12 +362,46 @@ paths:
           description: Question Not Found
         500:
           description: Server Error
+    put:
+      tags:
+      - Admins
+      - Professors
+      summary: Edit question by ID.
+      operationId: editQuestion
+      description: Replaces a question's content and all associated answers entirely. Auto-unpublishes the question if it was published. Professors can only edit their own questions. Admins can edit any question.
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: integer
+        description: The unique ID of the question.
+      - in: body
+        name: questionItem
+        description: Replacement question and answer details.
+        schema:
+          $ref: '#/definitions/EditQuestion'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        404:
+          description: Question Not Found
+        500:
+          description: Server Error
     delete:
       tags:
       - Admins
+      - Professors
       summary: Delete question by ID.
       operationId: deleteQuestion
-      description: Deletes a question and all associated answers and responses. Admin only.
+      description: Deletes a question and all associated answers and responses. Professors can only delete their own questions. Admins can delete any question.
       security:
         - BearerAuth: []
       parameters:
@@ -376,8 +415,58 @@ paths:
           description: OK
         401:
           description: Unauthorized
+        403:
+          description: Forbidden
         404:
           description: Question Not Found
+        500:
+          description: Server Error
+
+  /admin/problems/{id}/publish:
+    post:
+      tags:
+      - Admins
+      - Professors
+      summary: Publish a draft question.
+      operationId: publishQuestion
+      description: Sets a draft question's IS_PUBLISHED flag to true, making it visible in topic practice and mock tests. Professors can only publish their own questions. Admins can publish any question.
+      security:
+        - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        type: integer
+        description: The unique ID of the question.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Question already published
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        404:
+          description: Question Not Found
+        500:
+          description: Server Error
+
+  /admin/drafts:
+    get:
+      tags:
+      - Admins
+      - Professors
+      summary: Fetch draft question metadata.
+      operationId: getDrafts
+      description: Returns metadata for all unpublished questions. Professors see only their own drafts. Admins see all drafts.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
         500:
           description: Server Error
 
@@ -428,13 +517,6 @@ paths:
       responses:
         201:
           description: Created
-        name: submitCodeItem
-        description: Code submission details.
-        schema:
-          $ref: '#/definitions/SubmitCode'
-      responses:
-        200:
-          description: OK
         400:
           description: Bad Request
         401:
@@ -515,6 +597,37 @@ paths:
           description: Professor Not Found
         500:
           description: Server Error
+  
+
+  /code/submitCode:
+    post:
+      tags:
+      - Problems
+      summary: Submit or test code against a programming question.
+      operationId: submitCode
+      description: |
+        Submits code to Judge0 for execution. Supports two modes:
+        - **Graded Submission** (`isTestRun: false`): Runs code against all test cases, grades the result, and records the response. Counts toward the daily submission limit (10/day).
+        - **Test Run** (`isTestRun: true`): Runs code against only the first test case and returns raw output without grading or saving a response. Limited to 3 runs per problem per day.
+      security:
+        - BearerAuth: []
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: submitCodeItem
+        description: Code submission details.
+        schema:
+          $ref: '#/definitions/SubmitCode'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
         404:
           description: Question or Test Cases Not Found
         429:
@@ -523,14 +636,14 @@ paths:
           description: Server Error
         502:
           description: Judge0 Service Unavailable
-  
+
   /test/topic/{topicName}:
     get:
       tags:
       - Problems
       summary: Fetch questions for a specific topic.
       operationId: getTopicQuestions
-      description: Retrieves all questions for a given subcategory (e.g., Backtracking, Recursion).
+      description: Retrieves all published questions for a given subcategory (e.g., Backtracking, Recursion).
       security:
         - BearerAuth: []
       parameters:
@@ -555,7 +668,7 @@ paths:
       - Problems
       summary: Generate a mock test.
       operationId: getMockTest
-      description: Retrieves a randomly generated mock test with questions from all sections (A, B, C, D).
+      description: Retrieves a randomly generated mock test with published questions from all sections (A, B, C, D).
       security:
         - BearerAuth: []
       responses:
@@ -575,7 +688,7 @@ paths:
       summary: Submit answer to a question.
       operationId: submitAnswer
       description: |
-        Submits user's answer to a question, grades it based on question type, and records the response. Supports multiple question types: Multiple Choice, Fill-In-the-Blanks, Select-All-That-Apply, Ranked Choice, and Drag-and-Drop.
+        Submits user's answer to a question, grades it based on question type, and records the response. Supports multiple question types: Multiple Choice, Fill-In-the-Blanks, Select-All-That-Apply, Ranked Choice, and Drag-and-Drop. Serializes and stores user response as JSON, response structure varies by question type.
       security:
         - BearerAuth: []
       consumes:
@@ -608,7 +721,7 @@ paths:
       - Problems
       summary: Fetch problem by its ID.
       operationId: getProblemById
-      description: Retrieves a practice problem by its ID.
+      description: Retrieves a published practice problem by its ID.
       parameters:
       - name: id
         in: path
@@ -651,13 +764,17 @@ paths:
       description: Retrieves the history of problems solved by the user in a paginated format.
       security:
         - BearerAuth: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        type: integer
+        description: Page number (default 1, 10 results per page)
       responses:
         200:
           description: OK
         401:
           description: Unauthorized
-        404:
-          description: URL Not Found
         500:
           description: Server Error
   
@@ -775,6 +892,7 @@ definitions:
     - subcategory
     - points_possible
     - question_text
+    - is_published
     - answer_text
     - answer_correctness
     - answer_rank
@@ -805,6 +923,10 @@ definitions:
         type: integer
         example: null
         description: Owner professor ID. Ignored for professor requests — always forced to the requesting professor's own ID.
+      is_published:
+        type: boolean
+        example: false
+        description: Whether to publish immediately or save as draft. Required.
       answer_text:
         type: array
         items:
@@ -828,7 +950,67 @@ definitions:
           type: string
         example: ["a", "b", "c", "d"]
         description: Correct placement field for each of answer_text options. Only used in Drag and Drop questions.
-        
+
+  EditQuestion:
+    type: object
+    required:
+    - type
+    - author_exam_id
+    - section
+    - category
+    - subcategory
+    - points_possible
+    - question_text
+    - answer_text
+    - answer_correctness
+    - answer_rank
+    - answer_placement
+    properties:
+      type:
+        type: string
+        example: "Multiple Choice"
+      author_exam_id:
+        type: string
+        example: "KnightWise"
+      section:
+        type: string
+        example: "DSN"
+      category:
+        type: string
+        example: "Programming"
+      subcategory:
+        type: string
+        example: "Python"
+      points_possible:
+        type: number
+        example: 5.0
+      question_text:
+        type: string
+        example: "What is Python's print function?"
+      answer_text:
+        type: array
+        items:
+          type: string
+        example: ["print", "printf", "println", "put"]
+      answer_correctness:
+        type: array
+        items:
+          type: integer
+        example: [1, 0, 0, 0]
+        description: Which answer_text is considered a correct answer.
+      answer_rank:
+        type: array
+        items:
+          type: integer
+        example: [1, 2, 3, 4]
+        description: Correct ranking of answer_text options. Only used in Ranked Choice questions.
+      answer_placement:
+        type: array
+        items:
+          type: string
+        example: ["a", "b", "c", "d"]
+        description: Correct placement field for each of answer_text options. Only used in Drag and Drop questions.
+
   SubmitCode:
     type: object
     required:
@@ -904,6 +1086,18 @@ definitions:
         type: string
         example: "Correct!"
         description: Feedback message explaining the result.
+      passedTests:
+        type: number
+        example: 3
+        description: Programming questions only - Number of test cases passed.
+      totalTests:
+        type: number
+        example: 5
+        description: Programming questions only - Total number of test cases for a question.
+      allPassed:
+        type: boolean
+        example: true
+        description: Programming questions only - Whether the answer passed all test cases.
 
 host: www.knightwise.dev
 basePath: /api
