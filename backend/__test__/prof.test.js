@@ -54,8 +54,8 @@ const makeProfToken = (profId, role = 'professor') => {
 const insertProf = async (db, username, email, verified = 1) => {
   const hashed = await bcrypt.hash("testpass123", 10);
   const [result] = await db.query(
-    'INSERT INTO Professor (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, VERIFIED) VALUES (?, ?, ?, ?, ?, ?)',
-    [username, email, hashed, "Test", "Prof", verified]
+    'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [username, email, hashed, "Test", "Prof", 1, verified]
   );
   const profId = result.insertId;
   const token = makeProfToken(profId);
@@ -67,6 +67,7 @@ beforeAll(async () => {
   await verifyTestDatabase(pool);
 
   // Cleanup
+  await pool.query("DELETE FROM User");
   await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query("DELETE FROM Question");
@@ -77,6 +78,7 @@ afterEach(async () => {
 
   // More cleanup
   jest.clearAllMocks();
+  await pool.query("DELETE FROM User");
   await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query("DELETE FROM Question");
@@ -121,7 +123,7 @@ describe("Prof Auth Routes", () => {
     expect(res.body.token).toBeUndefined();
 
     // confirm VERIFIED = 0 in db
-    const [profs] = await pool.query('SELECT VERIFIED FROM Professor WHERE EMAIL = ?', [email]);
+    const [profs] = await pool.query('SELECT VERIFIED FROM User WHERE IS_PROF = 1 AND EMAIL = ?', [email]);
     expect(profs[0].VERIFIED).toBe(0);
   });
 
@@ -145,7 +147,7 @@ describe("Prof Auth Routes", () => {
     const email = "prof3@ucf.edu";
     const hashed = await bcrypt.hash("pass", 10);
     await pool.query(
-      'INSERT INTO Professor (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, VERIFIED) VALUES (?, ?, ?, ?, ?, 0)',
+      'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED) VALUES (?, ?, ?, ?, ?, 1, 0)',
       ["existingprof", email, hashed, "Existing", "Prof"]
     );
     await pool.query(
@@ -296,7 +298,7 @@ describe("Prof Auth Routes", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.message).toBe("Password reset");
 
-    const [profs] = await pool.query('SELECT PASSWORD FROM Professor WHERE EMAIL = ?', [email]);
+    const [profs] = await pool.query('SELECT PASSWORD FROM User WHERE IS_PROF = 1 AND EMAIL = ?', [email]);
     const isMatch = await bcrypt.compare("newpass456", profs[0].PASSWORD);
     expect(isMatch).toBe(true);
   });

@@ -213,8 +213,8 @@ describe("Admin Routes", () => {
     // verification tests
     test("GET /api/admin/unverifiedprofs returns unverified profs", async () => {
       const [result] = await pool.query(
-        'INSERT INTO Professor (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, VERIFIED) VALUES (?, ?, ?, ?, ?, ?)',
-        [TEST_USER.username, "test@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName, 0]
+        'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [TEST_USER.username, "test@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName, 1, 0]
       );
 
       const res = await request(app)
@@ -225,8 +225,8 @@ describe("Admin Routes", () => {
 
     test("POST /api/admin/verifyprof/:id verifies a prof", async () => {
       const [result] = await pool.query(
-        'INSERT INTO Professor (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, VERIFIED) VALUES (?, ?, ?, ?, ?, ?)',
-        [TEST_USER.username, "test@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName, 0]
+        'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [TEST_USER.username, "test@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName, 1, 0]
       );
 
       const profId = result.insertId
@@ -241,8 +241,8 @@ describe("Admin Routes", () => {
 
       // Insert professor
       const [result] = await pool.query(
-        'INSERT INTO Professor (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, VERIFIED) VALUES (?, ?, ?, ?, ?, ?)',
-        [TEST_USER.username, "test@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName, 0]
+        'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [TEST_USER.username, "test@email.com", TEST_USER.password, TEST_USER.firstName, TEST_USER.lastName, 1, 0]
       );
 
       // Verify professor
