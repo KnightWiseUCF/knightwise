@@ -127,6 +127,33 @@ CREATE TABLE `TestRun` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+DROP TABLE IF EXISTS `StoreItem`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `StoreItem` (
+  `ID` int NOT NULL AUTO_INCREMENT,
+  `TYPE` varchar(50),
+  `COST` decimal(10, 2) NOT NULL,
+  `NAME` varchar(50),
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `Purchase`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Purchase` (
+  `USER_ID` int NOT NULL,
+  `ITEM_ID` int NOT NULL,
+  `TYPE` varchar(50),
+  `IS_EQUIPPED` tinyint(1) NOT NULL DEFAULT 0,
+  INDEX `USER_ID`(`USER_ID` ASC) USING BTREE,
+  INDEX `ITEM_ID`(`ITEM_ID` ASC) USING BTREE,
+  CONSTRAINT `Purchased_Item` FOREIGN KEY (`ITEM_ID`) REFERENCES `StoreItem` (`ID`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `Purchaser` FOREIGN KEY (`USER_ID`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
 DROP TABLE IF EXISTS `User`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -137,6 +164,9 @@ CREATE TABLE `User` (
   `FIRSTNAME` varchar(100) DEFAULT NULL,
   `LASTNAME` varchar(100) DEFAULT NULL,
   `USERNAME` varchar(255) DEFAULT NULL,
+  `LIFETIME_EXP` double NOT NULL DEFAULT 0,
+  `WEEKLY_EXP` double NOT NULL DEFAULT 0,
+  `COINS` double NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID`),
   UNIQUE KEY `EMAIL` (`EMAIL`)
 ) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
