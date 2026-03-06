@@ -7,11 +7,14 @@ import {
   BarChart2,
   Lightbulb,
   GraduationCap,
-  UserRoundCog
+  UserRoundCog,
+  FileCode,
 } from "lucide-react"; // for icons
 
 const Sidebar = () => {
   const location = useLocation();
+  const accountType = localStorage.getItem("account_type");
+  const isProfessor = accountType === "professor";
 
   // function: LoggedInName - get first/lastname
   const LoggedInName = () => {
@@ -42,6 +45,15 @@ const Sidebar = () => {
       name: "Dashboard", 
       icon: <BookOpen size={24} />, 
       path: "/dashboard" },
+    ...(isProfessor
+      ? [
+          {
+            name: "Question Drafts",
+            icon: <FileCode size={24} />,
+            path: "/professor-drafts",
+          },
+        ]
+      : []),
     {
       name: "Topic Practice",
       icon: <Lightbulb size={24} />,
@@ -52,16 +64,26 @@ const Sidebar = () => {
       icon: <GraduationCap size={24} />,
       path: "/mock-test",
     },
-    {
-      name: "My Progress",
-      icon: <BarChart2 size={24} />,
-      path: "/my-progress",
-    },
+    ...(isProfessor
+      ? [
+          {
+            name: "Statistics",
+            icon: <BarChart2 size={24} />,
+            path: "",
+          },
+        ]
+      : [
+          {
+            name: "My Progress",
+            icon: <BarChart2 size={24} />,
+            path: "/my-progress",
+          },
+        ]),
     {
       name: "Account",
       icon: <UserRoundCog size={24} />,
       path: "/account"
-    }
+    },
   ];
 
   return (
@@ -73,22 +95,41 @@ const Sidebar = () => {
 
       {/* menu*/}
       <nav className="flex-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <Link
-            key={item.name}
-            to={item.path}
-            className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg mb-2 sm:mb-3 text-base sm:text-lg md:text-xl transition-colors cursor-pointer ${
-              (item.path === "/topic-practice" &&
-                location.pathname.includes("/topic")) ||
-              location.pathname.startsWith(item.path)
-                ? "bg-yellow-500 text-white font-semibold"
-                : "hover:bg-gray-200"
-            }`}
-          >
-            {item.icon}
-            {item.name}
-          </Link>
-        ))}
+        {menuItems.map((item) => {
+          const isDisabled = item.path === "";
+          const isActive = !isDisabled && (
+            (item.path === "/topic-practice" && location.pathname.includes("/topic")) ||
+            location.pathname.startsWith(item.path)
+          );
+
+          const itemClassName = `flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg mb-2 sm:mb-3 text-base sm:text-lg md:text-xl transition-colors ${
+            isActive
+              ? "bg-yellow-500 text-white font-semibold"
+              : isDisabled
+                ? "text-gray-500 cursor-default"
+                : "hover:bg-gray-200 cursor-pointer"
+          }`;
+
+          if (isDisabled) {
+            return (
+              <div key={item.name} className={itemClassName}>
+                {item.icon}
+                {item.name}
+              </div>
+            );
+          }
+
+          return (
+            <Link
+              key={item.name}
+              to={item.path}
+              className={itemClassName}
+            >
+              {item.icon}
+              {item.name}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* logout*/}

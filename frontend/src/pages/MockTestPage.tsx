@@ -31,6 +31,7 @@ import api from "../api";
 import { Question, MockTestResponse } from "../models";
 
 const MockTestPage: React.FC = () => {
+  const isProfessorAccount = localStorage.getItem("account_type") === "professor";
   const [step, setStep] = useState<"info" | "test" | "result">("info");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -98,9 +99,9 @@ const MockTestPage: React.FC = () => {
               .map((a) => a.TEXT)
             : undefined;
           
-          // Shuffle options for most types (except ranked_choice and drag_and_drop which maintain order)
+          // Shuffle options shown to users; keep correctOrder separately for grading
           const shuffledOptions = normalizedType === "ranked_choice"
-            ? correctOrder || []
+            ? [...allAnswerTexts].sort(() => 0.5 - Math.random())
             : normalizedType === "drag_and_drop"
             ? allAnswerTexts.sort(() => 0.5 - Math.random())
             : allAnswerTexts.sort(() => 0.5 - Math.random());
@@ -288,6 +289,10 @@ const MockTestPage: React.FC = () => {
 
     try
     {
+      const submitConfig = token && !isProfessorAccount
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : undefined;
+
       const result = await api.post(
         "/api/test/submit",
         {
@@ -296,7 +301,7 @@ const MockTestPage: React.FC = () => {
           category: current.CATEGORY,
           topic: current.SUBCATEGORY,
         },
-        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        submitConfig
       );
 
       const isCorrect = result.data.isCorrect;
