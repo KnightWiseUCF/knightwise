@@ -40,11 +40,6 @@ const normalizeStoredToken = (rawToken: string | null): string | null => {
   return normalized;
 };
 
-const isLikelyJwt = (token: string): boolean => {
-  const segments = token.split(".");
-  return segments.length === 3 && segments.every((segment) => segment.length > 0);
-};
-
 // Try to get base URL from .env
 const baseURL = import.meta.env.VITE_API_BASE_URL;
 if (!baseURL)
@@ -81,39 +76,11 @@ const clearAuthStorage = () => {
   localStorage.setItem("session_expired", "1");
 };
 
-const shouldSkipAutoLogout = (requestUrl: string): boolean => {
-  const accountType = (localStorage.getItem("account_type") || "").trim().toLowerCase();
-  if (accountType !== "professor") {
-    return false;
-  }
-
-  return /\/api\/admin\/problems(\/|$)/.test(requestUrl);
-};
-
 // Interceptor to add token
 api.interceptors.request.use((config) => {
   config.url = normalizeApiPathForBase(config.url, config.baseURL);
 
   const token = normalizeStoredToken(localStorage.getItem('token'));
-  const accountType = (localStorage.getItem("account_type") || "").trim().toLowerCase();
-  const requiresJwt = accountType !== "admin";
-
-  if (token && requiresJwt && !isLikelyJwt(token)) {
-    clearAuthStorage();
-    if (config.headers?.Authorization) {
-      delete config.headers.Authorization;
-    }
-
-    if (typeof window !== "undefined") {
-      if (window.location.pathname === "/") {
-        window.location.reload();
-      } else {
-        window.location.replace("/");
-      }
-    }
-
-    return config;
-  }
 
   // Add token if it exists (protected routes) 
   if (token) 
@@ -132,9 +99,8 @@ api.interceptors.response.use(
   (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       const hadAuthHeader = Boolean(error.config?.headers?.Authorization);
-      const requestUrl = String(error.config?.url || "");
 
-      if (hadAuthHeader && !shouldSkipAutoLogout(requestUrl)) {
+      if (hadAuthHeader) {
         clearAuthStorage();
 
         if (typeof window !== "undefined") {
