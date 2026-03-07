@@ -17,7 +17,14 @@ const express = require("express");
 const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
-const { deleteAccount, getUserInfo, updateUser } = require("../controllers/userController");
+const { 
+        deleteAccount, 
+        getUserInfo, 
+        updateUser,
+        getPurchases,
+        equipItem,
+        unequipItem,
+      } = require("../controllers/userController");
 
 /**
  * @route   DELETE /api/users/:id
@@ -39,5 +46,26 @@ router.get("/:id", authMiddleware, getUserInfo);
  * @access  Protected
  */
 router.put("/:id", authMiddleware, updateUser);
+
+/**
+ * @route   GET /api/users/:id/purchases
+ * @desc    Fetch a user's purchased store items
+ * @access  Protected
+ */
+router.get("/:id/purchases", authMiddleware, getPurchases);
+
+/**
+ * @route   PUT /api/users/:id/equip
+ * @desc    Equip a purchased store item
+ * @access  Protected
+ */
+router.put("/:id/equip", authMiddleware, equipItem);
+
+/**
+ * @route   PUT /api/users/:id/unequip
+ * @desc    Unequip a purchased store item
+ * @access  Protected
+ */
+router.put("/:id/unequip", authMiddleware, unequipItem);
 
 module.exports = router;

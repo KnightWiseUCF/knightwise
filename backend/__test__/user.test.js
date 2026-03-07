@@ -19,6 +19,7 @@
 const request = require('supertest');
 const { app, pool } = require('../server');
 const { TEST_USER, getAuthToken, verifyTestDatabase, insertPurchase } = require('./testHelpers');
+const { ITEM_TYPES, EQUIP_LIMITS } = require('../../shared/itemConfig');
 
 // Mock Discord webhook
 const { notifyUserEvent } = require('../services/discordWebhook');
@@ -82,14 +83,14 @@ describe('GET /api/users/:id', () => {
   });
 
   test('200 - returns equipped items for user', async () => {
-    const itemType = 'profile_picture';
+    const itemType = ITEM_TYPES.PROFILE_PICTURE;
     const itemCost = '100.00';
     const itemName = 'Octocat';
 
     // The true at the end equips the item
     const itemId = await insertPurchase(userId, { type: itemType, cost: itemCost, name: itemName }, true);
     // Purchase but don't equip this one
-    const uneqippedId = await insertPurchase(userId, { type: 'flair', cost: '3.00', name: 'notEquippedThing' }, false);
+    const uneqippedId = await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, cost: '3.00', name: 'notEquippedThing' }, false);
 
     const res = await request(app)
       .get(`/api/users/${userId}`)
@@ -321,5 +322,258 @@ describe('DELETE /api/users/:id', () => {
     // Verify user is gone
     const [rows] = await pool.query('SELECT ID FROM User WHERE ID = ?', [userId]);
     expect(rows.length).toBe(0);
+
+     // Re-create user for other tests
+    token = await getAuthToken();
+    const [newUserRows] = await pool.query('SELECT ID FROM User WHERE EMAIL = ?', [TEST_USER.email]);
+    userId = newUserRows[0].ID;
+  });
+});
+
+// Test equipping items
+describe('PUT /api/users/:id/equip', () => {
+
+  test('200 - successfully equips a purchased item', async () => {
+    const itemId = await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, name: 'Test Flair' }, false);
+
+    const res = await request(app)
+      .put(`/api/users/${userId}/equip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId });
+
+    expect(res.status).toBe(200);
+
+    // Verify equip state actually changed
+    const [rows] = await pool.query('SELECT IS_EQUIPPED FROM Purchase WHERE USER_ID = ? AND ITEM_ID = ?', [userId, itemId]);
+    expect(rows[0].IS_EQUIPPED).toBe(1);
+
+    // Cleanup
+    await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+  });
+
+  test('400 - item already equipped', async () => {
+    // Insert purchase and equip
+    const itemId = await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, name: 'Test Flair' }, true);
+
+    // Try equipping same item
+    const res = await request(app)
+      .put(`/api/users/${userId}/equip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId });
+
+    expect(res.status).toBe(400);
+
+    // Cleanup
+    await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+  });
+
+  test('400 - invalid user ID', async () => {
+    const res = await request(app)
+      .put('/api/users/abc/equip')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId: 1 });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/equip`)
+      .send({ itemId: 1 });
+
+    expect(res.status).toBe(401);
+  });
+
+  test('403 - cannot equip for another user', async () => {
+    const res = await request(app)
+      .put('/api/users/999999/equip')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId: 1 });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('404 - item not purchased', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/equip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId: 999999 });
+
+    expect(res.status).toBe(404);
+  });
+
+  test('409 - equip limit reached for flairs', async () => {
+    // Insert and equip max # of flairs
+    const itemIds = [];
+    for (let i = 0; i < EQUIP_LIMITS[ITEM_TYPES.FLAIR]; i++)
+    {
+      itemIds.push(await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, name: `Flair ${i}` }, true));
+    }
+    // One more flair, unequipped
+    const extraItemId = await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, name: 'Extra Flair' }, false);
+    itemIds.push(extraItemId);
+
+    // Now try to equip it
+    const res = await request(app)
+      .put(`/api/users/${userId}/equip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId: extraItemId });
+
+    // Equip limit reached!
+    expect(res.status).toBe(409);
+
+    // Cleanup
+    await pool.query(`DELETE FROM StoreItem WHERE ID IN (${itemIds.map(() => '?').join(',')})`, itemIds);
+  });
+
+  test('200 - equipping profile picture swaps out current one', async () => {
+    // Insert and equip 1 profile picture (the limit)
+    const pfpId1 = await insertPurchase(userId, { type: ITEM_TYPES.PROFILE_PICTURE, name: 'Pic 1' }, true);
+    // This one has been purchased but not equipped
+    const pfpId2 = await insertPurchase(userId, { type: ITEM_TYPES.PROFILE_PICTURE, name: 'Pic 2' }, false);
+
+    // Equip the second picture, it should just swap out the first one
+    const res = await request(app)
+      .put(`/api/users/${userId}/equip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId: pfpId2 });
+
+    expect(res.status).toBe(200);
+
+    // Verify old picture was unequipped
+    const [old] = await pool.query('SELECT IS_EQUIPPED FROM Purchase WHERE USER_ID = ? AND ITEM_ID = ?', [userId, pfpId1]);
+    expect(old[0].IS_EQUIPPED).toBe(0);
+
+    // Verify new picture is equipped
+    const [current] = await pool.query('SELECT IS_EQUIPPED FROM Purchase WHERE USER_ID = ? AND ITEM_ID = ?', [userId, pfpId2]);
+    expect(current[0].IS_EQUIPPED).toBe(1);
+
+    await pool.query('DELETE FROM StoreItem WHERE ID IN (?, ?)', [pfpId1, pfpId2]);
+  });
+});
+
+// Test unequipping items
+describe('PUT /api/users/:id/unequip', () => {
+
+  test('200 - successfully unequips an equipped item', async () => {
+    // Purchase and equip a flair
+    const itemId = await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, name: 'Test Flair' }, true);
+
+    // Try to unequip it
+    const res = await request(app)
+      .put(`/api/users/${userId}/unequip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId });
+
+    // Success!
+    expect(res.status).toBe(200);
+
+    // Verify equip state actually changed to false
+    const [rows] = await pool.query('SELECT IS_EQUIPPED FROM Purchase WHERE USER_ID = ? AND ITEM_ID = ?', [userId, itemId]);
+    expect(rows[0].IS_EQUIPPED).toBe(0);
+
+    // Cleanup
+    await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+  });
+
+  test('400 - item not equipped', async () => {
+    // Insert purchase as unequipped
+    const itemId = await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, name: 'Test Flair' }, false);
+
+    // Try double-unequipping
+    const res = await request(app)
+      .put(`/api/users/${userId}/unequip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId });
+
+    expect(res.status).toBe(400);
+
+    // Cleanup
+    await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/unequip`)
+      .send({ itemId: 1 });
+
+    expect(res.status).toBe(401);
+  });
+
+  test('403 - cannot unequip for another user', async () => {
+    const res = await request(app)
+      .put('/api/users/999999/unequip')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId: 1 });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('404 - item not purchased', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/unequip`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemId: 999999 });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// Test fetching user purchases
+describe('GET /api/users/:id/purchases', () => {
+
+  test('200 - returns empty array when no purchases', async () => {
+    const res = await request(app)
+      .get(`/api/users/${userId}/purchases`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('purchases');
+    expect(res.body.purchases).toHaveLength(0);
+  });
+
+  test('200 - returns purchased items with item data', async () => {
+    // Insert two purchases
+    const itemId1 = await insertPurchase(userId, { type: ITEM_TYPES.FLAIR, cost: '5.00', name: 'Test Flair' }, false);
+    const itemId2 = await insertPurchase(userId, { type: ITEM_TYPES.PROFILE_PICTURE, cost: '10.00', name: 'Test Pic' }, true);
+
+    const res = await request(app)
+      .get(`/api/users/${userId}/purchases`)
+      .set('Authorization', `Bearer ${token}`);
+
+    const flair = res.body.purchases.find(p => p.ID === itemId1);
+    const pic   = res.body.purchases.find(p => p.ID === itemId2);
+
+    // Should succeed and show purchases
+    expect(res.status).toBe(200);
+    expect(res.body.purchases).toHaveLength(2);
+    expect(flair).toHaveProperty('ID',  itemId1);
+    expect(flair).toHaveProperty('TYPE', ITEM_TYPES.FLAIR);
+    expect(flair).toHaveProperty('COST', '5.00');
+    expect(flair).toHaveProperty('NAME', 'Test Flair');
+    expect(flair).toHaveProperty('IS_EQUIPPED', 0);
+    expect(pic).toHaveProperty('ID', itemId2);
+    expect(pic).toHaveProperty('TYPE', ITEM_TYPES.PROFILE_PICTURE);
+    expect(pic).toHaveProperty('COST', '10.00');
+    expect(pic).toHaveProperty('NAME', 'Test Pic');
+    expect(pic).toHaveProperty('IS_EQUIPPED', 1);
+
+    // Cleanup
+    await pool.query('DELETE FROM StoreItem WHERE ID IN (?, ?)', [itemId1, itemId2]);
+  });
+
+  test('400 - invalid user ID', async () => {
+    const res = await request(app)
+      .get('/api/users/abc/purchases')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .get(`/api/users/${userId}/purchases`);
+
+    expect(res.status).toBe(401);
   });
 });

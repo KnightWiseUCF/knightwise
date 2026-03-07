@@ -10,6 +10,7 @@
 //                 supertest
 //                 mysql2 connection pool (server.js)
 //                 env config
+//                 itemConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -17,6 +18,7 @@ const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const { app, pool, poolReady } = require('../server');
 const { validTestDBs } = require('../config/env');
+const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Default test user template, can be overridden for individual tests
 const TEST_USER = {
@@ -37,7 +39,7 @@ const TEST_USER = {
 const insertPurchase = async (userId, itemInfo = {}, isEquipped = false) => {
   const [itemResult] = await pool.query(
     'INSERT INTO StoreItem (TYPE, COST, NAME) VALUES (?, ?, ?)',
-    [itemInfo.type ?? 'flair', itemInfo.cost ?? 5.00, itemInfo.name ?? 'Test Flair']
+    [itemInfo.type ?? ITEM_TYPES.FLAIR, itemInfo.cost ?? 5.00, itemInfo.name ?? 'Test Flair']
   );
   const itemId = itemResult.insertId;
 

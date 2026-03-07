@@ -33,7 +33,7 @@ const parseUserId = (rawId, context = 'parseUserId') => {
 
 /**
  * Validates a first or last name 
- * Allows accented letters, spaces, hyphens, apostrophes, and periods
+ * Allows Unicode letters, spaces, hyphens, apostrophes, and periods
  * 
  * Note: Returns error string instead of throwing AppError because
  * this function is technically agnostic of Express/HTTP stuff,
@@ -47,7 +47,7 @@ const validateName = (name) => {
   {
     return "Name is required.";
   }
-  if (!/^[a-zA-ZÀ-ÖØ-öø-ÿ\s'\-\.]+$/.test(name)) 
+  if (!/^[\p{L}\s'\-\.]+$/u.test(name)) 
   {
     return "Name may only include letters, spaces, hyphens, apostrophes, and periods.";
   }

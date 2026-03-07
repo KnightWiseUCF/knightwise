@@ -19,6 +19,7 @@
 //                 requireRole
 //                 node-mailjet
 //                 discordWebhook service (notifyUserEvent)
+//                 itemConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -31,6 +32,7 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 const authMiddleware = require('../middleware/authMiddleware');
 const requireRole = require('../middleware/requireRole');
 const { notifyUserEvent } = require("../services/discordWebhook");
+const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Mailjet for sending professor verified email
 const Mailjet = require("node-mailjet");
@@ -127,7 +129,7 @@ const sendProfVerifiedEmail = async (prof) => {
 }
 
 /**
- * @route   DELETE /api/admin/user/:id
+ * @route   DELETE /api/admin/users/:id
  * @desc    Delete a user's account and associated data
  * @access  Admin
  */
@@ -659,6 +661,49 @@ router.post('/problems/:id/publish', adminOrProf, asyncHandler(async (req, res) 
   notifyUserEvent(`Question ID ${id} published by ${req.user?.role} (owner ID: ${question.OWNER_ID})`);
 
   res.json({ message: "Question published" });
+}));
+
+/**
+ * @route   POST /api/admin/store/createitem
+ * @desc    Create a store item available for purchase
+ * @access  Admin
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @throws {AppError} 400                  - If invalid item field provided
+ * @returns {Promise<void>} - JSON response confirming store item created
+ */
+router.post('/store/createitem', adminMiddleware, asyncHandler(async (req, res) => {
+  const { itemType, itemCost, itemName } = req.body;
+
+  if (itemType == null || itemCost == null || itemName == null)
+  {
+    throw new AppError("[createitem] Missing required fields", 400, "Invalid fields");
+  }
+
+  // Ensure new item corresponds to a valid item type
+  if (!Object.values(ITEM_TYPES).includes(itemType))
+  {
+    throw new AppError(`[createitem] Invalid item type: ${itemType}`, 400, `Invalid item type. Must be one of: ${Object.values(ITEM_TYPES).join(', ')}`);
+  }
+
+  // Ensure cost is non-negative number
+  if (isNaN(itemCost) || itemCost < 0)
+  {
+    throw new AppError(`[createitem] Invalid item cost: ${itemCost}`, 400, "Cost must be a non-negative number");
+  }
+
+  // Insert new item into db
+  const [result] = await req.db.query(
+    'INSERT INTO StoreItem (TYPE, COST, NAME) VALUES (?, ?, ?)',
+    [itemType, itemCost, itemName]
+  );
+  const itemId = result.insertId;
+
+  // Send Discord notification
+  notifyUserEvent(`Item ${itemId} created: ${itemName} (${itemType}), costs ${itemCost} coins`);
+
+  res.status(201).json({ message: "Store item successfully created", itemId});
 }));
 
 module.exports = router;

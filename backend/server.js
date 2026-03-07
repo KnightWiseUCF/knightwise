@@ -114,6 +114,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/code', require('./routes/codeSubmission'));
 app.use('/api/profauth', require('./routes/profAuthRoutes'));
+app.use('/api/store', require('./routes/store'));
 
 // Error handler
 app.use(handleError);
