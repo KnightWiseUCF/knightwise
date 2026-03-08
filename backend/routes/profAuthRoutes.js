@@ -73,7 +73,7 @@ router.post("/signup", asyncHandler(async (req, res) => {
 
   // Check if professor user or email already exists
   const [existingProfs] = await req.db.query(
-    'SELECT * FROM Professor WHERE USERNAME = ? OR EMAIL = ?',
+    'SELECT * FROM User WHERE IS_PROF = 1 AND (USERNAME = ? OR EMAIL = ?)',
     [username, email]
   );
 
@@ -86,7 +86,7 @@ router.post("/signup", asyncHandler(async (req, res) => {
 
   // Insert new professor into db
   const [result] = await req.db.query(
-    'INSERT INTO Professor (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, VERIFIED) VALUES (?, ?, ?, ?, ?, 0)',
+    'INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED) VALUES (?, ?, ?, ?, ?, 1, 0)',
     [username, email, hashedPassword, firstName, lastName]
   );
 
@@ -117,7 +117,7 @@ router.post("/login", asyncHandler(async (req, res) => {
   const { username, password } = req.body;
 
   const [profs] = await req.db.query(
-    'SELECT * FROM Professor WHERE USERNAME = ?',
+    'SELECT * FROM User WHERE IS_PROF = 1 AND USERNAME = ?',
     [username]
   );
 
@@ -189,7 +189,7 @@ router.post("/resetPassword", asyncHandler(async (req, res) => {
 
   // Get professor's current password hash
   const [profs] = await req.db.query(
-    'SELECT PASSWORD FROM Professor WHERE EMAIL = ?',
+    'SELECT PASSWORD FROM User WHERE IS_PROF = 1 AND EMAIL = ?',
     [email]
   );
   if (profs.length === 0) 
@@ -209,7 +209,7 @@ router.post("/resetPassword", asyncHandler(async (req, res) => {
 
   // Update new password
   await req.db.query(
-    'UPDATE Professor SET PASSWORD = ? WHERE EMAIL = ?',
+    'UPDATE User SET PASSWORD = ? WHERE EMAIL = ?',
     [hashedPassword, email]
   );
   res.json({ message: "Password reset" });
