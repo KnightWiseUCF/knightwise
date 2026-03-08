@@ -12,30 +12,46 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 
 const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  // Tracks whether the user is attempting student or professor sign-in.
+  const [accountType, setAccountType] = useState<"student" | "professor">("student");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const sessionExpired = localStorage.getItem("session_expired") === "1";
+    if (sessionExpired) {
+      setSessionExpiredMessage("Session expired. Please sign in again.");
+      localStorage.removeItem("session_expired");
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccessMessage("");
+    setSessionExpiredMessage("");
 
     try {
-      const response = await api.post("/api/auth/login", 
+      const loginEndpoint = accountType === "professor" ? "/api/profauth/login" : "/api/auth/login";
+
+      const response = await api.post(loginEndpoint, 
       {
         username,
         password,
       });
 
       localStorage.setItem("token", response.data.token);
+      // Persist selected role for downstream role-based navigation/logic.
+      localStorage.setItem("account_type", accountType);
 
       if (response.data.user) {
         localStorage.setItem("user_data", JSON.stringify(response.data.user));
@@ -91,6 +107,36 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
             />
           </div>
 
+          {/* Account type toggle for choosing student vs professor login flow */}
+          <div className="w-full flex justify-center py-2">
+            <div className="inline-flex rounded-full border border-gray-900 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setAccountType("student")}
+                className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
+                  accountType === "student"
+                    ? "bg-yellow-500 text-black"
+                    : "bg-transparent text-gray-800"
+                }`}
+                aria-pressed={accountType === "student"}
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType("professor")}
+                className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
+                  accountType === "professor"
+                    ? "bg-yellow-500 text-black"
+                    : "bg-transparent text-gray-800"
+                }`}
+                aria-pressed={accountType === "professor"}
+              >
+                Professor
+              </button>
+            </div>
+          </div>
+
           {/* button */}
           <button
             type="submit"
@@ -103,6 +149,9 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
         {/* messages */}
         {error && (
           <p className="text-red-500 text-base text-center mt-2">{error}</p>
+        )}
+        {sessionExpiredMessage && (
+          <p className="text-amber-600 text-base text-center mt-2">{sessionExpiredMessage}</p>
         )}
         {successMessage && (
           <p className="text-green-500 text-sm text-center mt-2">
@@ -117,12 +166,25 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
             Create an account
           </button>
         </p>
+        {/* move to professor application */}
+        <p className="text-sm sm:text-base text-gray-600 mt-1 text-center">
+          Professor or Teacher?{" "}
+          <button
+            onClick={() => navigate("/professor-apply")}
+            className="text-blue-500 hover:underline"
+          >
+            Apply for a professor account
+          </button>
+        </p>
 
         {/* password reset */}
         <p className="text-sm sm:text-base text-gray-600 mt-4 text-center">
           Forgot password?{" "}
           <button
-            onClick={() => navigate("/forgot-password")}
+            onClick={() => {
+              localStorage.setItem("reset_account_type", accountType);
+              navigate("/forgot-password");
+            }}
             className="text-blue-500 hover:underline"
           >
             Reset Password

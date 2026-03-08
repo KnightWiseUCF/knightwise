@@ -133,12 +133,33 @@ const DragAndDrop: React.FC<Props> = ({
     if (!draggedAnswer) return;
 
     const newAnswers = { ...droppedAnswers };
+    // Remove the dragged answer from any previous placement before reassigning.
+    Object.entries(newAnswers).forEach(([key, answer]) => {
+      if (answer === draggedAnswer) {
+        delete newAnswers[key];
+      }
+    });
     // Simple placement-based key: placement_0, placement_1, etc.
     const existingCount = Object.entries(newAnswers).filter(
       ([key]) => key.startsWith(placement)
     ).length;
     const zoneKey = `${placement}_${existingCount}`;
     newAnswers[zoneKey] = draggedAnswer;
+    setDroppedAnswers(newAnswers);
+    setDraggedAnswer(null);
+  };
+
+  // Handle drop back into answer pool - remove from current placement.
+  const handleAnswerPoolDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!draggedAnswer) return;
+
+    const newAnswers = { ...droppedAnswers };
+    Object.entries(newAnswers).forEach(([key, answer]) => {
+      if (answer === draggedAnswer) {
+        delete newAnswers[key];
+      }
+    });
     setDroppedAnswers(newAnswers);
     setDraggedAnswer(null);
   };
@@ -169,7 +190,7 @@ const DragAndDrop: React.FC<Props> = ({
         Question {currentIndex + 1} of {total}
       </h2>
 
-      <div className="text-base sm:text-lg md:text-xl font-medium mb-6">
+      <div className="question-rich-text text-base sm:text-lg md:text-xl font-medium mb-6">
         {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
       </div>
 
@@ -196,7 +217,13 @@ const DragAndDrop: React.FC<Props> = ({
                   .map(([key, answer]) => (
                     <div
                       key={key}
-                      className="px-3 py-2 bg-yellow-100 border border-yellow-400 rounded"
+                      draggable={!showFeedback}
+                      onDragStart={handleDragStart(answer)}
+                      className={`px-3 py-2 border rounded ${
+                        showFeedback
+                          ? "bg-gray-200 border-gray-300 text-gray-600 cursor-not-allowed"
+                          : "bg-yellow-100 border-yellow-400 cursor-move"
+                      }`}
                     >
                       {answer}
                     </div>
@@ -215,6 +242,7 @@ const DragAndDrop: React.FC<Props> = ({
         <div
           className="flex flex-wrap gap-3 p-4 bg-gray-50 rounded-lg min-h-[100px]"
           onDragOver={handleDragOver}
+          onDrop={handleAnswerPoolDrop}
         >
           {availableAnswers.map((ans, idx) => (
             <div
