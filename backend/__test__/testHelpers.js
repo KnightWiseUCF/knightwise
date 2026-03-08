@@ -10,6 +10,7 @@
 //                 supertest
 //                 mysql2 connection pool (server.js)
 //                 env config
+//                 itemConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -17,6 +18,7 @@ const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const { app, pool, poolReady } = require('../server');
 const { validTestDBs } = require('../config/env');
+const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Default test user template, can be overridden for individual tests
 const TEST_USER = {
@@ -25,6 +27,28 @@ const TEST_USER = {
   password: "Testpass123!",
   firstName: "Test",
   lastName: "User"
+};
+
+/**
+ * Inserts a store item and purchase for it, optionally equips
+ * @param {number} userId      - User to purchase for
+ * @param {Object} itemInfo    - Optional store item info, default fields used otherwise
+ * @param {boolean} isEquipped - If true, equips new item for user, false by default
+ * @returns {Promise<number>} Inserted item ID
+ */
+const insertPurchase = async (userId, itemInfo = {}, isEquipped = false) => {
+  const [itemResult] = await pool.query(
+    'INSERT INTO StoreItem (TYPE, COST, NAME) VALUES (?, ?, ?)',
+    [itemInfo.type ?? ITEM_TYPES.FLAIR, itemInfo.cost ?? 5.00, itemInfo.name ?? 'Test Flair']
+  );
+  const itemId = itemResult.insertId;
+
+  await pool.query(
+    'INSERT INTO Purchase (USER_ID, ITEM_ID, IS_EQUIPPED) VALUES (?, ?, ?)',
+    [userId, itemId, isEquipped ? 1 : 0]
+  );
+
+  return itemId;
 };
 
 /**
@@ -138,6 +162,7 @@ async function verifyTestDatabase(pool)
 
 module.exports = {
   TEST_USER,
+  insertPurchase,
   insertQuestion,
   submitAndFetch,
   getAuthToken,
