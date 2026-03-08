@@ -90,6 +90,30 @@ const hasError = (results) => {
 }
 
 /**
+ * Helper function, serializes user source code into JSON
+ * Stored in Response.USER_ANSWER and used in History Table
+ *
+ * @param {string} code       - Raw source code string
+ * @param {number} languageId - Judge0 language ID
+ * @returns {string} JSON containing relevant user response data
+ */
+const serializeProgrammingAnswer = (code, languageId) => {
+  // These labels will be used in the History Table display
+  const languageNames = {
+    [judge0Service.LANGUAGE_IDS.C]:      'C',
+    [judge0Service.LANGUAGE_IDS.CPP]:    'C++',
+    [judge0Service.LANGUAGE_IDS.JAVA]:   'Java',
+    [judge0Service.LANGUAGE_IDS.PYTHON]: 'Python',
+  };
+
+  return JSON.stringify({
+    type: 'Programming',
+    language: languageNames[languageId] ?? `Language ${languageId}`,
+    code,
+  });
+};
+
+/**
  * @route   POST /api/codeSubmission/submitCode
  * @desc    Submit code to Judge0, receive output and grade against test cases.
  *          Supports test runs, which submits to Judge0 but doesn't grade output
@@ -204,6 +228,9 @@ const submitCode = asyncHandler(async (req, res) => {
     tokens.map(token => judge0Service.pollSubmission(token))
   );
 
+  // Serialize user's code and language
+  const serializedCode = serializeProgrammingAnswer(code, languageId);
+
   // Check for compilation/runtime errors
   if (hasError(pollResults))
   {
@@ -226,12 +253,22 @@ const submitCode = asyncHandler(async (req, res) => {
     else // Actual submission, not test run
     {
       await req.db.query(
-        `INSERT INTO Response (USERID, PROBLEM_ID, USER_ANSWER, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
+        `INSERT INTO Response
+        (
+          USERID,
+          PROBLEM_ID,
+          USER_ANSWER,
+          ISCORRECT,
+          POINTS_EARNED,
+          POINTS_POSSIBLE,
+          CATEGORY,
+          TOPIC
+        ) 
         VALUES (?, ?, ?, FALSE, 0, ?, ?, ?)`,
         [
           userId, 
           problemId, 
-          code,
+          serializedCode,
           question.POINTS_POSSIBLE, 
           question.CATEGORY, 
           question.SUBCATEGORY
@@ -246,7 +283,7 @@ const submitCode = asyncHandler(async (req, res) => {
       error: errorResult.stderr || errorResult.compile_output || 'Execution failed',
       message: 'Your code failed to execute. Please check for errors.'
     });
-  }
+  } // End error block
 
   // If test run, just save test run to database and return execution output
   if (isTestRun)
@@ -275,12 +312,22 @@ const submitCode = asyncHandler(async (req, res) => {
 
   // Save submission to database
   await req.db.query(
-    `INSERT INTO Response (USERID, PROBLEM_ID, USER_ANSWER, ISCORRECT, POINTS_EARNED, POINTS_POSSIBLE, CATEGORY, TOPIC) 
+    `INSERT INTO Response 
+    (
+      USERID,
+      PROBLEM_ID,
+      USER_ANSWER,
+      ISCORRECT,
+      POINTS_EARNED,
+      POINTS_POSSIBLE,
+      CATEGORY,
+      TOPIC
+    ) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId, 
       problemId, 
-      code, 
+      serializedCode, 
       gradingResults.allPassed, 
       gradingResults.pointsEarned, 
       question.POINTS_POSSIBLE, 

@@ -28,6 +28,51 @@ const TEST_USER = {
 };
 
 /**
+ * Inserts a question and its answers, returns question ID.
+ * @param {string}         type     - Question.TYPE (e.g. 'Multiple Choice')
+ * @param {Array<Object>}  answers  - Array of { text, isCorrect, rank, placement }
+ * @returns {Promise<number>} Inserted question ID
+ */
+const insertQuestion = async (type, answers = []) => {
+  const [result] = await pool.query(
+    'INSERT INTO Question (QUESTION_TEXT, TYPE, SUBCATEGORY, SECTION, CATEGORY, POINTS_POSSIBLE) VALUES (?, ?, ?, ?, ?, ?)',
+    ['Test question', type, 'Test Topic', 'A', 'Test Category', 2.00]
+  );
+  const questionId = result.insertId;
+
+  for (const answer of answers)
+  {
+    await pool.query(
+      'INSERT INTO AnswerText (QUESTION_ID, `TEXT`, IS_CORRECT_ANSWER, `RANK`, PLACEMENT) VALUES (?, ?, ?, ?, ?)',
+      [questionId, answer.text, answer.isCorrect ? 1 : 0, answer.rank ?? 0, answer.placement ?? '']
+    );
+  }
+
+  return questionId;
+};
+
+/**
+ * Submits an answer and returns response + stored Response database row.
+ */
+const submitAndFetch = async (questionId, userAnswer, token) => {
+  const res = await request(app)
+    .post('/api/test/submit')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      problem_id: questionId,
+      userAnswer,
+      category:   'Test Category',
+      topic:      'Test Topic',
+    });
+
+  const [rows] = await pool.query(
+    'SELECT USER_ANSWER FROM Response ORDER BY ID DESC LIMIT 1'
+  );
+
+  return { res, stored: rows[0] ? JSON.parse(rows[0].USER_ANSWER) : null };
+};
+
+/**
  * Get a JWT auth token for the test user
  * Creates the user if it doesn't exist, then logs in.
  *
@@ -92,8 +137,9 @@ async function verifyTestDatabase(pool)
 }
 
 module.exports = {
-  validTestDBs,
   TEST_USER,
+  insertQuestion,
+  submitAndFetch,
   getAuthToken,
   verifyTestDatabase
 };

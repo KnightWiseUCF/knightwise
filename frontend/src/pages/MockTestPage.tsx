@@ -258,6 +258,7 @@ const MockTestPage: React.FC = () => {
             problemId: current.ID,
             code: programmingAnswer,
             languageId,
+            isTestRun: false,
           },
           token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
         );

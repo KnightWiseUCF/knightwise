@@ -49,16 +49,18 @@ const Programming: React.FC<Props> = ({
   const [useSpaces, setUseSpaces] = useState<boolean>(true);
 
   const languages = current.problem?.languages || [];
-  const languageOptions = languages.length ? languages : ["C", "Python", "Java"];
+  const languageOptions = languages.length ? languages : ["C", "C++", "Python", "Java"];
 
   const languageIds: Record<string, number> = {
     C: 50,
+    "C++": 54,
     Java: 62,
     Python: 71,
   };
 
   const monacoLanguageIds: Record<string, string> = {
     C: "cpp",
+    "C++": "cpp",
     Java: "java",
     Python: "python",
   };
@@ -93,6 +95,7 @@ const Programming: React.FC<Props> = ({
           problemId: current.ID,
           code: editorContent,
           languageId,
+          isTestRun: true,
         },
         token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
       );
