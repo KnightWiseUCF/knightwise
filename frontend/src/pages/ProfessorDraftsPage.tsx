@@ -400,10 +400,10 @@ const ProfessorDraftsPage: React.FC = () => {
 
         setAvailableSections(Array.from(new Set([...defaultSections, ...sectionsFromApi])));
         const mappedCategoryNames = defaultCategories;
-        const mergedSubcategories = Array.from(new Set([...defaultSubcategories, ...subcategoriesFromApi]));
+        const mergedSubcategories = Array.from(new Set(subcategoriesFromApi));
 
         setAvailableCategories(mappedCategoryNames);
-        setAvailableSubcategories(mergedSubcategories);
+        setAvailableSubcategories(mergedSubcategories.length > 0 ? mergedSubcategories : defaultSubcategories);
       } catch {
         setAvailableSections(defaultSections);
         setAvailableCategories(defaultCategories);
@@ -529,6 +529,8 @@ const ProfessorDraftsPage: React.FC = () => {
           return Number.isFinite(questionOwnerId) && questionOwnerId === userId;
         };
 
+        // /api/test/topic/:topicName already returns published questions only.
+        // Keep only ownership filtering on the client for professor-specific management UI.
         const filtered = Array.from(dedupedById.values())
           .filter(ownerMatches)
           .map(toPublishedQuestion)

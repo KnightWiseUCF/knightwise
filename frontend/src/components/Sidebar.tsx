@@ -7,6 +7,7 @@ import {
   BarChart2,
   Lightbulb,
   GraduationCap,
+  UserCircle,
   UserRoundCog,
   FileCode,
 } from "lucide-react"; // for icons
@@ -79,6 +80,11 @@ const Sidebar = () => {
             path: "/my-progress",
           },
         ]),
+    {
+      name: "Profile",
+      icon: <UserCircle size={24} />,
+      path: "/profile"
+    },
     {
       name: "Account",
       icon: <UserRoundCog size={24} />,
