@@ -1,2 +1,10 @@
 /* Tailwind is being used */
 @import 'tailwindcss';
+
+.question-rich-text code {
+	white-space: break-spaces;
+}
+
+.question-rich-text pre {
+	white-space: pre-wrap;
+}

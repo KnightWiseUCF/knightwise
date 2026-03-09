@@ -19,9 +19,24 @@ interface ProgressMessageProps {
 }
 
 const allTopics = [
-  "Algorithm Analysis", "AVL Trees", "Backtracking", "Base Conversion", "Binary Trees",
-  "Bitwise Operators", "Dynamic Memory", "Hash Tables", "Heaps", "Linked Lists",
-  "Queues", "Recurrence Relations", "Recursion", "Sorting", "Stacks", "Summations", "Tries"
+  "Input/Output",
+  "Branching",
+  "Loops",
+  "Variables",
+  "Arrays",
+  "Linked Lists",
+  "Strings",
+  "Classes",
+  "Methods",
+  "Trees",
+  "Stacks",
+  "Heaps",
+  "Tries",
+  "Bitwise Operators",
+  "Dynamic Memory",
+  "Algorithm Analysis",
+  "Recursion",
+  "Sorting"
 ];
 
 const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, streakCount }) => {

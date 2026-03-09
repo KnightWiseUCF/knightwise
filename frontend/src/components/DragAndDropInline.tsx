@@ -65,7 +65,7 @@ const DragAndDropInline: React.FC<Props> = ({
     let zoneIndex = 0;
 
     return (
-      <div className="text-base sm:text-lg md:text-xl font-medium mb-6 leading-relaxed">
+      <div className="question-rich-text text-base sm:text-lg md:text-xl font-medium mb-6 leading-relaxed">
         {parts.map((part, idx) => {
           // Replace [blank] markers with draggable drop zones
           if (part.toLowerCase() === "[blank]") {

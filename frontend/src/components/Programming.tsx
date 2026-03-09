@@ -101,21 +101,54 @@ const Programming: React.FC<Props> = ({
       );
 
       const data = result.data;
+      // Join only non-empty console lines with spacing for readability.
+      const formatConsoleLines = (lines: Array<string | undefined | null>) =>
+        lines.filter((line): line is string => Boolean(line)).join("\n\n");
+
+      // Backend returns per-test execution details in testResults.
+      // We use the first test case for a quick run-preview output.
+      const firstTestResult =
+        Array.isArray(data.testResults) && data.testResults.length > 0
+          ? data.testResults[0]
+          : null;
+
+      // Determine output, execution time, and memory usage 
+      let resolvedOutput = "(none)";
+      if (firstTestResult && firstTestResult.actualOutput != null) {
+        resolvedOutput = firstTestResult.actualOutput;
+      } else if (data.stdout != null) {
+        resolvedOutput = data.stdout;
+      }
+
+      let resolvedExecutionTime = data.executionTime;
+      if (firstTestResult && firstTestResult.executionTime != null) {
+        resolvedExecutionTime = firstTestResult.executionTime;
+      }
+
+      let resolvedMemory = data.memory;
+      if (firstTestResult && firstTestResult.memory != null) {
+        resolvedMemory = firstTestResult.memory;
+      }
+
+      // Normalize error fields that may vary by backend/Judge0 path.
+      const resolvedError = data.error || data.compile_output || data.stderr;
+
       if (data.success) {
-        const outputLines = [
-          `Status: ${data.status}`,
-          `Correct: ${data.correct ? "Yes" : "No"}`,
-          data.stdout ? `Output:\n${data.stdout}` : "Output: (none)",
-          data.executionTime ? `Time: ${data.executionTime}s` : "",
-          data.memory ? `Memory: ${data.memory} KB` : "",
-        ].filter(Boolean);
-        setConsoleOutput(outputLines.join("\n\n"));
+        setConsoleOutput(
+          formatConsoleLines([
+            resolvedOutput,
+            resolvedExecutionTime ? `Time: ${resolvedExecutionTime}s` : undefined,
+            resolvedMemory ? `Memory: ${resolvedMemory} KB` : undefined,
+          ])
+        );
       } else {
-        const errorLines = [
-          `Status: ${data.status || "Execution failed"}`,
-          data.error ? `Error:\n${data.error}` : "",
-        ].filter(Boolean);
-        setConsoleOutput(errorLines.join("\n\n"));
+        setConsoleOutput(
+          formatConsoleLines([
+            `Status: ${data.status || "Execution failed"}`,
+            resolvedError ? `Error Output:\n${resolvedError}` : undefined,
+            data.stdout ? `Output:\n${data.stdout}` : undefined,
+          ])
+        );
       }
     } catch (error) {
       // Log full error details for debugging
@@ -157,7 +190,7 @@ const Programming: React.FC<Props> = ({
         {current.CATEGORY} <span className="text-yellow-600">&gt;</span>{" "}
         {current.SUBCATEGORY}
         <span className="block text-sm sm:text-base md:text-xl text-gray-500 font-normal mt-1 sm:mt-0">
-          (Exam Date: {current.AUTHOR_EXAM_ID})
+          (Source: {current.AUTHOR_EXAM_ID})
         </span>
       </h1>
 
@@ -166,7 +199,7 @@ const Programming: React.FC<Props> = ({
         Problem {currentIndex + 1} of {total}
       </h2>
 
-      <div className="text-base sm:text-lg md:text-xl font-medium mb-6 p-4 bg-gray-50 rounded-lg border border-gray-300">
+      <div className="question-rich-text text-base sm:text-lg md:text-xl font-medium mb-6 p-4 bg-gray-50 rounded-lg border border-gray-300">
         {parse(DOMPurify.sanitize(current.QUESTION_TEXT))}
       </div>
 
