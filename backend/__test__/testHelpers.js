@@ -55,12 +55,13 @@ const insertPurchase = async (userId, itemInfo = {}, isEquipped = false) => {
  * Inserts a question and its answers, returns question ID.
  * @param {string}         type     - Question.TYPE (e.g. 'Multiple Choice')
  * @param {Array<Object>}  answers  - Array of { text, isCorrect, rank, placement }
+ * @param {number}         points   - Number of points question is worth, default 2.00
  * @returns {Promise<number>} Inserted question ID
  */
-const insertQuestion = async (type, answers = []) => {
+const insertQuestion = async (type, answers = [], points = 2.00) => {
   const [result] = await pool.query(
     'INSERT INTO Question (QUESTION_TEXT, TYPE, SUBCATEGORY, SECTION, CATEGORY, POINTS_POSSIBLE) VALUES (?, ?, ?, ?, ?, ?)',
-    ['Test question', type, 'Test Topic', 'A', 'Test Category', 2.00]
+    ['Test question', type, 'Test Topic', 'A', 'Test Category', points]
   );
   const questionId = result.insertId;
 
