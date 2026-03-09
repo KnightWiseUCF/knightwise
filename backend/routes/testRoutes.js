@@ -12,6 +12,7 @@
 //                 authMiddleware
 //                 errorHandler
 //                 gradingController
+//                 currencyUtils
 //
 ////////////////////////////////////////////////////////////////
 
@@ -20,6 +21,7 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 const { gradeQuestion } = require("../controllers/gradingController");
+const { awardCurrency } = require("../utils/currencyUtils");
 
 /**
  * Helper function, gets answers for given questions, pairs them with each question
@@ -215,6 +217,9 @@ router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
       new Date()
     ]
   );
+
+  // Award currency to user (respects daily exp cap)
+  await awardCurrency(req.db, user_id, result.pointsEarned);
 
   res.status(201).json(
   { 

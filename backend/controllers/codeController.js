@@ -9,12 +9,14 @@
 //  Dependencies:  judge0Service
 //                 errorHandler
 //                 codeLimits
+//                 currencyUtils
 //
 ////////////////////////////////////////////////////////////////
 
 const judge0Service = require('../services/judge0Service');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY, MAX_TEST_RUNS_PER_PROBLEM } = require('../config/codeLimits'); 
+const { awardCurrency } = require('../utils/currencyUtils');
 
 /**
  * Grade test case results, calculate score
@@ -335,6 +337,9 @@ const submitCode = asyncHandler(async (req, res) => {
       question.SUBCATEGORY
     ]
   );
+
+  // Award currency to user (respects daily exp cap)
+  await awardCurrency(req.db, userId, gradingResults.pointsEarned);
 
   // Return results
   return res.status(200).json({
