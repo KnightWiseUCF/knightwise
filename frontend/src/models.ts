@@ -29,6 +29,26 @@ export interface Purchase
   IS_EQUIPPED: boolean;
 }
 
+export interface PurchasedItem extends StoreItem
+{
+  IS_EQUIPPED: boolean | number;
+}
+
+export interface PurchasesResponse
+{
+  purchases: PurchasedItem[];
+}
+
+export interface StoreItemsResponse
+{
+  items: StoreItem[];
+}
+
+export interface ApiMessageResponse
+{
+  message: string;
+}
+
 // User types
 export interface UserInfo
 {
@@ -36,6 +56,7 @@ export interface UserInfo
   USERNAME:     string | null; // While these should never be null, technically
   FIRSTNAME:    string | null; // they can be according to the schema.
   LASTNAME:     string | null;
+  DAILY_EXP:    number;
   LIFETIME_EXP: number;
   WEEKLY_EXP:   number;
   COINS:        number;

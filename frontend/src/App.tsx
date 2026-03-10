@@ -27,6 +27,7 @@ import AccountPage from "./pages/AccountPage";
 import ProfessorApplyPage from "./pages/ProfessorApplyPage";
 import ProfessorDraftsPage from "./pages/ProfessorDraftsPage";
 import ProfilePage from "./pages/ProfilePage";
+import StorePage from "./pages/StorePage.tsx";
 
 
 function App() 
@@ -45,6 +46,7 @@ function App()
         <Route path="/reset-password"             element={<ResetPassword />} />
         <Route path="/account"                    element={<AccountPage />} />
         <Route path="/profile"                    element={<ProfilePage />} />
+        <Route path="/store"                      element={<StorePage />} />
         <Route path="/professor-apply"            element={<ProfessorApplyPage />} />
         <Route path="/professor-drafts"           element={<ProfessorDraftsPage />} />
       </Routes>
