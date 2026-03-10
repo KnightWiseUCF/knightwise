@@ -1421,6 +1421,9 @@ definitions:
           WEEKLY_EXP:
             type: number
             example: 300.0
+          DAILY_EXP:
+            type: number
+            example: 57.5
           COINS:
             type: number
             example: 450.0

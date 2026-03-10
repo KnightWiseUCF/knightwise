@@ -130,7 +130,7 @@ const getUserInfo = asyncHandler(async (req, res) => {
   // Get user info (including user currency info), and equips
   const [[users], [equippedItems]] = await Promise.all([
     req.db.query( // Get user info w/ currency info from User table
-      'SELECT ID, USERNAME, FIRSTNAME, LASTNAME, LIFETIME_EXP, WEEKLY_EXP, COINS FROM User WHERE ID = ?',
+      'SELECT ID, USERNAME, FIRSTNAME, LASTNAME, LIFETIME_EXP, WEEKLY_EXP, DAILY_EXP, COINS FROM User WHERE ID = ?',
       [userId]
     ),
     req.db.query( // Get equip info from StoreItem/Purchase tables
