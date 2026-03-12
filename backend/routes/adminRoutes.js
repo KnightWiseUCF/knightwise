@@ -57,6 +57,47 @@ const adminOrProf = [
 ];
 
 /**
+ * Helper function, gets questions for a given draft/published state
+ * Used in GET /api/admin/drafts and GET /api/admin/published
+ * @param {{ id: number, role: string }} user - User requesting questions (professor or admin)
+ * @param {boolean} isPublished - True to get published questions, false to get drafts
+ * @param {Object}  db          - Database connection pool
+ * @returns {Promise<Array>}    - Array of questions
+ */
+const getQuestionsByStatus = async (user, isPublished, db) => {
+  // Professors only see their own questions, admins see all
+  const [questions] = (user?.role === 'professor')
+    ? await db.query(
+        `SELECT
+          ID,
+          TYPE,
+          SECTION,
+          CATEGORY,
+          SUBCATEGORY,
+          POINTS_POSSIBLE,
+          QUESTION_TEXT,
+          OWNER_ID
+        FROM Question WHERE IS_PUBLISHED = ? AND OWNER_ID = ?`,
+        [isPublished ? 1 : 0, user.id]
+      )
+    : await db.query(
+        `SELECT
+          ID,
+          TYPE,
+          SECTION,
+          CATEGORY,
+          SUBCATEGORY,
+          POINTS_POSSIBLE,
+          QUESTION_TEXT,
+          OWNER_ID
+        FROM Question WHERE IS_PUBLISHED = ?`,
+        [isPublished ? 1 : 0]
+      );
+
+  return questions;
+}
+
+/**
  * Helper function, gets answers for a given question
  * @param {number} questionId - Question ID
  * @param {Object} db         - Database connection pool
@@ -480,36 +521,26 @@ router.post('/verifyprof/:id', adminMiddleware, asyncHandler(async (req, res) =>
  * @returns {Promise<void>} - JSON response with draft question metadata
  */
 router.get('/drafts', adminOrProf, asyncHandler(async (req, res) => {
-
-  // Professors only see their own drafts, admins see all
-  const [drafts] = (req.user?.role === 'professor')
-    ? await req.db.query(
-        `SELECT
-          ID,
-          TYPE,
-          SECTION,
-          CATEGORY,
-          SUBCATEGORY,
-          POINTS_POSSIBLE,
-          QUESTION_TEXT,
-          OWNER_ID
-        FROM Question WHERE IS_PUBLISHED = 0 AND OWNER_ID = ?`,
-        [req.user.id]
-      )
-    : await req.db.query(
-        `SELECT
-          ID,
-          TYPE,
-          SECTION,
-          CATEGORY,
-          SUBCATEGORY,
-          POINTS_POSSIBLE,
-          QUESTION_TEXT,
-          OWNER_ID
-        FROM Question WHERE IS_PUBLISHED = 0`
-      );
-
+  // Get draft questions
+  const drafts = await getQuestionsByStatus(req.user, false, req.db);
   res.json({ drafts });
+}));
+
+/**
+ * @route   GET /api/admin/published
+ * @desc    Get metadata for all published questions
+ *          Professors can only see their own published questions
+ *          Admins see all published questions.
+ * @access  Admin, Professor
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with published question metadata
+ */
+router.get('/published', adminOrProf, asyncHandler(async (req, res) => {
+  // Get published questions
+  const published = await getQuestionsByStatus(req.user, true, req.db);
+  res.json({ published });
 }));
 
 /**

@@ -467,57 +467,24 @@ const ProfessorDraftsPage: React.FC = () => {
       setPublishedLoadError("");
 
       try {
-        const userDataRaw = localStorage.getItem("user_data");
-        const parsedUser = userDataRaw ? JSON.parse(userDataRaw) as { id?: number; ID?: number; firstName?: string; lastName?: string; name?: string } : {};
-        const parsedUserIdValue = (parsedUser.id ?? parsedUser.ID) as unknown;
-        const parsedUserId = Number(parsedUserIdValue);
-        const userId = Number.isFinite(parsedUserId) ? parsedUserId : null;
+        // Get published raw questions
+        const res = await api.get<{published: RawQuestion[] }>("/api/admin/published");
+        const questions = Array.isArray(res.data?.published) ? res.data.published : [];
 
-        const allSubcategories = Array.from(
-          new Set(availableSubcategories.length > 0 ? availableSubcategories : defaultSubcategories)
-        );
-        const results = await Promise.allSettled(
-          allSubcategories.map((subcategory) =>
-            api.get<RawQuestion[]>(`/api/test/topic/${encodeURIComponent(subcategory)}`)
-          )
-        );
-
-        const mergedQuestions: RawQuestion[] = [];
-        results.forEach((result) => {
-          if (result.status === "fulfilled" && Array.isArray(result.value.data)) {
-            mergedQuestions.push(...result.value.data);
-          }
-        });
-
-        const dedupedById = new Map<number, RawQuestion>();
-        mergedQuestions.forEach((question) => {
-          if (typeof question.ID === "number") {
-            dedupedById.set(question.ID, question);
-          }
-        });
-
-        const toPublishedQuestion = (question: RawQuestion): PublishedQuestion => ({
-          id: question.ID,
-          section: question.SECTION,
-          category: question.CATEGORY,
-          subcategory: question.SUBCATEGORY,
-          questionType: question.TYPE,
-          authorExamId: question.AUTHOR_EXAM_ID,
-          ownerId: question.OWNER_ID,
-        });
-
-        const ownerMatches = (question: RawQuestion) => {
-          if (userId === null) return true;
-          const questionOwnerId = Number(question.OWNER_ID);
-          return Number.isFinite(questionOwnerId) && questionOwnerId === userId;
-        };
-
-        const filtered = Array.from(dedupedById.values())
-          .filter(ownerMatches)
-          .map(toPublishedQuestion)
+        // Map to published question type and sort
+        const mapped = questions
+          .map((question): PublishedQuestion => ({
+            id: question.ID,
+            section: question.SECTION,
+            category: question.CATEGORY,
+            subcategory: question.SUBCATEGORY,
+            questionType: question.TYPE,
+            authorExamId: question.AUTHOR_EXAM_ID,
+            ownerId: question.OWNER_ID,
+          }))
           .sort((first, second) => second.id - first.id);
 
-        setPublishedQuestions(filtered);
+        setPublishedQuestions(mapped);
       } catch {
         setPublishedLoadError("Failed to load published questions.");
         setPublishedQuestions([]);
@@ -527,7 +494,7 @@ const ProfessorDraftsPage: React.FC = () => {
     };
 
     fetchPublishedQuestions();
-  }, [activeTab, isProfessor, availableSubcategories]);
+  }, [activeTab, isProfessor]);
 
   useLayoutEffect(() => {
     if (form.questionType !== "Ranked Choice") {
