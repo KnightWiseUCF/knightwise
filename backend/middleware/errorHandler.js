@@ -81,7 +81,7 @@ function handleError(err, req, res, next)
   }
 
   // Change this section to configure which errors are logged
-  if (statusCode >= 400)
+  if (statusCode >= 400 && !isTest)
   {
     const errMsg = `
       **Error Code (${statusCode})**

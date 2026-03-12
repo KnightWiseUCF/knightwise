@@ -4,9 +4,49 @@
 //  Year:          2026
 //  Author(s):     Daniel Landsman
 //  File:          models.ts
-//  Description:   Database interfaces for type safety. 
+//  Description:   Type definitions and interfaces for 
+//                 API responses, database models, and
+//                 frontend data structures.
 //
 ////////////////////////////////////////////////////////////////
+
+// Store types
+// Keep ItemType in sync with ITEM_TYPES in shared/itemConfig.js
+export type ItemType = 'flair' | 'profile_picture' | 'background';
+
+export interface StoreItem
+{
+  ID:   number;
+  TYPE: ItemType;
+  COST: string; // Decimal in database, arrives as string
+  NAME: string;
+}
+
+export interface Purchase
+{
+  USER_ID:     number;
+  ITEM_ID:     number;
+  IS_EQUIPPED: boolean;
+}
+
+// User types
+export interface UserInfo
+{
+  ID:           number;
+  USERNAME:     string | null; // While these should never be null, technically
+  FIRSTNAME:    string | null; // they can be according to the schema.
+  LASTNAME:     string | null;
+  LIFETIME_EXP: number;
+  WEEKLY_EXP:   number;
+  COINS:        number;
+}
+
+// GET /api/users/:id response
+export interface UserInfoResponse
+{
+  user:          UserInfo;
+  equippedItems: StoreItem[];
+}
 
 // Question types 
 export interface Answer
