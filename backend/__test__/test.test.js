@@ -466,7 +466,8 @@ describe("POST /api/test/submit", () => {
       [
         { text: 'Right', isCorrect: true  },
         { text: 'Wrong', isCorrect: false },
-      ], pointValue);
+      ], 
+      { points: pointValue });
 
       // First submit should only award 50 exp, not 20 points' worth (higher than 50 exp)
       await submitAndFetch(questionId, 'Right', token);
