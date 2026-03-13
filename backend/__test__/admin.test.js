@@ -315,9 +315,9 @@ describe("Admin Routes", () => {
 
     test("GET /api/admin/published returns all published questions for admin", async () => { 
       // Insert 3 questions, two published and one draft
-      await insertQuestion("MCQ", [], true);
-      await insertQuestion("MCQ", [], false);
-      await insertQuestion("MCQ", [], true);
+      await insertQuestion("MCQ", [], { isPublished: true });
+      await insertQuestion("MCQ", [], { isPublished: false });
+      await insertQuestion("MCQ", [], { isPublished: true });
 
       // Call endpoint as admin
       const res = await request(app)

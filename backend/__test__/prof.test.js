@@ -830,8 +830,8 @@ describe("Admin Routes - Draft/Publish", () => {
     const { profId: otherId } = await insertProf(pool, "otherpubprof", "otherpub@ucf.edu", 1);
 
     // Insert published questions for both professors
-    await insertQuestion("MCQ", [], true, profId);
-    await insertQuestion("MCQ", [], true, otherId);
+    await insertQuestion("MCQ", [], { isPublished: true, ownerId: profId });
+    await insertQuestion("MCQ", [], { isPublished: true, ownerId: otherId });
 
     // First professor calls endpoint
     const res = await request(app)
