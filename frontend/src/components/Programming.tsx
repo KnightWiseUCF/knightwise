@@ -30,6 +30,16 @@ type Props = {
   setSelectedLanguage: (val: string) => void; // update selected language
   handleSubmit: () => void; // click submit
   handleNext: () => void; // click next
+  answered?: boolean; // if user submitted response
+  isSubmitting?: boolean; // loading state
+  isCorrect?: boolean; // check correct answer
+  feedbackText?: string; // optional grader feedback
+  pointsEarned?: number | null; // points earned
+  pointsPossible?: number | null; // points possible
+  normalizedScore?: number | null; // normalized score (0-1)
+  passedTests?: number | null; // number of passed test cases
+  totalTests?: number | null; // total number of test cases
+  submissionsRemaining?: number | null; // number of submits until daily limit reached
 };
 
 const Programming: React.FC<Props> = ({
@@ -42,6 +52,16 @@ const Programming: React.FC<Props> = ({
   setSelectedLanguage,
   handleSubmit,
   handleNext,
+  answered = false,
+  isSubmitting = false,
+  isCorrect = false,
+  feedbackText,
+  pointsEarned,
+  pointsPossible,
+  normalizedScore,
+  passedTests = null,
+  totalTests = null,
+  submissionsRemaining = null,
 }) => {
   const [consoleOutput, setConsoleOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
@@ -313,20 +333,88 @@ const Programming: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* submit/next buttons */}
+      {/* grading feedback */}
+      {answered && (
+        <div className="mb-6">
+          {(() => {
+            const score = typeof normalizedScore === "number"
+              ? normalizedScore
+              : isCorrect ? 1 : 0;
+            const statusClass = score >= 1
+              ? "text-green-600"
+              : score > 0.5
+              ? "text-yellow-600"
+              : "text-red-600";
+            const boxClass = score >= 1
+              ? "bg-green-50"
+              : score > 0.5
+              ? "bg-yellow-50"
+              : "bg-red-50";
+            const borderClass = score >= 1
+              ? "border-green-500"
+              : score > 0.5
+              ? "border-yellow-500"
+              : "border-red-500";
+
+            const derivedPointsPossible =
+              typeof pointsPossible === "number"
+                ? pointsPossible
+                : typeof current.POINTS_POSSIBLE === "number"
+                ? current.POINTS_POSSIBLE
+                : null;
+            const derivedPointsEarned =
+              typeof pointsEarned === "number"
+                ? pointsEarned
+                : typeof normalizedScore === "number" && derivedPointsPossible !== null
+                ? Math.round(normalizedScore * derivedPointsPossible * 100) / 100
+                : null;
+
+            return (
+              <div className={`p-4 ${boxClass} rounded border ${borderClass} text-sm sm:text-base md:text-lg`}>
+                {feedbackText && (
+                  <p className={statusClass}>{feedbackText}</p>
+                )}
+                <div className="mt-2 text-gray-700 space-y-1">
+                  {derivedPointsEarned !== null && derivedPointsPossible !== null && (
+                    <p>Points: {derivedPointsEarned} / {derivedPointsPossible}</p>
+                  )}
+                  {passedTests !== null && totalTests !== null && (
+                    <p>Test cases passed: {passedTests} / {totalTests}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+          {submissionsRemaining === 0 && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-400 rounded text-sm text-yellow-800">
+              You've now used all your programming submissions for today. Come back tomorrow for more!
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* submit/next buttons (next appears after submit) */}
       <div className="flex gap-4 justify-end mt-8 border-t pt-6">
-        <button
-          onClick={handleSubmit}
-          className="px-6 sm:px-8 py-2 sm:py-3 rounded-full shadow font-semibold text-sm sm:text-base bg-yellow-400 hover:bg-yellow-500 text-black"
-        >
-          Submit
-        </button>
-        <button
-          onClick={handleNext}
-          className="px-6 sm:px-8 py-2 sm:py-3 rounded-full shadow font-semibold text-sm sm:text-base bg-yellow-400 hover:bg-yellow-500 text-black"
-        >
-          {currentIndex + 1 === total ? "Result" : "Next"}
-        </button>
+        {!answered ? (
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={`px-6 sm:px-8 py-2 sm:py-3 rounded-full shadow font-semibold text-sm sm:text-base ${
+              isSubmitting
+                ? "bg-yellow-200 text-gray-500 cursor-not-allowed"
+                : "bg-yellow-400 hover:bg-yellow-500 text-black"
+            }`}
+          >
+            {isSubmitting ? "Grading..." : "Submit"}
+          </button>
+        ) : (
+          <button
+            onClick={handleNext}
+            className="px-6 sm:px-8 py-2 sm:py-3 rounded-full shadow font-semibold text-sm sm:text-base bg-yellow-400 hover:bg-yellow-500 text-black"
+          >
+            {currentIndex + 1 === total ? "Result" : "Next"}
+          </button>
+        )}
       </div>
     </div>
   );

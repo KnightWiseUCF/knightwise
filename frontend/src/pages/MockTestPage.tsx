@@ -14,6 +14,7 @@
 //                 SelectAllThatApply component
 //                 MockTestResult component
 //                 models (Question, MockTestResponse)
+//                 axios (isAxiosError)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -29,6 +30,7 @@ import DragAndDrop from "../components/DragAndDrop";
 import Programming from "../components/Programming";
 import api from "../api";
 import { Question, MockTestResponse } from "../models";
+import { isAxiosError } from "axios";
 
 const MockTestPage: React.FC = () => {
   const isProfessorAccount = localStorage.getItem("account_type") === "professor";
@@ -51,6 +53,9 @@ const MockTestPage: React.FC = () => {
   const [normalizedScore, setNormalizedScore] = useState<number | null>(null);
   const [programmingAnswer, setProgrammingAnswer] = useState("");
   const [programmingLanguage, setProgrammingLanguage] = useState("C");
+  const [passedTests, setPassedTests] = useState<number | null>(null);
+  const [totalTests, setTotalTests] = useState<number | null>(null);
+  const [progSubmitsRemaining, setProgSubmitsRemaining] = useState<number | null>(null);
   const programmingLanguageIds: Record<string, number> = {
     C: 50,
     "C++": 54,
@@ -132,11 +137,11 @@ const MockTestPage: React.FC = () => {
                   correctAnswer: ans.TEXT,
                 }))
               : undefined,
-            // programming: use standard languages (C, Java, Python)
+            // programming: use standard languages (C, C++, Java, Python)
             problem:        normalizedType === "programming"
               ? {
                   description: question.QUESTION_TEXT,
-                  languages: ["C", "Java", "Python"],
+                  languages: ["C", "C++", "Java", "Python"],
                 }
               : undefined,
             problemCode:    normalizedType === "programming"
@@ -153,6 +158,22 @@ const MockTestPage: React.FC = () => {
               question.QUESTION_TYPE !== undefined
           );
 
+        // Check and set how many programming submissions
+        // the user has left for the day.
+        const token = localStorage.getItem("token");
+        try 
+        {
+          const limitRes = await api.get(
+            "/api/code/canSubmit",
+            token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          );
+          setProgSubmitsRemaining(limitRes.data.remaining);
+        } 
+        catch 
+        {
+          // Just set the questions normally
+        }
+        
         setQuestions(withOptions);
         setSectionScores({});
         setCurrentIndex(0);
@@ -264,8 +285,31 @@ const MockTestPage: React.FC = () => {
         );
 
         const data = result.data;
-        const isCorrect = data.success ? data.correct : false;
+
+        // Decrement remaining submits
+        // Backend counts all submits toward daily limit,
+        // regardless of correct/incorrect/error,
+        // as long as the response is a 200.
+        setProgSubmitsRemaining(prev => prev !== null ? prev - 1 : null);
+
+        const isCorrect = data.success ? data.allPassed : false;
         setIsCorrectAnswer(isCorrect);
+
+        if (data.success)
+        {
+          const passed = data.passedTests ?? 0;
+          const total = data.totalTests ?? 0;
+          const label = data.allPassed ? "Correct!" : passed > 0 ? "Not quite!" : "Incorrect.";
+          setGradingFeedback(label);
+          setPassedTests(passed);
+          setTotalTests(total);
+          setPointsEarned(typeof data.pointsEarned === "number" ? data.pointsEarned : null);
+          setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
+        }
+        else
+        {
+          setGradingFeedback(`${data.status || "Execution failed. Please try again later."}`);
+        }
 
         const section = current.SECTION;
         setSectionScores((prev) => ({
@@ -275,10 +319,28 @@ const MockTestPage: React.FC = () => {
             total: (prev[section]?.total || 0) + 1,
           },
         }));
-      } catch {
-        console.error("Failed to submit programming response");
+      } catch (error: unknown) {
+        if (isAxiosError(error))
+        {
+          // Daily submission limit reached.
+          // This should never actually be reachable since
+          // the backend should stop serving programming questions to users
+          // once they hit the limit. But just in case.
+          if (error.response?.status === 429)
+          {
+            setGradingFeedback("Daily programming question submission limit exceeded. Come back tomorrow!");
+          }
+          else
+          {
+            setGradingFeedback("Submission failed. Please try again later.");
+          }
+        }
+        else
+        {
+          setGradingFeedback("Submission failed. Please try again later.");
+        }
+        setIsCorrectAnswer(false);
       }
-
       setShowFeedback(true);
       setIsSubmitting(false);
       return;
@@ -352,6 +414,8 @@ const MockTestPage: React.FC = () => {
       setNormalizedScore(null);
       setProgrammingAnswer("");
       setProgrammingLanguage("C");
+      setPassedTests(null);
+      setTotalTests(null);
       setCurrentIndex((prev) => prev + 1);
     }
   };
@@ -428,6 +492,16 @@ const MockTestPage: React.FC = () => {
             setSelectedLanguage={setProgrammingLanguage}
             handleSubmit={handleSubmit}
             handleNext={handleNext}
+            answered={showFeedback}
+            isSubmitting={isSubmitting}
+            isCorrect={isCorrectAnswer}
+            feedbackText={gradingFeedback}
+            pointsEarned={pointsEarned}
+            pointsPossible={pointsPossible}
+            normalizedScore={normalizedScore}
+            passedTests={passedTests}
+            totalTests={totalTests}
+            submissionsRemaining={progSubmitsRemaining}
           />
         ) : questionType === 'select_all_that_apply' ? (
           <SelectAllThatApply
