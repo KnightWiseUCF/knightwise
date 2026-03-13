@@ -104,7 +104,7 @@ paths:
       - Users
       summary: Register user.
       operationId: signupUser
-      description: Registers a new KnightPrep user. Requires email verification.
+      description: Registers a new KnightWise user. Requires email verification.
       consumes:
       - application/json
       produces:
@@ -287,6 +287,294 @@ paths:
         500:
           description: Server Error
 
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Fetch user profile info.
+      operationId: getUserInfo
+      description: Retrieves a user's profile information including currency, experience, and currently equipped store items.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/UserInfoResponse'
+        400:
+          description: Bad Request - Invalid user ID
+        401:
+          description: Unauthorized
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+    put:
+      tags:
+        - Users
+      summary: Update user profile.
+      operationId: updateUser
+      description: Updates editable profile fields (first name, last name). Can only be performed by the account owner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+        - in: body
+          name: updateUserItem
+          description: Updated profile fields.
+          schema:
+            $ref: '#/definitions/UpdateUser'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid user ID or name validation failed
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Can only update own profile
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+    delete:
+      tags:
+        - Users
+      summary: Delete user account.
+      operationId: deleteAccount
+      description: Deletes a user's account and all associated data. Can only be performed by the account owner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid user ID
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Can only delete own account
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+
+  /users/{id}/purchases:
+    get:
+      tags:
+        - Users
+      summary: Fetch user's purchased store items.
+      operationId: getPurchases
+      description: Retrieves all store items purchased by the user, including equip state. Any authenticated user can view any user's purchases.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/PurchasesResponse'
+        400:
+          description: Bad Request - Invalid user ID
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /users/{id}/equip:
+    put:
+      tags:
+        - Users
+      summary: Equip a purchased store item.
+      operationId: equipItem
+      description: |
+        Equips a purchased store item for the user. Enforces equip limits per item type:
+        - **Flair**: Max 3 equipped at once. Returns 409 if limit reached.
+        - **Profile Picture**: Max 1 equipped at once. Automatically unequips the current profile picture when a new one is equipped.
+
+        Can only be performed by the account owner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+        - in: body
+          name: equipItem
+          description: Item to equip.
+          schema:
+            $ref: '#/definitions/EquipItem'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid user ID or item already equipped
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Can only equip for own account
+        404:
+          description: Item not purchased
+        409:
+          description: Conflict - Equip limit reached for item type
+        500:
+          description: Server Error
+
+  /users/{id}/unequip:
+    put:
+      tags:
+        - Users
+      summary: Unequip a purchased store item.
+      operationId: unequipItem
+      description: Unequips a currently equipped store item for the user. Can only be performed by the account owner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+        - in: body
+          name: unequipItem
+          description: Item to unequip.
+          schema:
+            $ref: '#/definitions/EquipItem'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid user ID or item not equipped
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Can only unequip for own account
+        404:
+          description: Item not purchased
+        500:
+          description: Server Error
+
+  /store:
+    get:
+      tags:
+        - Store
+      summary: Fetch all store items.
+      operationId: getStoreItems
+      description: Retrieves metadata for all available store items.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/StoreItemsResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /store/{id}/purchase:
+    post:
+      tags:
+        - Store
+      summary: Purchase a store item with coins.
+      operationId: purchaseItem
+      description: Attempts to purchase a store item using the authenticated user's coins. Deducts coins and inserts a purchase record atomically. Item is not equipped on purchase.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the store item to purchase.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid item ID or insufficient coins
+        401:
+          description: Unauthorized
+        404:
+          description: Item Not Found
+        409:
+          description: Conflict - Item already purchased
+        500:
+          description: Server Error
+
+  /leaderboard/weekly:
+    get:
+      tags:
+        - Users
+      summary: Fetch weekly exp leaderboard.
+      operationId: getWeeklyLeaderboard
+      description: Returns users ranked by weekly exp using DENSE_RANK, paginated at PAGE_SIZE users per page. Includes the requesting user's rank and exp regardless of current page. Weekly exp resets every Monday at midnight UTC.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          description: Page number (default 1, PAGE_SIZE users per page, clamped to valid range)
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/LeaderboardResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /leaderboard/lifetime:
+    get:
+      tags:
+        - Users
+      summary: Fetch lifetime exp leaderboard.
+      operationId: getLifetimeLeaderboard
+      description: Returns users ranked by lifetime exp using DENSE_RANK, paginated at PAGE_SIZE users per page. Includes the requesting user's rank and exp regardless of current page. Lifetime exp never resets.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          description: Page number (default 1, PAGE_SIZE users per page, clamped to valid range)
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/LeaderboardResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
   /admin/createquestion:
     post:
       tags:
@@ -296,44 +584,36 @@ paths:
       operationId: createQuestion
       description: Creates a new question and its associated answer objects. Accessible by admin key or verified professor JWT. Professors can only submit questions under their own owner ID regardless of what is passed in.
   
-  /code/submitCode:
+  /admin/store/createitem:
     post:
       tags:
-      - Problems
-      summary: Submit or test code against a programming question.
-      operationId: submitCode
-      description: |
-        Submits code to Judge0 for execution. Supports two modes:
-        - **Graded Submission** (`isTestRun: false`): Runs code against all test cases, grades the result, and records the response. Counts toward the daily submission limit (10/day).
-        - **Test Run** (`isTestRun: true`): Runs code against only the first test case and returns raw output without grading or saving a response. Limited to 3 runs per problem per day.
-        Serializes user answer into JSON.
+        - Admins
+      summary: Create a store item.
+      operationId: createStoreItem
+      description: Creates a new store item available for purchase. Admin only.
       security:
         - BearerAuth: []
       consumes:
-      - application/json
+        - application/json
       produces:
-      - application/json
+        - application/json
       parameters:
-      - in: body
-        name: questionItem
-        description: Question and answer details.
-        schema:
-          $ref: '#/definitions/SubmitCode'
+        - in: body
+          name: createStoreItemBody
+          description: Store item details.
+          schema:
+            $ref: '#/definitions/CreateStoreItem'
       responses:
-        200:
-          description: OK
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateStoreItemResponse'
         400:
-          description: Bad Request
+          description: Bad Request - Missing fields, invalid item type, or negative cost
         401:
           description: Unauthorized
-        404:
-          description: Question or Test Cases Not Found
-        429:
-          description: Submission or Test Run Limit Exceeded
         500:
           description: Server Error
-        502:
-          description: Judge0 Service Unavailable
 
   /admin/problems/{id}:
     get:
@@ -1116,6 +1396,197 @@ definitions:
         type: boolean
         example: true
         description: Programming questions only - Whether the answer passed all test cases.
+
+  UpdateUser:
+    type: object
+    required:
+      - newFirstName
+      - newLastName
+    properties:
+      newFirstName:
+        type: string
+        example: "Jean-Jacques"
+        description: "Allows letters, spaces, hyphens, apostrophes, periods, and accented/Unicode characters."
+      newLastName:
+        type: string
+        example: "O'Malley"
+        description: "Allows letters, spaces, hyphens, apostrophes, periods, and accented/Unicode characters."
+
+  UserInfoResponse:
+    type: object
+    properties:
+      user:
+        type: object
+        properties:
+          ID:
+            type: integer
+            example: 1
+          USERNAME:
+            type: string
+            example: "RickL"
+            nullable: true
+          FIRSTNAME:
+            type: string
+            example: "Rick"
+            nullable: true
+          LASTNAME:
+            type: string
+            example: "Leinecker"
+            nullable: true
+          LIFETIME_EXP:
+            type: number
+            example: 1250.0
+          WEEKLY_EXP:
+            type: number
+            example: 300.0
+          DAILY_EXP:
+            type: number
+            example: 57.5
+          COINS:
+            type: number
+            example: 450.0
+      equippedItems:
+        type: array
+        items:
+          $ref: '#/definitions/StoreItem'
+
+  PurchasesResponse:
+    type: object
+    properties:
+      purchases:
+        type: array
+        items:
+          $ref: '#/definitions/PurchasedItem'
+
+  PurchasedItem:
+    type: object
+    properties:
+      ID:
+        type: integer
+        example: 1
+      TYPE:
+        type: string
+        example: "flair"
+        description: "Item type. One of: flair, profile_picture, background"
+      COST:
+        type: string
+        example: "50.00"
+        description: "Returned as string due to MySQL DECIMAL serialization."
+      NAME:
+        type: string
+        example: "Greatest of all Time"
+      IS_EQUIPPED:
+        type: integer
+        example: 0
+        description: "1 if equipped, 0 if not."
+
+  StoreItem:
+    type: object
+    properties:
+      ID:
+        type: integer
+        example: 1
+      TYPE:
+        type: string
+        example: "flair"
+        description: "Item type. One of: flair, profile_picture, background"
+      COST:
+        type: string
+        example: "50.00"
+        description: "Returned as string due to MySQL DECIMAL serialization."
+      NAME:
+        type: string
+        example: "Greatest of all Time"
+
+  StoreItemsResponse:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/StoreItem'
+
+  EquipItem:
+    type: object
+    required:
+      - itemId
+    properties:
+      itemId:
+        type: integer
+        example: 1
+        description: The unique ID of the store item to equip or unequip.
+
+  CreateStoreItem:
+    type: object
+    required:
+      - itemType
+      - itemCost
+      - itemName
+    properties:
+      itemType:
+        type: string
+        example: "flair"
+        description: "Must be a valid item type. One of: flair, profile_picture, background"
+      itemCost:
+        type: number
+        example: 50
+        description: "Cost in coins. Must be a non-negative number."
+      itemName:
+        type: string
+        example: "Greatest of all Time"
+
+  CreateStoreItemResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Store item successfully created"
+      itemId:
+        type: integer
+        example: 1
+
+  LeaderboardResponse:
+    type: object
+    properties:
+      userRank:
+        type: integer
+        example: 3
+        description: Requesting user's rank across all users, regardless of current page.
+      userExp:
+        type: number
+        example: 450
+        description: Requesting user's exp value.
+      page:
+        type: integer
+        example: 1
+        description: Current page number.
+      totalPages:
+        type: integer
+        example: 1
+        description: Total number of pages at PAGE_SIZE users per page.
+      leaderboard:
+        type: array
+        items:
+          type: object
+          properties:
+            rank:
+              type: integer
+              example: 1
+            username:
+              type: string
+              example: "RickL"
+            firstName:
+              type: string
+              example: "Rick"
+              nullable: true
+            exp:
+              type: number
+              example: 900
+            profilePicture:
+              type: string
+              example: "Octocat"
+              nullable: true
+        description: "Page of users ranked by exp. Tied users share the same rank. PAGE_SIZE users per page."
 
 host: www.knightwise.dev
 basePath: /api

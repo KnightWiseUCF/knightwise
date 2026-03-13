@@ -12,6 +12,7 @@
 //                 discordWebhook (mocked)
 //                 mysql2 connection pool (server.js)
 //                 testHelpers
+//                 itemConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -19,6 +20,7 @@ const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const { app, pool } = require("../server");
 const { TEST_USER, verifyTestDatabase, insertQuestion } = require("./testHelpers");
+const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Mock Mailjet
 const Mailjet = require('node-mailjet');
@@ -311,7 +313,7 @@ describe("Admin Routes", () => {
       expect(res.statusCode).toBe(401);
     });
 
-    test("published - returns all published questions for admin", async () => { 
+    test("GET /api/admin/published returns all published questions for admin", async () => { 
       // Insert 3 questions, two published and one draft
       await insertQuestion("MCQ", [], true);
       await insertQuestion("MCQ", [], false);
@@ -325,5 +327,59 @@ describe("Admin Routes", () => {
       // Admin should be able to see both published questions
       expect(res.statusCode).toBe(200);
       expect(res.body.published.length).toBeGreaterThanOrEqual(2);
+    });
+    
+    // store item tests
+    test('POST /api/admin/store/createitem creates a store item', async () => {
+      const res = await request(app)
+        .post('/api/admin/store/createitem')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ itemType: ITEM_TYPES.FLAIR, itemCost: 5.00, itemName: 'Test Flair' });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('itemId');
+      expect(res.body.message).toBe('Store item successfully created');
+
+      // Expect Discord notification
+      expect(notifyUserEvent).toHaveBeenCalledWith(
+        expect.stringContaining('Test Flair')
+      );
+
+      await pool.query('DELETE FROM StoreItem WHERE ID = ?', [res.body.itemId]);
+    });
+
+    test('POST /api/admin/store/createitem rejects invalid item type', async () => {
+      const res = await request(app)
+        .post('/api/admin/store/createitem')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ itemType: 'invalid_type', itemCost: 5.00, itemName: 'Test Flair' });
+
+      expect(res.status).toBe(400);
+    });
+
+    test('POST /api/admin/store/createitem rejects negative cost', async () => {
+      const res = await request(app)
+        .post('/api/admin/store/createitem')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ itemType: ITEM_TYPES.FLAIR, itemCost: -5.00, itemName: 'Test Flair' });
+
+      expect(res.status).toBe(400);
+    });
+
+    test('POST /api/admin/store/createitem rejects missing fields', async () => {
+      const res = await request(app)
+        .post('/api/admin/store/createitem')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ itemType: ITEM_TYPES.FLAIR });
+
+      expect(res.status).toBe(400);
+    });
+
+    test('POST /api/admin/store/createitem requires admin token', async () => {
+      const res = await request(app)
+        .post('/api/admin/store/createitem')
+        .send({ itemType: ITEM_TYPES.FLAIR, itemCost: 5.00, itemName: 'Test Flair' });
+
+      expect(res.status).toBe(401);
     });
 })

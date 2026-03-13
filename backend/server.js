@@ -13,6 +13,8 @@
 //                 cors
 //                 errorHandler
 //                 env config
+//                 db config
+//                 expReset jobs
 //
 ////////////////////////////////////////////////////////////////
 
@@ -24,6 +26,8 @@ const cors = require('cors');
 const { handleError } = require('./middleware/errorHandler');
 const { validTestDBs } = require('./config/env');
 const app = express();
+const pool = require('./config/db');
+const { startExpResetJobs } = require('./jobs/expReset');
 
 // Middleware
 app.use(cors());
@@ -54,21 +58,6 @@ if (process.env.NODE_ENV !== 'test' && validTestDBs.includes(db_name))
   console.error('ERROR: Production cannot use a testing database!');
   process.exit(1);
 }
-
-// Create connection pool
-const pool = mysql.createPool(
-    {
-        host:                   db_host || "localhost",
-        user:                   db_user,
-        password:               db_password,
-        database:               db_name,
-        waitForConnections:     true,
-        connectionLimit:        5,      
-        queueLimit:             10,          
-        enableKeepAlive:        true,   
-        keepAliveInitialDelay:  0
-    }
-);
 
 // Connect to MySQL
 const poolReady = pool.getConnection()
@@ -114,6 +103,14 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/code', require('./routes/codeSubmission'));
 app.use('/api/profauth', require('./routes/profAuthRoutes'));
+app.use('/api/store', require('./routes/store'));
+app.use('/api/leaderboard', require('./routes/leaderboard'));
+
+// Start background jobs (skip during tests)
+if (process.env.NODE_ENV !== 'test')
+{
+  startExpResetJobs();
+}
 
 // Error handler
 app.use(handleError);

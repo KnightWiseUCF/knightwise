@@ -10,6 +10,7 @@
 //                 supertest
 //                 mysql2 connection pool (server.js)
 //                 env config
+//                 itemConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -17,6 +18,7 @@ const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const { app, pool, poolReady } = require('../server');
 const { validTestDBs } = require('../config/env');
+const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Default test user template, can be overridden for individual tests
 const TEST_USER = {
@@ -28,17 +30,40 @@ const TEST_USER = {
 };
 
 /**
- * Inserts a question and its answers, returns question ID.
- * @param {string}         type     - Question.TYPE (e.g. 'Multiple Choice')
- * @param {Array<Object>}  answers  - Array of { text, isCorrect, rank, placement }
- * @param {boolean=true} isPublished - True inserts as published, false inserts as draft. True by default.
- * @param {number=null}     ownerId - Question.OWNER_ID to insert. Null by default.
- * @returns {Promise<number>} Inserted question ID
+ * Inserts a store item and purchase for it, optionally equips
+ * @param {number} userId      - User to purchase for
+ * @param {Object} itemInfo    - Optional store item info, default fields used otherwise
+ * @param {boolean} isEquipped - If true, equips new item for user, false by default
+ * @returns {Promise<number>} Inserted item ID
  */
-const insertQuestion = async (type, answers = [], isPublished = true, ownerId = null) => {
+const insertPurchase = async (userId, itemInfo = {}, isEquipped = false) => {
+  const [itemResult] = await pool.query(
+    'INSERT INTO StoreItem (TYPE, COST, NAME) VALUES (?, ?, ?)',
+    [itemInfo.type ?? ITEM_TYPES.FLAIR, itemInfo.cost ?? 5.00, itemInfo.name ?? 'Test Flair']
+  );
+  const itemId = itemResult.insertId;
+
+  await pool.query(
+    'INSERT INTO Purchase (USER_ID, ITEM_ID, IS_EQUIPPED) VALUES (?, ?, ?)',
+    [userId, itemId, isEquipped ? 1 : 0]
+  );
+
+  return itemId;
+};
+
+/**
+ * Inserts a question and its answers, returns question ID.
+ * @param {string}        type        - Question.TYPE (e.g. 'Multiple Choice')
+ * @param {Array<Object>} answers     - Array of { text, isCorrect, rank, placement }
+ * @param {number}        points      - Number of points question is worth, default 2.00
+ * @param {boolean=true}  isPublished - True inserts as published, false inserts as draft. True by default.
+ * @param {number=null}   ownerId     - Question.OWNER_ID to insert. Null by default.
+ * @returns {Promise<number>}           Inserted question ID
+ */
+const insertQuestion = async (type, answers = [], points = 2.00, isPublished = true, ownerId = null) => {
   const [result] = await pool.query(
     'INSERT INTO Question (QUESTION_TEXT, TYPE, SUBCATEGORY, SECTION, CATEGORY, POINTS_POSSIBLE, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    ['Test question', type, 'Test Topic', 'A', 'Test Category', 2.00, isPublished ? 1 : 0, ownerId]
+    ['Test question', type, 'Test Topic', 'A', 'Test Category', points, isPublished ? 1 : 0, ownerId]
   );
   const questionId = result.insertId;
 
@@ -140,6 +165,7 @@ async function verifyTestDatabase(pool)
 
 module.exports = {
   TEST_USER,
+  insertPurchase,
   insertQuestion,
   submitAndFetch,
   getAuthToken,
