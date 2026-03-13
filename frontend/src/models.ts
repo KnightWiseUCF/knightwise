@@ -12,7 +12,7 @@
 
 // Store types
 // Keep ItemType in sync with ITEM_TYPES in shared/itemConfig.js
-export type ItemType = 'flair' | 'profile_picture';
+export type ItemType = 'flair' | 'profile_picture' | 'background';
 
 export interface StoreItem
 {

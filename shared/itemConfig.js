@@ -18,14 +18,16 @@
 // Keep in sync with ItemType in models.ts
 const ITEM_TYPES = Object.freeze(
 {
-  FLAIR: 'flair',
-  PROFILE_PICTURE: 'profile_picture',
+  FLAIR:            'flair',
+  PROFILE_PICTURE:  'profile_picture',
+  BACKGROUND:       'background',
 });
 
 const EQUIP_LIMITS = Object.freeze(
 {
-  [ITEM_TYPES.FLAIR]: 3, // Subject to change
+  [ITEM_TYPES.FLAIR]:           3, // Subject to change
   [ITEM_TYPES.PROFILE_PICTURE]: 1,
+  [ITEM_TYPES.BACKGROUND]:      1,
 });
 
 module.exports = {

@@ -10,6 +10,7 @@
 //                 mysql2 connection pool (server.js)
 //                 testHelpers
 //                 discordWebhook (mocked)
+//                 currencyConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -21,6 +22,7 @@ const { TEST_USER,
         insertQuestion,
         submitAndFetch,
       } = require("./testHelpers");
+const { DAILY_EXP_CAP, EXP_PER_POINT, COINS_PER_POINT } = require('../../shared/currencyConfig');
 
 // Mock Discord webhook
 jest.mock('../services/discordWebhook', () => ({
@@ -324,6 +326,179 @@ describe("POST /api/test/submit", () => {
         await pool.query('DELETE FROM Response');
         await pool.query('DELETE FROM Question');
       }
+    });
+  });
+
+  describe("Daily EXP Cap Tests", () => {
+
+    // Reset exp for test user
+    afterEach(async () => {
+      await pool.query(
+        'UPDATE User SET WEEKLY_EXP = 0, LIFETIME_EXP = 0, DAILY_EXP = 0 WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+    });
+
+    test("POST /api/test/submit awards exp and coins on correct answer", async () => {
+      const questionId = await insertQuestion('Multiple Choice',
+      [
+        { text: 'Right', isCorrect: true  },
+        { text: 'Wrong', isCorrect: false },
+      ]);
+
+      // Submit the correct response
+      await submitAndFetch(questionId, 'Right', token);
+
+      const [[user]] = await pool.query(
+        'SELECT WEEKLY_EXP, LIFETIME_EXP, COINS FROM User WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+
+      // Correct response should have awarded currency
+      expect(Number(user.WEEKLY_EXP)).toBeGreaterThan(0);
+      expect(Number(user.LIFETIME_EXP)).toBeGreaterThan(0);
+      expect(Number(user.COINS)).toBeGreaterThan(0);
+    });
+
+    test("POST /api/test/submit does not award exp on incorrect answer", async () => {
+      const questionId = await insertQuestion('Multiple Choice',
+      [
+        { text: 'Right', isCorrect: true  },
+        { text: 'Wrong', isCorrect: false },
+      ]);
+
+      // Submit wrong answer
+      await submitAndFetch(questionId, 'Wrong', token);
+
+      const [[user]] = await pool.query(
+        'SELECT WEEKLY_EXP, LIFETIME_EXP, DAILY_EXP FROM User WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+
+      // No points earned, no currency earned
+      expect(Number(user.WEEKLY_EXP)).toBe(0);
+      expect(Number(user.LIFETIME_EXP)).toBe(0);
+      expect(Number(user.DAILY_EXP)).toBe(0);
+    });
+
+    test("POST /api/test/submit respects daily exp cap", async () => {
+      // Set user's daily exp 2 points' worth below cap
+      const expBeforeCap = DAILY_EXP_CAP - (EXP_PER_POINT * 2);
+      await pool.query(
+        'UPDATE User SET DAILY_EXP = ?, WEEKLY_EXP = ?, LIFETIME_EXP = ? WHERE EMAIL = ?',
+        [expBeforeCap, expBeforeCap, expBeforeCap, TEST_USER.email]
+      );
+
+      // insertQuestion uses 2.00 points by default
+      // Thus each correct answer earns EXP_PER_POINT * 2.00 (2 points worth of exp)
+      const questionId = await insertQuestion('Multiple Choice',
+      [
+        { text: 'Right', isCorrect: true  },
+        { text: 'Wrong', isCorrect: false },
+      ]);
+
+      // First submission should award remaining exp up to cap
+      // In this test it should award all points exactly up to the cap
+      await submitAndFetch(questionId, 'Right', token);
+
+      const [[afterFirst]] = await pool.query(
+        'SELECT DAILY_EXP, WEEKLY_EXP, LIFETIME_EXP FROM User WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+
+      // We should hit cap after first submit
+      expect(Number(afterFirst.DAILY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterFirst.WEEKLY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterFirst.LIFETIME_EXP)).toBe(DAILY_EXP_CAP);
+
+      // Second submission should award no more exp (cap hit)
+      await submitAndFetch(questionId, 'Right', token);
+
+      const [[afterSecond]] = await pool.query(
+        'SELECT DAILY_EXP, WEEKLY_EXP, LIFETIME_EXP FROM User WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+
+      // Should still be at cap
+      expect(Number(afterSecond.DAILY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterSecond.WEEKLY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterSecond.LIFETIME_EXP)).toBe(DAILY_EXP_CAP);
+    });
+
+    test("POST /api/test/submit still awards coins when exp cap is hit", async () => {
+      // Set daily exp to cap. Note no coins
+      await pool.query(
+        'UPDATE User SET DAILY_EXP = ?, COINS = 0 WHERE EMAIL = ?',
+        [DAILY_EXP_CAP, TEST_USER.email]
+      );
+
+      const questionId = await insertQuestion('Multiple Choice',
+      [
+        { text: 'Right', isCorrect: true  },
+        { text: 'Wrong', isCorrect: false },
+      ]);
+
+      // Submit correct
+      await submitAndFetch(questionId, 'Right', token);
+
+      const [[user]] = await pool.query(
+        'SELECT COINS FROM User WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+
+      // Coins should still be awarded (2 points * COINS_PER_POINT)
+      expect(Number(user.COINS)).toBe(2 * COINS_PER_POINT);
+    });
+
+    test("POST /api/test/submit partially awards exp when close to daily cap", async () => {
+      // Use a high point question so exp earned exceeds the remaining cap allowance
+      const pointValue = 20;
+
+      // Set user just below cap so one submission would overshoot it
+      const expBeforeCap = DAILY_EXP_CAP - 50; // 50 exp under cap
+      await pool.query(
+        'UPDATE User SET DAILY_EXP = ?, WEEKLY_EXP = ?, LIFETIME_EXP = ?, COINS = 0 WHERE EMAIL = ?',
+        [expBeforeCap, expBeforeCap, expBeforeCap, TEST_USER.email]
+      );
+
+      // Question worth 20 points
+      const questionId = await insertQuestion('Multiple Choice',
+      [
+        { text: 'Right', isCorrect: true  },
+        { text: 'Wrong', isCorrect: false },
+      ], pointValue);
+
+      // First submit should only award 50 exp, not 20 points' worth (higher than 50 exp)
+      await submitAndFetch(questionId, 'Right', token);
+
+      const [[afterFirst]] = await pool.query(
+        'SELECT DAILY_EXP, WEEKLY_EXP, LIFETIME_EXP, COINS FROM User WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+
+      // Exp should be exactly at cap, not 20 points' worth above expBeforeCap
+      expect(Number(afterFirst.DAILY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterFirst.WEEKLY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterFirst.LIFETIME_EXP)).toBe(DAILY_EXP_CAP);
+
+      // Should still get full pointValue * COINS_PER_POINT
+      expect(Number(afterFirst.COINS)).toBe(pointValue * COINS_PER_POINT);
+
+      // Second submit, cap already hit, no more exp
+      await submitAndFetch(questionId, 'Right', token);
+
+      const [[afterSecond]] = await pool.query(
+        'SELECT DAILY_EXP, WEEKLY_EXP, LIFETIME_EXP, COINS FROM User WHERE EMAIL = ?',
+        [TEST_USER.email]
+      );
+
+      // Still at cap
+      expect(Number(afterSecond.DAILY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterSecond.WEEKLY_EXP)).toBe(DAILY_EXP_CAP);
+      expect(Number(afterSecond.LIFETIME_EXP)).toBe(DAILY_EXP_CAP);
+
+      // Coins still awarded though
+      expect(Number(afterSecond.COINS)).toBe(pointValue * COINS_PER_POINT * 2);
     });
   });
 });
