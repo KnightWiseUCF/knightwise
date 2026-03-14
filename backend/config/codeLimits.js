@@ -4,7 +4,8 @@
 //  Year:          2026
 //  Author(s):     Daniel Landsman
 //  File:          codeLimits.js
-//  Description:   Config file used to set code submission limits
+//  Description:   Config file used to set and check code 
+//                 submission limits.
 //                 Numbers may need fine-tuning
 //
 ////////////////////////////////////////////////////////////////
@@ -34,10 +35,29 @@ const MAX_TEST_RUNS_PER_PROBLEM = 3;
  * const MAX_MEMORY_KB = TBD
  */
 
+/**
+ * Checks how many programming question submissions a user has remaining today.
+ * @param {object} db     - Database connection
+ * @param {number} userId - User ID
+ * @returns {Promise<number>} - Number of submissions remaining today (0 means limit reached)
+ */
+const getProgrammingSubmissionsRemaining = async (db, userId) => {
+  const [[{ numDailyResponses }]] = await db.query(
+    `SELECT COUNT(*) as numDailyResponses
+     FROM Response r
+     JOIN Question q ON r.PROBLEM_ID = q.ID
+     WHERE r.USERID = ? AND q.TYPE = 'Programming' AND DATE(DATETIME) = CURDATE()`,
+    [userId]
+  );
+
+  return Math.max(0, MAX_SUBMISSIONS_PER_DAY - numDailyResponses);
+};
+
 module.exports = {
     MAX_CODE_BYTES,
     MAX_SUBMISSIONS_PER_DAY,
     MAX_TEST_RUNS_PER_PROBLEM,
     // MAX_RUNTIME_MS,
-    // MAX_MEMORY_KB
+    // MAX_MEMORY_KB,
+    getProgrammingSubmissionsRemaining,
 }
