@@ -269,16 +269,18 @@ const submitCode = asyncHandler(async (req, res) => {
           POINTS_EARNED,
           POINTS_POSSIBLE,
           CATEGORY,
-          TOPIC
+          TOPIC,
+          DATETIME
         ) 
-        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?)`,
+        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?, ?)`,
         [
           userId, 
           problemId, 
           serializedCode,
           question.POINTS_POSSIBLE, 
           question.CATEGORY, 
-          question.SUBCATEGORY
+          question.SUBCATEGORY,
+          new Date()
         ]
       );
     }
@@ -286,6 +288,11 @@ const submitCode = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: false,
       isTestRun: isTestRun,
+      allPassed: false,
+      passedTests: 0,
+      totalTests: testCases.length,
+      pointsEarned: 0,
+      pointsPossible: parseFloat(question.POINTS_POSSIBLE),
       status: errorResult.status.description,
       error: errorResult.stderr || errorResult.compile_output || 'Execution failed',
       message: 'Your code failed to execute. Please check for errors.'
@@ -328,9 +335,10 @@ const submitCode = asyncHandler(async (req, res) => {
       POINTS_EARNED,
       POINTS_POSSIBLE,
       CATEGORY,
-      TOPIC
+      TOPIC,
+      DATETIME
     ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId, 
       problemId, 
@@ -339,7 +347,8 @@ const submitCode = asyncHandler(async (req, res) => {
       gradingResults.pointsEarned, 
       question.POINTS_POSSIBLE, 
       question.CATEGORY, 
-      question.SUBCATEGORY
+      question.SUBCATEGORY,
+      new Date()
     ]
   );
 

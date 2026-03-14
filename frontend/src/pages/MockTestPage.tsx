@@ -295,20 +295,25 @@ const MockTestPage: React.FC = () => {
         const isCorrect = data.success ? data.allPassed : false;
         setIsCorrectAnswer(isCorrect);
 
+        setTotalTests(data.totalTests ?? 0);
+        setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
+
         if (data.success)
         {
           const passed = data.passedTests ?? 0;
-          const total = data.totalTests ?? 0;
           const label = data.allPassed ? "Correct!" : passed > 0 ? "Not quite!" : "Incorrect.";
           setGradingFeedback(label);
           setPassedTests(passed);
-          setTotalTests(total);
           setPointsEarned(typeof data.pointsEarned === "number" ? data.pointsEarned : null);
-          setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
         }
         else
         {
-          setGradingFeedback(`${data.status || "Execution failed. Please try again later."}`);
+          // Include compiler/runtime errors when present.
+          const errorDetails = data.compile_output || data.stderr || data.error || "";
+          setPointsEarned(0);
+          setPassedTests(0);
+          setIsCorrectAnswer(false);
+          setGradingFeedback(`${data.status || "Source code error"}${errorDetails ? `: ${errorDetails}` : "."}`);
         }
 
         const section = current.SECTION;

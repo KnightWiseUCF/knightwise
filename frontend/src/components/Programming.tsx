@@ -10,6 +10,7 @@
 //                 html-react-parser
 //                 dompurify
 //                 models (Question)
+//                 axios (isAxiosError)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -19,6 +20,7 @@ import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 import { Question } from "../models";
 import api from "../api";
+import { isAxiosError } from "axios";
 
 type Props = {
   current: Question; // current question
@@ -173,21 +175,30 @@ const Programming: React.FC<Props> = ({
     } catch (error) {
       // Log full error details for debugging
       console.error("Code execution error:", error);
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: { error?: string; message?: string }; statusText?: string } };
-        console.error("Backend response:", {
-          status: axiosError.response?.status,
-          statusText: axiosError.response?.statusText,
-          data: axiosError.response?.data,
-        });
-        const errorMsg = axiosError.response?.data?.error 
-          || axiosError.response?.data?.message
-          || axiosError.response?.statusText
-          || "Network error occurred";
-        setConsoleOutput(`Failed to run code (${axiosError.response?.status || 'unknown'}): ${errorMsg}`);
-      } else {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        setConsoleOutput(`Failed to run code: ${errorMessage}`);
+
+      // Test run limit reached
+      if (isAxiosError(error) && error.response?.status === 429)
+      {
+        setConsoleOutput("Daily test run limit for this question exceeded. Submit your response to see your results!");
+      }   
+      else // All other errors
+      { 
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { status?: number; data?: { error?: string; message?: string }; statusText?: string } };
+          console.error("Backend response:", {
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText,
+            data: axiosError.response?.data,
+          });
+          const errorMsg = axiosError.response?.data?.error 
+            || axiosError.response?.data?.message
+            || axiosError.response?.statusText
+            || "Network error occurred";
+          setConsoleOutput(`Failed to run code (${axiosError.response?.status || 'unknown'}): ${errorMsg}`);
+        } else {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          setConsoleOutput(`Failed to run code: ${errorMessage}`);
+        }
       }
     } finally {
       setIsRunning(false);
@@ -327,7 +338,7 @@ const Programming: React.FC<Props> = ({
           <h4 className="text-sm font-semibold mb-2">Console Output</h4>
           <div className="p-4 bg-black rounded-lg border border-gray-700 min-h-[120px] max-h-[200px] overflow-auto">
             <pre className="text-gray-300 font-mono text-xs sm:text-sm whitespace-pre-wrap break-words">
-              {consoleOutput || "Run your code to see output here..."}
+              {consoleOutput ||  'Click "Run" to see your code executed with the example input.'}
             </pre>
           </div>
         </div>

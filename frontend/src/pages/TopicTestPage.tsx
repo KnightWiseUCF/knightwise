@@ -325,24 +325,25 @@ const TopicTestPage: React.FC = () => {
         // as long as the response is a 200.
         setProgSubmitsRemaining(prev => prev !== null ? prev - 1 : null);
 
+        setTotalTests(data.totalTests ?? 0);
+        setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
+
         if (data.success) {
           // Show accepted vs incorrect based on judge response.
           const passed = data.passedTests ?? 0;
-          const total = data.totalTests ?? 0;
           const label = data.allPassed ? "Correct!" : passed > 0 ? "Not quite!" : "Incorrect.";
           setFeedback(label);
           setIsCorrectAnswer(Boolean(data.allPassed));
           setPointsEarned(typeof data.pointsEarned === "number" ? data.pointsEarned : null);
           setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
           setPassedTests(passed);
-          setTotalTests(total);
         } else {
           // Include compiler/runtime errors when present.
           const errorDetails = data.compile_output || data.stderr || data.error || "";
-          setFeedback(`${data.status || "Execution failed"}${errorDetails ? `: ${errorDetails}` : ""}`);
+          setPointsEarned(0);
+          setPassedTests(0);
+          setFeedback(`${data.status || "Source code error"}${errorDetails ? `: ${errorDetails}` : "."}`);
           setIsCorrectAnswer(false);
-          setPassedTests(null);
-          setTotalTests(null);
         }
       } catch (error: unknown) {
         if (isAxiosError(error))
