@@ -141,7 +141,17 @@ router.post("/login", asyncHandler(async (req, res) => {
     throw new AppError(`Login failed, invalid password for user: ${username}`, 400, "Invalid credentials");
   }
 
-  const token = jwt.sign({ userId: user.ID }, process.env.JWT_SECRET, {
+  // Unverified professors can't login until admin approves
+  if (user.IS_PROF && !user.VERIFIED)
+  {
+    throw new AppError(`Login failed, professor not yet verified: ${username}`, 403, "Account pending verification.");
+  }
+
+  const token = jwt.sign({
+    userId: user.ID,
+    role: (user.IS_PROF) ? 'professor' : 'student',
+    verified: Boolean(user.VERIFIED) // double-check
+  }, process.env.JWT_SECRET, {
     expiresIn: "1h",
   });
   res.status(200).json({

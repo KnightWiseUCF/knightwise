@@ -221,14 +221,14 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "loginprof", "loginprof@ucf.edu", 1);
 
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "loginprof",
       password: "testpass123",
     });
 
     // then: token with professor role
     expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe("Professor Logged In");
+    expect(res.body.message).toBe("User Logged In");
     expect(res.body.token).toBeDefined();
 
     const decoded = jwt.verify(res.body.token, process.env.JWT_SECRET);
@@ -241,7 +241,7 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "unverifiedprof", "unverified@ucf.edu", 0);
 
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "unverifiedprof",
       password: "testpass123",
     });
@@ -256,19 +256,19 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "wrongpassprof", "wrongpass@ucf.edu", 1);
 
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "wrongpassprof",
       password: "wrongpassword",
     });
 
     // then
     expect(res.statusCode).toBe(400);
-    expect(res.body.message).toBe("Invalid credentials.");
+    expect(res.body.message).toBe("Invalid credentials");
   });
 
   test("login - fail if professor does not exist", async () => {
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "ghostprof",
       password: "testpass123",
     });
@@ -289,7 +289,7 @@ describe("Prof Auth Routes", () => {
     );
 
     // when
-    const res = await request(app).post("/api/profauth/resetPassword").send({
+    const res = await request(app).post("/api/auth/resetPassword").send({
       email,
       password: "newpass456",
     });
@@ -308,14 +308,14 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "noverifyprof", "noverify@ucf.edu", 1);
 
     // when
-    const res = await request(app).post("/api/profauth/resetPassword").send({
+    const res = await request(app).post("/api/auth/resetPassword").send({
       email: "noverify@ucf.edu",
       password: "newpass456",
     });
 
     // then
     expect(res.statusCode).toBe(403);
-    expect(res.body.message).toBe("Email verification required.");
+    expect(res.body.message).toBe("Email verification required");
   });
 
   test("resetPassword - fail if new password same as current", async () => {
@@ -328,7 +328,7 @@ describe("Prof Auth Routes", () => {
     );
 
     // when: same password as what insertProf set
-    const res = await request(app).post("/api/profauth/resetPassword").send({
+    const res = await request(app).post("/api/auth/resetPassword").send({
       email,
       password: "testpass123",
     });
