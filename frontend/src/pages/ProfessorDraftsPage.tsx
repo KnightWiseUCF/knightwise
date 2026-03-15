@@ -1384,7 +1384,7 @@ const ProfessorDraftsPage: React.FC = () => {
   if (!isProfessor) {
     return (
       <Layout>
-        <div className="p-8 max-w-3xl mx-auto">
+        <div className="p-8 max-w-6xl mx-auto">
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-6 text-center">
             This page is only available to professor accounts.
           </div>
@@ -1396,7 +1396,7 @@ const ProfessorDraftsPage: React.FC = () => {
   return (
     <Layout>
       <div className="bg-gray-100 min-h-full py-8 px-4">
-        <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-8">
+        <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-6">Question Drafts</h1>
 
           <div className="flex gap-2 mb-6">

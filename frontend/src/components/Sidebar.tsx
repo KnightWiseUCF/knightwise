@@ -1,5 +1,6 @@
 // This code is based on Dr. Leinecker's code: LoggedInName.tsx
 
+import { useEffect, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LogOut,
@@ -10,29 +11,45 @@ import {
   UserCircle,
   UserRoundCog,
   FileCode,
+  Trophy,
 } from "lucide-react"; // for icons
+import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+import { getFlairPresentation } from "../utils/flairPresentation";
 
 const Sidebar = () => {
   const location = useLocation();
   const accountType = localStorage.getItem("account_type");
   const isProfessor = accountType === "professor";
+  const { user, equippedItems } = useUserCustomizationStore();
 
-  // function: LoggedInName - get first/lastname
-  const LoggedInName = () => {
+  useEffect(() => {
+    void userCustomizationStore.refresh();
+  }, []);
+
+  const userData = (() => {
     try {
-      const userData = localStorage.getItem("user_data");
-
-      if (userData) {
-        const user = JSON.parse(userData);
-        return user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`
-          : user.name || "Hello";
-      }
+      const rawUserData = localStorage.getItem("user_data");
+      return rawUserData ? JSON.parse(rawUserData) as {
+        firstName?: string;
+        lastName?: string;
+        name?: string;
+      } : null;
     } catch (error) {
       console.error("Error parsing user data:", error);
+      return null;
     }
-    return "Hello";
-  };
+  })();
+
+  const displayName = useMemo(() => {
+    const firstName = (user?.FIRSTNAME || userData?.firstName || "").trim();
+    const lastName = (user?.LASTNAME || userData?.lastName || "").trim();
+    return `${firstName} ${lastName}`.trim() || user?.USERNAME || userData?.name || "Hello";
+  }, [user, userData?.firstName, userData?.lastName, userData?.name]);
+
+  const flairItems = useMemo(
+    () => equippedItems.filter((item) => item.TYPE === "flair"),
+    [equippedItems]
+  );
 
   // function: logout
   const doLogout = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -61,7 +78,7 @@ const Sidebar = () => {
       path: "/topic-practice",
     },
     {
-      name: "Mock Test",
+      name: "Build an Exam",
       icon: <GraduationCap size={24} />,
       path: "/mock-test",
     },
@@ -81,6 +98,11 @@ const Sidebar = () => {
           },
         ]),
     {
+      name: "Leaderboard",
+      icon: <Trophy size={24} />,
+      path: "/leaderboard"
+    },
+    {
       name: "Profile",
       icon: <UserCircle size={24} />,
       path: "/profile"
@@ -95,9 +117,28 @@ const Sidebar = () => {
   return (
     <div className="h-full w-72 bg-gray-100 p-4 sm:p-6 shadow-lg flex flex-col">
       {/* user name */}
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold pt-6 sm:pt-10 mb-6 sm:mb-10 text-center">
-        {LoggedInName()}
-      </h1>
+      <div className="pt-6 sm:pt-10 mb-6 sm:mb-10 text-center">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
+          {displayName}
+        </h1>
+        {flairItems.length > 0 && (
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {flairItems.map((item) => {
+              const flairStyle = getFlairPresentation(item.NAME);
+
+              return (
+                <span
+                  key={item.ID}
+                  className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${flairStyle.className}`}
+                >
+                  <span className="mr-1" aria-hidden="true">{flairStyle.emoji}</span>
+                  <span>{item.NAME}</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* menu*/}
       <nav className="flex-1 overflow-y-auto">

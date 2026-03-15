@@ -430,7 +430,7 @@ const ProblemView: React.FC = () => {
   const label   = scoreLabel(score);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
       {/* Header */}
       <div>

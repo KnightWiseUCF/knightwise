@@ -56,7 +56,7 @@ const MockTestProblem: React.FC<Props> = ({
       {current.CATEGORY} <span className="text-yellow-600">&gt;</span>{" "}
       {current.SUBCATEGORY}
       <span className="block text-sm sm:text-base md:text-xl text-gray-500 font-normal mt-1 sm:mt-0">
-        (Exam Date: {current.AUTHOR_EXAM_ID})
+        (Credit: {current.AUTHOR_EXAM_ID})
       </span>
     </h1>
 

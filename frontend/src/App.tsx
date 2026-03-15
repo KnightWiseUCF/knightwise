@@ -46,6 +46,8 @@ function App()
         <Route path="/reset-password"             element={<ResetPassword />} />
         <Route path="/account"                    element={<AccountPage />} />
         <Route path="/profile"                    element={<ProfilePage />} />
+        <Route path="/profile/:userId"            element={<ProfilePage />} />
+        <Route path="/profile/u/:username"        element={<ProfilePage />} />
         <Route path="/store"                      element={<StorePage />} />
         <Route path="/professor-apply"            element={<ProfessorApplyPage />} />
         <Route path="/professor-drafts"           element={<ProfessorDraftsPage />} />

@@ -17,6 +17,7 @@ import React from "react";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 import { Question } from "../models";
+import { formatSubcategoryLabel } from "../utils/topicLabels";
 
 type Props = {
   current: Question; // current question
@@ -74,9 +75,9 @@ const SelectAllThatApply: React.FC<Props> = ({
 
       <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 mb-2">
         {current.CATEGORY} <span className="text-yellow-600">&gt;</span>{" "}
-        {current.SUBCATEGORY}
+        {formatSubcategoryLabel(current.SUBCATEGORY)}
         <span className="block text-sm sm:text-base md:text-xl text-gray-500 font-normal mt-1 sm:mt-0">
-          (Exam Date: {current.AUTHOR_EXAM_ID})
+          (Credit: {current.AUTHOR_EXAM_ID})
         </span>
       </h1>
 

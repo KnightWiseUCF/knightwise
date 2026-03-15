@@ -101,16 +101,20 @@ const serializeUserAnswer = (questionType, userAnswer) => {
  */
 router.get("/topic/:topicName", authMiddleware, asyncHandler(async (req, res) => {
   const { topicName } = req.params;
+  const normalizedTopicName = String(topicName || "").trim();
+  const resolvedTopicName = normalizedTopicName === "Input/Output"
+    ? "InputOutput"
+    : normalizedTopicName;
 
   // Get all questions of this subcategory
   const [questions] = await req.db.query(
     'SELECT * FROM Question WHERE SUBCATEGORY = ? AND IS_PUBLISHED = 1',
-    [topicName]
+    [resolvedTopicName]
   );
 
   if (!questions || questions.length === 0) 
   {
-    throw new AppError(`No published questions exist for subcategory: ${topicName}`, 404, "Question not found");
+    throw new AppError(`No published questions exist for subcategory: ${resolvedTopicName}`, 404, "Question not found");
   }
 
   const questionsWithAnswers = await pairAnswersWithQuestions(questions, req.db);
