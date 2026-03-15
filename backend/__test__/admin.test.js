@@ -19,7 +19,7 @@
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const { app, pool } = require("../server");
-const { TEST_USER, verifyTestDatabase } = require("./testHelpers");
+const { TEST_USER, verifyTestDatabase, insertQuestion } = require("./testHelpers");
 const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Mock Mailjet
@@ -313,6 +313,22 @@ describe("Admin Routes", () => {
       expect(res.statusCode).toBe(401);
     });
 
+    test("GET /api/admin/published returns all published questions for admin", async () => { 
+      // Insert 3 questions, two published and one draft
+      await insertQuestion("MCQ", [], { isPublished: true });
+      await insertQuestion("MCQ", [], { isPublished: false });
+      await insertQuestion("MCQ", [], { isPublished: true });
+
+      // Call endpoint as admin
+      const res = await request(app)
+        .get("/api/admin/published")
+        .set("Authorization", `Bearer ${process.env.ADMIN_KEY}`);
+
+      // Admin should be able to see both published questions
+      expect(res.statusCode).toBe(200);
+      expect(res.body.published.length).toBeGreaterThanOrEqual(2);
+    });
+    
     // store item tests
     test('POST /api/admin/store/createitem creates a store item', async () => {
       const res = await request(app)

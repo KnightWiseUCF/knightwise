@@ -738,8 +738,26 @@ paths:
       - Admins
       - Professors
       summary: Fetch draft question metadata.
-      operationId: getDrafts
+      operationId: getQuestionsByStatus
       description: Returns metadata for all unpublished questions. Professors see only their own drafts. Admins see all drafts.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /admin/published:
+    get:
+      tags:
+      - Admins
+      - Professors
+      summary: Fetch published question metadata.
+      operationId: getQuestionsByStatus
+      description: Returns metadata for all published questions. Professors see only their own published questions. Admins see all published questions.
       security:
         - BearerAuth: []
       responses:
