@@ -17,7 +17,7 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Layout from "../components/Layout";
 import MockTestInfo from "../components/MockTestInfo";
 import MockTestResult from "../components/MockTestResult";
@@ -28,18 +28,158 @@ import RankedChoice from "../components/RankedChoice";
 import DragAndDrop from "../components/DragAndDrop";
 import Programming from "../components/Programming";
 import api from "../api";
-import { Question, MockTestResponse } from "../models";
+import { Question, RawQuestion } from "../models";
+
+const AVAILABLE_TOPICS = [
+  "Input/Output",
+  "Branching",
+  "Loops",
+  "Variables",
+  "Arrays",
+  "Linked Lists",
+  "Strings",
+  "Classes",
+  "Methods",
+  "Trees",
+  "Stacks",
+  "Heaps",
+  "Tries",
+  "Bitwise Operators",
+  "Dynamic Memory",
+  "Algorithm Analysis",
+  "Recursion",
+  "Sorting",
+];
+
+const DEFAULT_SELECTED_TOPICS = ["Input/Output", "Branching", "Loops", "Variables"];
+const DEFAULT_QUESTION_COUNT = 12;
+const MIN_QUESTION_COUNT = 1;
+const MAX_QUESTION_COUNT = 50;
+const DEFAULT_TIME_LIMIT_MINUTES = 30;
+const MIN_TIME_LIMIT_MINUTES = 5;
+const MAX_TIME_LIMIT_MINUTES = 180;
+
+const shuffleArray = <T,>(items: T[]): T[] => [...items].sort(() => 0.5 - Math.random());
+
+const clampTimeLimit = (minutes: number): number => {
+  if (!Number.isFinite(minutes)) {
+    return DEFAULT_TIME_LIMIT_MINUTES;
+  }
+
+  return Math.min(MAX_TIME_LIMIT_MINUTES, Math.max(MIN_TIME_LIMIT_MINUTES, Math.round(minutes)));
+};
+
+const clampQuestionCount = (count: number): number => {
+  if (!Number.isFinite(count)) {
+    return DEFAULT_QUESTION_COUNT;
+  }
+
+  return Math.min(MAX_QUESTION_COUNT, Math.max(MIN_QUESTION_COUNT, Math.round(count)));
+};
+
+const toApiTopicSlug = (topic: string): string => {
+  const normalized = String(topic || "").trim();
+  return normalized === "Input/Output" ? "InputOutput" : normalized;
+};
+
+const normalizeQuestionType = (
+  type?: string
+): Question["QUESTION_TYPE"] => {
+  const normalized = (type || "").trim().toLowerCase();
+
+  switch (normalized) {
+    case "multiple choice":
+      return "multiple_choice";
+    case "fill in the blanks":
+      return "fill_in_blank";
+    case "select all that apply":
+      return "select_all_that_apply";
+    case "ranked choice":
+      return "ranked_choice";
+    case "drag and drop":
+      return "drag_and_drop";
+    case "programming":
+      return "programming";
+    default:
+      return undefined;
+  }
+};
+
+const toQuestion = (question: RawQuestion): Question | null => {
+  const correctAnswer = question.answers?.find((answer) => answer.IS_CORRECT_ANSWER);
+  const normalizedType = normalizeQuestionType(question.TYPE);
+  const allAnswerTexts = question.answers?.map((answer) => answer.TEXT) || [];
+
+  const correctOrder = normalizedType === "ranked_choice"
+    ? [...(question.answers || [])]
+      .sort((left, right) => (left.RANK ?? 0) - (right.RANK ?? 0))
+      .map((answer) => answer.TEXT)
+    : undefined;
+
+  const shuffledOptions = shuffleArray(allAnswerTexts);
+
+  if (!normalizedType) {
+    return null;
+  }
+
+  return {
+    ID: question.ID,
+    TYPE: question.TYPE,
+    SECTION: question.SECTION,
+    CATEGORY: question.CATEGORY,
+    SUBCATEGORY: question.SUBCATEGORY,
+    AUTHOR_EXAM_ID: question.AUTHOR_EXAM_ID,
+    POINTS_POSSIBLE: question.POINTS_POSSIBLE,
+    QUESTION_TEXT: question.QUESTION_TEXT,
+    OWNER_ID: question.OWNER_ID,
+    answerCorrect: normalizedType === "ranked_choice"
+      ? (correctOrder || []).join(", ")
+      : correctAnswer?.TEXT || "",
+    options: shuffledOptions,
+    QUESTION_TYPE: normalizedType,
+    correctOrder,
+    answerObjects: normalizedType === "drag_and_drop" ? question.answers || [] : undefined,
+    dropZones: normalizedType === "drag_and_drop"
+      ? [...(question.answers || [])].map((answer, index) => ({
+          id: `zone-${index}`,
+          correctAnswer: answer.TEXT,
+        }))
+      : undefined,
+    problem: normalizedType === "programming"
+      ? {
+          description: question.QUESTION_TEXT,
+          languages: ["C", "Java", "Python"],
+        }
+      : undefined,
+    problemCode: normalizedType === "programming"
+      ? (question.answers || []).reduce((accumulator, answer) => {
+          accumulator[answer.TEXT] = {
+            code: answer.IS_CORRECT_ANSWER ? "// Solution" : "// Code",
+            output: "",
+          };
+          return accumulator;
+        }, {} as { [language: string]: { code: string; output?: string } })
+      : undefined,
+  };
+};
 
 const MockTestPage: React.FC = () => {
   const isProfessorAccount = localStorage.getItem("account_type") === "professor";
   const [step, setStep] = useState<"info" | "test" | "result">("info");
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(DEFAULT_SELECTED_TOPICS);
+  const [questionCount, setQuestionCount] = useState<number>(DEFAULT_QUESTION_COUNT);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<number>(DEFAULT_TIME_LIMIT_MINUTES);
+  const [timeRemainingSeconds, setTimeRemainingSeconds] = useState<number>(DEFAULT_TIME_LIMIT_MINUTES * 60);
+  const [isPreparingTest, setIsPreparingTest] = useState(false);
+  const [setupError, setSetupError] = useState("");
+  const [completionReason, setCompletionReason] = useState<"completed" | "time_limit">("completed");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [droppedAnswers, setDroppedAnswers] = useState<Record<string, string>>({});
-  const [sectionScores, setSectionScores] = useState<
+  const [subcategoryScores, setSubcategoryScores] = useState<
     Record<string, { correct: number; total: number }>
   >({});
   const [showFeedback, setShowFeedback] = useState(false);
@@ -58,129 +198,41 @@ const MockTestPage: React.FC = () => {
     Python: 71,
   };
 
-  const normalizeQuestionType = (
-    type?: string
-  ): Question["QUESTION_TYPE"] => {
-    switch (type) {
-      case "Multiple Choice":
-        return "multiple_choice";
-      case "Fill in the Blanks":
-        return "fill_in_blank";
-      case "Select All That Apply":
-        return "select_all_that_apply";
-      case "Ranked Choice":
-        return "ranked_choice";
-      case "Drag and Drop":
-        return "drag_and_drop";
-      case "Programming":
-        return "programming";
-      default:
-        return undefined;
-    }
-  };
-
   useEffect(() => {
-    const fetchMockTestProblems = async () => {
-      try {
-        const res = await api.get<MockTestResponse>("/api/test/mocktest");
-        const data = res.data;
-
-        const withOptions = data.questions
-          .map((question) => {
-          // Extract answer data
-          const correctAnswer = question.answers?.find((a) => a.IS_CORRECT_ANSWER);
-          const normalizedType = normalizeQuestionType(question.TYPE);
-          const allAnswerTexts = question.answers?.map((a) => a.TEXT) || [];
-          
-          // For ranked_choice: sort answers by RANK field
-          const correctOrder = normalizedType === "ranked_choice"
-            ? [...(question.answers || [])]
-              .sort((a, b) => (a.RANK ?? 0) - (b.RANK ?? 0))
-              .map((a) => a.TEXT)
-            : undefined;
-          
-          // Shuffle options shown to users; keep correctOrder separately for grading
-          const shuffledOptions = normalizedType === "ranked_choice"
-            ? [...allAnswerTexts].sort(() => 0.5 - Math.random())
-            : normalizedType === "drag_and_drop"
-            ? allAnswerTexts.sort(() => 0.5 - Math.random())
-            : allAnswerTexts.sort(() => 0.5 - Math.random());
-
-          // Transform RawQuestion to Question interface
-          const newQuestion: Question = {
-            ID:             question.ID,
-            TYPE:           question.TYPE,
-            SECTION:        question.SECTION,
-            CATEGORY:       question.CATEGORY,
-            SUBCATEGORY:    question.SUBCATEGORY,
-            AUTHOR_EXAM_ID: question.AUTHOR_EXAM_ID,
-            POINTS_POSSIBLE: question.POINTS_POSSIBLE,
-            QUESTION_TEXT:  question.QUESTION_TEXT,
-            OWNER_ID:       question.OWNER_ID,
-            answerCorrect:  normalizedType === "ranked_choice"
-              ? (correctOrder || []).join(", ")
-              : correctAnswer?.TEXT || "",
-            options:        shuffledOptions,
-            QUESTION_TYPE:  normalizedType,
-            correctOrder:   correctOrder,            // drag_and_drop (new placement-based): store full answer objects with placement field
-            answerObjects:  normalizedType === "drag_and_drop"
-              ? question.answers || []
-              : undefined,            // drag_and_drop: map each answer to a drop zone with id and correctAnswer
-            dropZones:      normalizedType === "drag_and_drop"
-              ? [...(question.answers || [])].map((ans, idx) => ({
-                  id: `zone-${idx}`,
-                  correctAnswer: ans.TEXT,
-                }))
-              : undefined,
-            // programming: use standard languages (C, Java, Python)
-            problem:        normalizedType === "programming"
-              ? {
-                  description: question.QUESTION_TEXT,
-                  languages: ["C", "Java", "Python"],
-                }
-              : undefined,
-            problemCode:    normalizedType === "programming"
-              ? (question.answers || []).reduce((acc, ans) => {
-                  acc[ans.TEXT] = { code: ans.IS_CORRECT_ANSWER ? "// Solution" : "// Code", output: "" };
-                  return acc;
-                }, {} as { [lang: string]: { code: string; output?: string } })
-              : undefined,
-          };
-          return newQuestion;
-        })
-          .filter(
-            (question): question is Question =>
-              question.QUESTION_TYPE !== undefined
-          );
-
-        setQuestions(withOptions);
-        setSectionScores({});
-        setCurrentIndex(0);
-        setSelectedAnswer(null);
-        setSelectedAnswers([]);
-        setSelectedOrder([]);
-        setDroppedAnswers({});
-        setShowFeedback(false);
-        setIsCorrectAnswer(false);
-        setGradingFeedback("");
-        setPointsEarned(null);
-        setPointsPossible(null);
-        setNormalizedScore(null);
-        setProgrammingAnswer("");
-        setProgrammingLanguage("C");
-      } 
-      catch 
-      {
-        console.error("Failed to load mock test problems");
-      }
-    };
-
-    if (step === "test") {
-      fetchMockTestProblems();
+    if (step !== "test") {
+      return undefined;
     }
+
+    const intervalId = window.setInterval(() => {
+      setTimeRemainingSeconds((previous) => {
+        if (previous <= 1) {
+          window.clearInterval(intervalId);
+          setCompletionReason("time_limit");
+          setStep("result");
+          return 0;
+        }
+
+        return previous - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
   }, [step]);
 
-  const current = questions[currentIndex];
+  const subcategoryTotals = useMemo(() => {
+    return questions.reduce<Record<string, number>>((accumulator, question) => {
+      accumulator[question.SUBCATEGORY] = (accumulator[question.SUBCATEGORY] || 0) + 1;
+      return accumulator;
+    }, {});
+  }, [questions]);
+
+  const formattedTimeRemaining = useMemo(() => {
+    const minutes = Math.floor(timeRemainingSeconds / 60);
+    const seconds = timeRemainingSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }, [timeRemainingSeconds]);
+
+  const current = questions[currentIndex] ?? null;
   const questionType = current?.QUESTION_TYPE || 'multiple_choice';
 
   useEffect(() => {
@@ -216,6 +268,124 @@ const MockTestPage: React.FC = () => {
         return { language: programmingLanguage, code: programmingAnswer };
       default:
         return "";
+    }
+  };
+
+  const resetInteractionState = () => {
+    setCurrentIndex(0);
+    setSelectedAnswer(null);
+    setSelectedAnswers([]);
+    setSelectedOrder([]);
+    setDroppedAnswers({});
+    setSubcategoryScores({});
+    setShowFeedback(false);
+    setIsSubmitting(false);
+    setIsCorrectAnswer(false);
+    setGradingFeedback("");
+    setPointsEarned(null);
+    setPointsPossible(null);
+    setNormalizedScore(null);
+    setProgrammingAnswer("");
+    setProgrammingLanguage("C");
+  };
+
+  const handleToggleTopic = (topic: string) => {
+    setSetupError("");
+    setSelectedTopics((previous) =>
+      previous.includes(topic)
+        ? previous.filter((entry) => entry !== topic)
+        : [...previous, topic]
+    );
+  };
+
+  const handleStart = async () => {
+    if (selectedTopics.length === 0) {
+      setSetupError("Select at least one topic to build a mock test.");
+      return;
+    }
+
+    setIsPreparingTest(true);
+    setSetupError("");
+
+    try {
+      const settledTopicResponses = await Promise.allSettled(
+        selectedTopics.map(async (topic) => {
+          const topicSlug = toApiTopicSlug(topic);
+          const response = await api.get<RawQuestion[]>(`/api/test/topic/${encodeURIComponent(topicSlug)}`);
+          return { topic, questions: response.data };
+        })
+      );
+
+      const topicQuestions = new Map<string, RawQuestion[]>();
+
+      for (const response of settledTopicResponses) {
+        if (response.status !== "fulfilled") {
+          continue;
+        }
+
+        const shuffledQuestions = shuffleArray(Array.isArray(response.value.questions) ? response.value.questions : []);
+        if (shuffledQuestions.length > 0) {
+          topicQuestions.set(response.value.topic, shuffledQuestions);
+        }
+      }
+
+      const usedQuestionIds = new Set<number>();
+      const assembledQuestions: RawQuestion[] = [];
+      const overflowQuestions: RawQuestion[] = [];
+      const targetQuestionCount = clampQuestionCount(questionCount);
+
+      for (const topic of selectedTopics) {
+        if (assembledQuestions.length >= targetQuestionCount) {
+          break;
+        }
+
+        const questionsForTopic = topicQuestions.get(topic) || [];
+        const firstUnusedQuestion = questionsForTopic.find((question) => !usedQuestionIds.has(question.ID));
+
+        if (firstUnusedQuestion) {
+          assembledQuestions.push(firstUnusedQuestion);
+          usedQuestionIds.add(firstUnusedQuestion.ID);
+        }
+
+        for (const question of questionsForTopic) {
+          if (!usedQuestionIds.has(question.ID)) {
+            overflowQuestions.push(question);
+          }
+        }
+      }
+
+      for (const question of shuffleArray(overflowQuestions)) {
+        if (assembledQuestions.length >= targetQuestionCount) {
+          break;
+        }
+
+        if (usedQuestionIds.has(question.ID)) {
+          continue;
+        }
+
+        assembledQuestions.push(question);
+        usedQuestionIds.add(question.ID);
+      }
+
+      const preparedQuestions = shuffleArray(assembledQuestions)
+        .map(toQuestion)
+        .filter((question): question is Question => question !== null);
+
+      if (preparedQuestions.length === 0) {
+        setSetupError("No published questions were available for the selected topics.");
+        return;
+      }
+
+      setQuestions(preparedQuestions);
+      resetInteractionState();
+      setTimeRemainingSeconds(clampTimeLimit(timeLimitMinutes) * 60);
+      setCompletionReason("completed");
+      setStep("test");
+    } catch (error) {
+      console.error("Failed to prepare custom mock test", error);
+      setSetupError("Unable to prepare the mock test right now. Please try again.");
+    } finally {
+      setIsPreparingTest(false);
     }
   };
 
@@ -267,12 +437,12 @@ const MockTestPage: React.FC = () => {
         const isCorrect = data.success ? data.correct : false;
         setIsCorrectAnswer(isCorrect);
 
-        const section = current.SECTION;
-        setSectionScores((prev) => ({
+        const subcategory = current.SUBCATEGORY;
+        setSubcategoryScores((prev) => ({
           ...prev,
-          [section]: {
-            correct: (prev[section]?.correct || 0) + (isCorrect ? 1 : 0),
-            total: (prev[section]?.total || 0) + 1,
+          [subcategory]: {
+            correct: (prev[subcategory]?.correct || 0) + (isCorrect ? 1 : 0),
+            total: (prev[subcategory]?.total || 0) + 1,
           },
         }));
       } catch {
@@ -317,12 +487,12 @@ const MockTestPage: React.FC = () => {
         typeof result.data.normalizedScore === "number" ? result.data.normalizedScore : null
       );
 
-      const section = current.SECTION;
-      setSectionScores((prev) => ({
+      const subcategory = current.SUBCATEGORY;
+      setSubcategoryScores((prev) => ({
         ...prev,
-        [section]: {
-          correct: (prev[section]?.correct || 0) + (isCorrect ? 1 : 0),
-          total: (prev[section]?.total || 0) + 1,
+        [subcategory]: {
+          correct: (prev[subcategory]?.correct || 0) + (isCorrect ? 1 : 0),
+          total: (prev[subcategory]?.total || 0) + 1,
         },
       }));
     }
@@ -337,6 +507,7 @@ const MockTestPage: React.FC = () => {
 
   const handleNext = () => {
     if (currentIndex + 1 === questions.length) {
+      setCompletionReason("completed");
       setStep("result");
     } else {
       setSelectedAnswer(null);
@@ -359,113 +530,157 @@ const MockTestPage: React.FC = () => {
   const restartTest = () => {
     setStep("info");
     setQuestions([]);
-    setSectionScores({});
-    setCurrentIndex(0);
+    resetInteractionState();
+    setTimeRemainingSeconds(clampTimeLimit(timeLimitMinutes) * 60);
   };
 
   return (
     <Layout>
-      {step === "info" && <MockTestInfo onStart={() => setStep("test")} />}
+      {step === "info" && (
+        <MockTestInfo
+          availableTopics={AVAILABLE_TOPICS}
+          selectedTopics={selectedTopics}
+          questionCount={questionCount}
+          timeLimitMinutes={timeLimitMinutes}
+          isStarting={isPreparingTest}
+          errorMessage={setupError}
+          onToggleTopic={handleToggleTopic}
+          onSelectAll={() => {
+            setSetupError("");
+            setSelectedTopics(AVAILABLE_TOPICS);
+          }}
+          onClearAll={() => {
+            setSetupError("");
+            setSelectedTopics([]);
+          }}
+          onQuestionCountChange={(count) => setQuestionCount(clampQuestionCount(count))}
+          onTimeLimitChange={(minutes) => setTimeLimitMinutes(clampTimeLimit(minutes))}
+          onStart={handleStart}
+        />
+      )}
 
       <div className="pb-16">
         {step === "test" && current && (
-        questionType === 'multiple_choice' ? (
-          <MultipleChoice
-            current={current}
-            currentIndex={currentIndex}
-            total={questions.length}
-            selectedAnswer={selectedAnswer}
-            setSelectedAnswer={setSelectedAnswer}
-            handleSubmit={handleSubmit}
-            handleNext={handleNext}
-            showFeedback={showFeedback}
-            isCorrect={isCorrectAnswer}
-            feedbackText={gradingFeedback}
-            pointsEarned={pointsEarned}
-            pointsPossible={pointsPossible}
-            normalizedScore={normalizedScore}
-          />
-        ) : questionType === 'ranked_choice' ? (
-          <RankedChoice
-            current={current}
-            currentIndex={currentIndex}
-            total={questions.length}
-            selectedOrder={selectedOrder}
-            setSelectedOrder={setSelectedOrder}
-            handleSubmit={handleSubmit}
-            handleNext={handleNext}
-            showFeedback={showFeedback}
-            isCorrect={isCorrectAnswer}
-            feedbackText={gradingFeedback}
-            pointsEarned={pointsEarned}
-            pointsPossible={pointsPossible}
-            normalizedScore={normalizedScore}
-          />
-        ) : questionType === 'drag_and_drop' ? (
-          <DragAndDrop
-            current={current}
-            currentIndex={currentIndex}
-            total={questions.length}
-            droppedAnswers={droppedAnswers}
-            setDroppedAnswers={setDroppedAnswers}
-            handleSubmit={handleSubmit}
-            handleNext={handleNext}
-            showFeedback={showFeedback}
-            isCorrect={isCorrectAnswer}
-            feedbackText={gradingFeedback}
-            pointsEarned={pointsEarned}
-            pointsPossible={pointsPossible}
-            normalizedScore={normalizedScore}
-          />
-        ) : questionType === 'programming' ? (
-          <Programming
-            current={current}
-            currentIndex={currentIndex}
-            total={questions.length}
-            editorContent={programmingAnswer}
-            setEditorContent={setProgrammingAnswer}
-            selectedLanguage={programmingLanguage}
-            setSelectedLanguage={setProgrammingLanguage}
-            handleSubmit={handleSubmit}
-            handleNext={handleNext}
-          />
-        ) : questionType === 'select_all_that_apply' ? (
-          <SelectAllThatApply
-            current={current}
-            currentIndex={currentIndex}
-            total={questions.length}
-            selectedAnswers={selectedAnswers}
-            setSelectedAnswers={setSelectedAnswers}
-            handleSubmit={handleSubmit}
-            handleNext={handleNext}
-            showFeedback={showFeedback}
-            isCorrect={isCorrectAnswer}
-            feedbackText={gradingFeedback}
-            pointsEarned={pointsEarned}
-            pointsPossible={pointsPossible}
-            normalizedScore={normalizedScore}
-          />
-        ) : (
-          <FillInTheBlank
-            current={current}
-            currentIndex={currentIndex}
-            total={questions.length}
-            selectedAnswer={selectedAnswer}
-            setSelectedAnswer={setSelectedAnswer}
-            handleSubmit={handleSubmit}
-            handleNext={handleNext}
-            showFeedback={showFeedback}
-            isCorrect={isCorrectAnswer}
-            feedbackText={gradingFeedback}
-            pointsEarned={pointsEarned}
-            pointsPossible={pointsPossible}
-            normalizedScore={normalizedScore}
-          />
-        )
-      )}
+          <>
+            <div className="mx-auto mb-6 flex w-full max-w-6xl flex-col gap-4 rounded-3xl border border-gray-200 bg-white/95 px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+                  Custom mock test
+                </p>
+                <p className="mt-1 text-sm text-gray-700 sm:text-base">
+                  {selectedTopics.length} topics selected • {questions.length} questions
+                </p>
+              </div>
+              <div className="flex items-center gap-3 self-start sm:self-auto">
+                <span className="rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white sm:text-base">
+                  Time left {formattedTimeRemaining}
+                </span>
+              </div>
+            </div>
+
+            {questionType === 'multiple_choice' ? (
+              <MultipleChoice
+                current={current}
+                currentIndex={currentIndex}
+                total={questions.length}
+                selectedAnswer={selectedAnswer}
+                setSelectedAnswer={setSelectedAnswer}
+                handleSubmit={handleSubmit}
+                handleNext={handleNext}
+                showFeedback={showFeedback}
+                isCorrect={isCorrectAnswer}
+                feedbackText={gradingFeedback}
+                pointsEarned={pointsEarned}
+                pointsPossible={pointsPossible}
+                normalizedScore={normalizedScore}
+              />
+            ) : questionType === 'ranked_choice' ? (
+              <RankedChoice
+                current={current}
+                currentIndex={currentIndex}
+                total={questions.length}
+                selectedOrder={selectedOrder}
+                setSelectedOrder={setSelectedOrder}
+                handleSubmit={handleSubmit}
+                handleNext={handleNext}
+                showFeedback={showFeedback}
+                isCorrect={isCorrectAnswer}
+                feedbackText={gradingFeedback}
+                pointsEarned={pointsEarned}
+                pointsPossible={pointsPossible}
+                normalizedScore={normalizedScore}
+              />
+            ) : questionType === 'drag_and_drop' ? (
+              <DragAndDrop
+                current={current}
+                currentIndex={currentIndex}
+                total={questions.length}
+                droppedAnswers={droppedAnswers}
+                setDroppedAnswers={setDroppedAnswers}
+                handleSubmit={handleSubmit}
+                handleNext={handleNext}
+                showFeedback={showFeedback}
+                isCorrect={isCorrectAnswer}
+                feedbackText={gradingFeedback}
+                pointsEarned={pointsEarned}
+                pointsPossible={pointsPossible}
+                normalizedScore={normalizedScore}
+              />
+            ) : questionType === 'programming' ? (
+              <Programming
+                current={current}
+                currentIndex={currentIndex}
+                total={questions.length}
+                editorContent={programmingAnswer}
+                setEditorContent={setProgrammingAnswer}
+                selectedLanguage={programmingLanguage}
+                setSelectedLanguage={setProgrammingLanguage}
+                handleSubmit={handleSubmit}
+                handleNext={handleNext}
+              />
+            ) : questionType === 'select_all_that_apply' ? (
+              <SelectAllThatApply
+                current={current}
+                currentIndex={currentIndex}
+                total={questions.length}
+                selectedAnswers={selectedAnswers}
+                setSelectedAnswers={setSelectedAnswers}
+                handleSubmit={handleSubmit}
+                handleNext={handleNext}
+                showFeedback={showFeedback}
+                isCorrect={isCorrectAnswer}
+                feedbackText={gradingFeedback}
+                pointsEarned={pointsEarned}
+                pointsPossible={pointsPossible}
+                normalizedScore={normalizedScore}
+              />
+            ) : (
+              <FillInTheBlank
+                current={current}
+                currentIndex={currentIndex}
+                total={questions.length}
+                selectedAnswer={selectedAnswer}
+                setSelectedAnswer={setSelectedAnswer}
+                handleSubmit={handleSubmit}
+                handleNext={handleNext}
+                showFeedback={showFeedback}
+                isCorrect={isCorrectAnswer}
+                feedbackText={gradingFeedback}
+                pointsEarned={pointsEarned}
+                pointsPossible={pointsPossible}
+                normalizedScore={normalizedScore}
+              />
+            )}
+          </>
+        )}
 
         {step === "result" && (
-          <MockTestResult sectionScores={sectionScores} onRetry={restartTest} />
+          <MockTestResult
+            subcategoryScores={subcategoryScores}
+            subcategoryTotals={subcategoryTotals}
+            completionReason={completionReason}
+            onRetry={restartTest}
+          />
         )}
       </div>
     </Layout>

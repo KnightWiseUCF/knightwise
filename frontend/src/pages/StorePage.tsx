@@ -57,7 +57,7 @@ const StorePage: React.FC = () => {
       await userCustomizationStore.refresh();
     } catch (requestError) {
       if (axios.isAxiosError(requestError)) {
-        const apiMessage = requestError.response?.data?.error;
+        const apiMessage = requestError.response?.data?.message ?? requestError.response?.data?.error;
         if (typeof apiMessage === "string" && apiMessage.trim()) {
           setError(apiMessage);
         } else {
@@ -74,7 +74,7 @@ const StorePage: React.FC = () => {
   return (
     <Layout>
       <div className="bg-gray-100 py-8 px-4 min-h-full">
-        <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-8">
+        <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Store</h1>
           <p className="text-gray-600 mb-6">Spend your coins on profile customization items.</p>
 

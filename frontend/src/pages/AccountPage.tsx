@@ -13,14 +13,20 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/DeleteAccount";
 import Layout from "../components/Layout";
+import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const { user, isLoading, error } = useUserCustomizationStore();
+
+  useEffect(() => {
+    void userCustomizationStore.refresh();
+  }, []);
 
   // Get user info from localStorage
   const userDataString = localStorage.getItem("user_data");
@@ -39,7 +45,10 @@ const AccountPage: React.FC = () => {
   }
 
   const userEmail = userData?.email;
-  const userName = userData?.name;
+  const userName = (user?.USERNAME || userData?.name || "").trim();
+  const firstName = (user?.FIRSTNAME || userData?.firstName || "").trim();
+  const lastName = (user?.LASTNAME || userData?.lastName || "").trim();
+  const fullName = `${firstName} ${lastName}`.trim();
 
   // Delete success, remove items from localStorage, redirect to login
   const handleDeleteSuccess = () => {
@@ -72,7 +81,7 @@ const AccountPage: React.FC = () => {
   return (
     <Layout>
       <div className="bg-gray-100 py-8 px-4 min-h-full">
-        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
+        <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-8 pb-4 border-b-2 border-gray-200">
             Account Settings
           </h1>
@@ -89,9 +98,23 @@ const AccountPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               Profile Information
             </h2>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-3">
+              {isLoading && (
+                <p className="text-gray-600">Loading account data...</p>
+              )}
+              {error && (
+                <p className="text-red-600">{error}</p>
+              )}
+              {fullName && (
+                <div className="flex">
+                  <label className="font-semibold text-gray-600 min-w-[120px]">
+                    Name:
+                  </label>
+                  <span className="text-gray-800">{fullName}</span>
+                </div>
+              )}
               {userEmail && (
-                <div className="flex mb-4">
+                <div className="flex">
                   <label className="font-semibold text-gray-600 min-w-[120px]">
                     Email:
                   </label>
@@ -106,7 +129,31 @@ const AccountPage: React.FC = () => {
                   <span className="text-gray-800">{userName}</span>
                 </div>
               )}
-              {!userEmail && !userName && (
+              <div className="flex">
+                <label className="font-semibold text-gray-600 min-w-[120px]">
+                  Coins:
+                </label>
+                <span className="text-gray-800">{user?.COINS ?? "-"}</span>
+              </div>
+              <div className="flex">
+                <label className="font-semibold text-gray-600 min-w-[120px]">
+                  Lifetime EXP:
+                </label>
+                <span className="text-gray-800">{user?.LIFETIME_EXP ?? "-"}</span>
+              </div>
+              <div className="flex">
+                <label className="font-semibold text-gray-600 min-w-[120px]">
+                  Weekly EXP:
+                </label>
+                <span className="text-gray-800">{user?.WEEKLY_EXP ?? "-"}</span>
+              </div>
+              <div className="flex">
+                <label className="font-semibold text-gray-600 min-w-[120px]">
+                  Daily EXP:
+                </label>
+                <span className="text-gray-800">{user?.DAILY_EXP ?? "-"}</span>
+              </div>
+              {!userEmail && !userName && !fullName && (
                 <p className="text-gray-500">No user information available</p>
               )}
             </div>

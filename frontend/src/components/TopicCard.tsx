@@ -87,7 +87,8 @@ const TopicCard: React.FC = () => {
 
   const handleClick = (topicTitle: string) => {
     setSelectedTopic(topicTitle);
-    navigate(`/topic-practice/${encodeURIComponent(topicTitle)}`);
+    const topicSlug = topicTitle === "Input/Output" ? "InputOutput" : topicTitle;
+    navigate(`/topic-practice/${encodeURIComponent(topicSlug)}`);
   };
 
   return (
