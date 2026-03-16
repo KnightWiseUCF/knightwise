@@ -15,7 +15,12 @@
 
 const judge0Service = require('../services/judge0Service');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY, MAX_TEST_RUNS_PER_PROBLEM } = require('../config/codeLimits'); 
+const { 
+        MAX_CODE_BYTES,
+        MAX_SUBMISSIONS_PER_DAY,
+        MAX_TEST_RUNS_PER_PROBLEM,
+        getProgrammingSubmissionsRemaining,
+      } = require('../config/codeLimits'); 
 const { awardCurrency } = require('../utils/currencyUtils');
 
 /**
@@ -116,7 +121,7 @@ const serializeProgrammingAnswer = (code, languageId) => {
 };
 
 /**
- * @route   POST /api/codeSubmission/submitCode
+ * @route   POST /api/code/submitCode
  * @desc    Submit code to Judge0, receive output and grade against test cases.
  *          Supports test runs, which submits to Judge0 but doesn't grade output
  *          or store as a response, just runs against first test case, shows output, 
@@ -264,16 +269,18 @@ const submitCode = asyncHandler(async (req, res) => {
           POINTS_EARNED,
           POINTS_POSSIBLE,
           CATEGORY,
-          TOPIC
+          TOPIC,
+          DATETIME
         ) 
-        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?)`,
+        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?, ?)`,
         [
           userId, 
           problemId, 
           serializedCode,
           question.POINTS_POSSIBLE, 
           question.CATEGORY, 
-          question.SUBCATEGORY
+          question.SUBCATEGORY,
+          new Date()
         ]
       );
     }
@@ -281,6 +288,11 @@ const submitCode = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: false,
       isTestRun: isTestRun,
+      allPassed: false,
+      passedTests: 0,
+      totalTests: testCases.length,
+      pointsEarned: 0,
+      pointsPossible: parseFloat(question.POINTS_POSSIBLE),
       status: errorResult.status.description,
       error: errorResult.stderr || errorResult.compile_output || 'Execution failed',
       message: 'Your code failed to execute. Please check for errors.'
@@ -323,9 +335,10 @@ const submitCode = asyncHandler(async (req, res) => {
       POINTS_EARNED,
       POINTS_POSSIBLE,
       CATEGORY,
-      TOPIC
+      TOPIC,
+      DATETIME
     ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId, 
       problemId, 
@@ -334,7 +347,8 @@ const submitCode = asyncHandler(async (req, res) => {
       gradingResults.pointsEarned, 
       question.POINTS_POSSIBLE, 
       question.CATEGORY, 
-      question.SUBCATEGORY
+      question.SUBCATEGORY,
+      new Date()
     ]
   );
 
@@ -349,9 +363,29 @@ const submitCode = asyncHandler(async (req, res) => {
     passedTests: gradingResults.passedTests,
     totalTests: gradingResults.totalTests,
     pointsEarned: gradingResults.pointsEarned,
-    pointsPossible: question.POINTS_POSSIBLE,
+    pointsPossible: parseFloat(question.POINTS_POSSIBLE),
     testResults: gradingResults.testResults
   });
 });
 
-module.exports = { submitCode };
+/**
+ * @route   GET /api/code/canSubmit
+ * @desc    Fetch whether the user still has remaining code submission
+ *          attempts for the day, as well as their number of remaining
+ *          submissions for the day.
+ * @access  Protected
+ * 
+ * @param   {import('express').Request}  req - Express request object
+ * @param   {import('express').Response} res - Express response object
+ * @returns {Promise<void>}                  - Sends HTTP/JSON response
+ */
+const canSubmit = asyncHandler(async (req, res) => {
+  // Get number of remaining code submissions for today
+  const remaining = await getProgrammingSubmissionsRemaining(req.db, req.user.id);
+  return res.status(200).json({ canSubmit: remaining > 0, remaining });
+});
+
+module.exports = { 
+  submitCode,
+  canSubmit,
+};
