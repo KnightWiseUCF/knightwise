@@ -19,8 +19,6 @@ import api from "../api";
 const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  // Tracks whether the user is attempting student or professor sign-in.
-  const [accountType, setAccountType] = useState<"student" | "professor">("student");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState("");
@@ -157,7 +155,6 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
           Forgot password?{" "}
           <button
             onClick={() => {
-              localStorage.setItem("reset_account_type", accountType);
               navigate("/forgot-password");
             }}
             className="text-blue-500 hover:underline"
