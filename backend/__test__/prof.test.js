@@ -848,7 +848,7 @@ describe("Admin Routes - Draft/Publish", () => {
     const { profId, token } = await insertProf(pool, "draftcheckprof", "draftcheck@ucf.edu", 1);
 
     // Insert draft queston for the professor
-    await insertQuestion("MCQ", [], false, profId);
+    await insertQuestion("MCQ", [], { isPublished: false, ownerId: profId });
 
     const res = await request(app)
       .get("/api/admin/published")

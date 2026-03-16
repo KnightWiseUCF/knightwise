@@ -65,8 +65,7 @@ beforeAll(async () => {
   userId = rows[0].ID;
 
   // Insert a published prog question in section A with one test case
-  // This will need updating once SCRUM-199 goes in
-  programmingQuestionId = await insertQuestion('Programming', [], 2.00);
+  programmingQuestionId = await insertQuestion('Programming', [], { points: 2.00 });
   await pool.query(
     `UPDATE Question SET IS_PUBLISHED = 1, SUBCATEGORY = 'Test Topic', SECTION = 'A' WHERE ID = ?`,
     [programmingQuestionId]
@@ -93,11 +92,10 @@ beforeAll(async () => {
   // Insert questions
   for (const { section, topic } of sectionsAndTopics) 
   {
-    // This will need updating once SCRUM-199 goes in
     const id = await insertQuestion('Multiple Choice', 
     [
       { text: 'Answer', isCorrect: true }
-    ], 2.00);
+    ], { points: 2.00 });
     await pool.query(
       `UPDATE Question SET IS_PUBLISHED = 1, SUBCATEGORY = ?, SECTION = ? WHERE ID = ?`,
       [topic, section, id]
@@ -247,8 +245,7 @@ describe('GET /api/test/topic/:topicName - programming limit', () => {
 
   test('includes at most one programming question regardless of how many exist', async () => {
     // Insert a second published programming question in the same topic
-    // This will need updating once SCRUM-199 goes in
-    const secondId = await insertQuestion('Programming', [], 2.00);
+    const secondId = await insertQuestion('Programming', [], { points: 2.00 });
     await pool.query(
       `UPDATE Question SET IS_PUBLISHED = 1, SUBCATEGORY = 'Test Topic', SECTION = 'A' WHERE ID = ?`,
       [secondId]
