@@ -163,6 +163,7 @@ router.post("/login", asyncHandler(async (req, res) => {
       email: user.EMAIL,
       firstName: user.FIRSTNAME,
       lastName: user.LASTNAME,
+      account_type: (user.IS_PROF) ? 'professor' : 'student'
     },
   });
 }));

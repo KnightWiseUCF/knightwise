@@ -13,7 +13,7 @@
 ////////////////////////////////////////////////////////////////
 
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { UNSAFE_ErrorResponseImpl, useNavigate } from "react-router-dom";
 import api from "../api";
 
 const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
@@ -41,19 +41,18 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
     setSessionExpiredMessage("");
 
     try {
-      const loginEndpoint = accountType === "professor" ? "/api/profauth/login" : "/api/auth/login";
-
-      const response = await api.post(loginEndpoint, 
+      const response = await api.post("/api/auth/login", 
       {
         username,
         password,
       });
 
       localStorage.setItem("token", response.data.token);
-      // Persist selected role for downstream role-based navigation/logic.
-      localStorage.setItem("account_type", accountType);
 
       if (response.data.user) {
+        // set accout type based on endpoint response
+        localStorage.setItem("account_type", response.data.user.account_type);
+
         localStorage.setItem("user_data", JSON.stringify(response.data.user));
       }
 
@@ -63,9 +62,15 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
         navigate("/dashboard");
       }, 2000);
     } 
-    catch 
+    catch (error: any)
     {
-      setError("Invalid username or password. Please try again.");
+      // if an unverified professor tries to log in, let them know to check back later
+      if (error.status === 403) {
+        setError("This account has yet to be verified. Please check back in 12-24 hours.");
+      }
+      else {
+        setError("Invalid username or password. Please try again.");
+      }
     }
   };
 
@@ -105,36 +110,6 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-          </div>
-
-          {/* Account type toggle for choosing student vs professor login flow */}
-          <div className="w-full flex justify-center py-2">
-            <div className="inline-flex rounded-full border border-gray-900 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setAccountType("student")}
-                className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
-                  accountType === "student"
-                    ? "bg-yellow-500 text-black"
-                    : "bg-transparent text-gray-800"
-                }`}
-                aria-pressed={accountType === "student"}
-              >
-                Student
-              </button>
-              <button
-                type="button"
-                onClick={() => setAccountType("professor")}
-                className={`px-6 py-2 text-sm sm:text-base font-semibold transition ${
-                  accountType === "professor"
-                    ? "bg-yellow-500 text-black"
-                    : "bg-transparent text-gray-800"
-                }`}
-                aria-pressed={accountType === "professor"}
-              >
-                Professor
-              </button>
-            </div>
           </div>
 
           {/* button */}
