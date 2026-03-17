@@ -68,7 +68,6 @@ beforeAll(async () => {
 
   // Cleanup
   await pool.query("DELETE FROM User");
-  await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query("DELETE FROM Question");
   await pool.query("DELETE FROM AnswerText");
@@ -79,7 +78,6 @@ afterEach(async () => {
   // More cleanup
   jest.clearAllMocks();
   await pool.query("DELETE FROM User");
-  await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query("DELETE FROM Question");
   await pool.query("DELETE FROM AnswerText");
