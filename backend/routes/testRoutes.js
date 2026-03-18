@@ -13,6 +13,7 @@
 //                 errorHandler
 //                 gradingController
 //                 currencyUtils
+//                 codeLimits (daily submission check)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -22,6 +23,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 const { gradeQuestion } = require("../controllers/gradingController");
 const { awardCurrency } = require("../utils/currencyUtils");
+const { getProgrammingSubmissionsRemaining } = require("../config/codeLimits");
 
 /**
  * Helper function, gets answers for given questions, pairs them with each question
@@ -93,6 +95,13 @@ const serializeUserAnswer = (questionType, userAnswer) => {
 /**
  * @route   GET /api/test/topic/:topicName
  * @desc    Fetch published questions for a given subcategory (e.g. Backtracking)
+ *          Maximum of 1 programming question, or 0
+ *          if user has reached the max daily submission
+ *          limit for programming questions.
+ *          WARNING: THIS ENDPOINT IS INTENDED ONLY FOR GENERATING TOPIC PRACTICE SESSIONS.
+ *          Programming questions may be silently filtered out based on the requesting
+ *          user's daily submission limit. Using this endpoint as a general question
+ *          enumerator may return incomplete results.
  * @access  Protected
  * 
  * @param {import('express').Request}  req - Express request object
@@ -117,13 +126,28 @@ router.get("/topic/:topicName", authMiddleware, asyncHandler(async (req, res) =>
     throw new AppError(`No published questions exist for subcategory: ${resolvedTopicName}`, 404, "Question not found");
   }
 
-  const questionsWithAnswers = await pairAnswersWithQuestions(questions, req.db);
+  // If user reached programming question daily submission limit,
+  // filter out programming questions
+  // Otherwise only allow one programming question to be included
+  const remaining = await getProgrammingSubmissionsRemaining(req.db, req.user.id);
+  let programmingQuestionUsed = false;
+  const filtered = questions.filter(q => {
+    if (q.TYPE !== 'Programming') return true;
+    if ( !(remaining > 0) || programmingQuestionUsed) return false;
+    programmingQuestionUsed = true;
+    return true;
+  });
+
+  const questionsWithAnswers = await pairAnswersWithQuestions(filtered, req.db);
   res.json(questionsWithAnswers);
 }));
 
 /**
  * @route   GET /api/test/mocktest
  * @desc    Fetch questions info for a mock test
+ *          Maximum of 1 programming question, or 0
+ *          if user has reached the max daily submission
+ *          limit for programming questions.
  * @access  Protected
  * 
  * @param {import('express').Request}  req - Express request object
@@ -134,10 +158,19 @@ router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
   const sections = ["A", "B", "C", "D"];
   const questionsBySection = {};
 
+  // Check if user has reached the daily limit for programming questions
+  const remaining = await getProgrammingSubmissionsRemaining(req.db, req.user.id);
+
   // shuffled problem per section and pick three published questions randomly
+  let programmingQuestionUsed = false;
   for (const section of sections) {
+    // Don't include programming in the query if:
+    // - User is at daily submission limit
+    // - We've already included one programming question
+    const excludeProgramming = !(remaining > 0) || programmingQuestionUsed;
     const [questions] = await req.db.query(
-      'SELECT * FROM Question WHERE SECTION = ? AND IS_PUBLISHED = 1',
+      `SELECT * FROM Question WHERE SECTION = ? AND IS_PUBLISHED = 1
+      ${excludeProgramming ? "AND TYPE != 'Programming'" : ""}`,
       [section]
     );
 
@@ -146,7 +179,14 @@ router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
       throw new AppError(`Published question not found in section: ${section}`, 404, "Question not found");
     }
     const shuffled = questions.sort(() => 0.5 - Math.random());
-    questionsBySection[section] = shuffled.slice(0, 3);
+    const picked = shuffled.slice(0, 3);
+    questionsBySection[section] = picked;
+
+    // We included a programming question, so don't include any additional
+    if (!programmingQuestionUsed && picked.some(q => q.TYPE === 'Programming')) 
+    {
+      programmingQuestionUsed = true;
+    }
   }
 
   const allQuestions = Object.values(questionsBySection).flat();

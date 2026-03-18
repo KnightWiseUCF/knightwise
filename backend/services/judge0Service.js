@@ -64,13 +64,16 @@ const submitBatch = async (sourceCode, languageId, testCases) => {
   // Create batch submissions
   const submissions = testCases.map(testCase => (
   {
-    source_code: sourceCode,
+    source_code: Buffer.from(sourceCode).toString('base64'),
     language_id: languageId,
-    stdin: testCase.INPUT || '',
+    stdin: testCase.INPUT ? Buffer.from(testCase.INPUT).toString('base64') : '',
     expected_output: testCase.EXPECTED_OUTPUT
+      ? Buffer.from(testCase.EXPECTED_OUTPUT).toString('base64')
+      : '',
   }));
 
-  const response = await fetch(`${JUDGE0_API_URL}/submissions/batch`, {
+  // Use base64 encoding to work with Judge0's UTF-8 parsing
+  const response = await fetch(`${JUDGE0_API_URL}/submissions/batch?base64_encoded=true`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -103,7 +106,7 @@ const submitBatch = async (sourceCode, languageId, testCases) => {
  */
 const getSubmission = async (token) => {
   const response = await fetch(
-    `${JUDGE0_API_URL}/submissions/${token}`,
+    `${JUDGE0_API_URL}/submissions/${token}?base64_encoded=true`,
     {
       method: 'GET',
       headers: 
@@ -115,6 +118,11 @@ const getSubmission = async (token) => {
   );
 
   const data = await response.json();
+
+  // Decode response fields from base64
+  if (data.stdout) data.stdout = Buffer.from(data.stdout, 'base64').toString('utf8');
+  if (data.stderr) data.stderr = Buffer.from(data.stderr, 'base64').toString('utf8');
+  if (data.compile_output) data.compile_output = Buffer.from(data.compile_output, 'base64').toString('utf8');
 
   if (!response.ok) 
   {
