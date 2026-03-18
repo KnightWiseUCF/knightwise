@@ -150,7 +150,7 @@ const toQuestion = (question: RawQuestion): Question | null => {
     problem: normalizedType === "programming"
       ? {
           description: question.QUESTION_TEXT,
-          languages: ["C", "Java", "Python"],
+          languages: ["C", "C++", "Java", "Python"],
         }
       : undefined,
     problemCode: normalizedType === "programming"
