@@ -30,6 +30,34 @@ const TEST_USER = {
 };
 
 /**
+ * Inserts a guild with the specified parameters
+ * @param {string}  name        - Name of the guild to insert. Default 'Ancient Wolves'
+ * @param {number}  ownerId     - ID of user to make owner of the guild. Default null
+ * @param {number}  lifetimeExp - Lifetime exp of the guild. Default 0
+ * @param {number}  weeklyExp   - Weekly exp of the guild. Default 0
+ * @param {number}  coins       - Total coin bank of the guild. Default 0
+ * @param {number}  dailyExp    - Daily exp of the guild. Default 0
+ * @param {boolean} isOpen      - Whether guild is accepting requests to join. Default false
+ * @returns {Promise<number>} Inserted guild ID
+ */
+const insertGuild = async ({ name = 'Ancient Wolves', ownerId = null, lifetimeExp = 0, weeklyExp = 0, coins = 0, dailyExp = 0, isOpen = false } = {}) => {
+
+  // OWNER_ID can't be null, you actually have to give that
+  if (ownerId === null)
+  {
+    throw new Error('insertGuild() requires an ownerId');
+  }
+
+  const [result] = await pool.query(
+    `INSERT INTO Guild (NAME, OWNER_ID, LIFETIME_EXP, WEEKLY_EXP, COINS, DAILY_EXP, IS_OPEN)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [name, ownerId, lifetimeExp, weeklyExp, coins, dailyExp, isOpen]
+  );
+
+  return result.insertId;
+};
+
+/**
  * Inserts a store item and purchase for it, optionally equips
  * @param {number} userId      - User to purchase for
  * @param {Object} itemInfo    - Optional store item info, default fields used otherwise
@@ -165,6 +193,7 @@ async function verifyTestDatabase(pool)
 
 module.exports = {
   TEST_USER,
+  insertGuild,
   insertPurchase,
   insertQuestion,
   submitAndFetch,

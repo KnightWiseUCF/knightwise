@@ -1081,6 +1081,33 @@ paths:
           description: URL Not Found
         500:
           description: Server Error
+
+  /guilds/name/generate:
+    get:
+      tags:
+        - Guilds
+      summary: Generate a random guild name.
+      operationId: generateGuildName
+      description: |
+        Returns a randomly generated guild name composed of an adjective and a plural noun from the backend word bank.
+        - Guaranteed to return a name not already in use.
+        - Intended to be called repeatedly during guild creation while the user shuffles names.
+        - The name is not persisted until POST /guilds is called.
+      security:
+        - BearerAuth: []
+      produces:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/GuildNameResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+        503:
+          description: All possible guild name combinations are in use
           
 securityDefinitions:
   BearerAuth:
@@ -1574,6 +1601,13 @@ definitions:
               example: "Octocat"
               nullable: true
         description: "Page of users ranked by exp. Tied users share the same rank. PAGE_SIZE users per page."
+
+  GuildNameResponse:
+    type: object
+    properties:
+      name:
+        type: string
+        example: "Blazing Dragons"
 
 host: www.knightwise.dev
 basePath: /api
