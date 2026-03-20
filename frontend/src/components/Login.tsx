@@ -61,10 +61,10 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
         navigate("/dashboard");
       }, 2000);
     } 
-    catch (error: any)
+    catch (error: unknown)
     {
       // if an unverified professor tries to log in, let them know to check back later
-      if (error.status === 403) {
+      if (isAxiosError(error) && error.response?.status === 403) {
         setError("This account has yet to be verified. Please check back in 12-24 hours.");
       }
       else {
