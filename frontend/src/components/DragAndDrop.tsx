@@ -18,6 +18,7 @@ import React, { useEffect, useState } from "react";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 import { Question } from "../models";
+import { formatSubcategoryLabel } from "../utils/topicLabels";
 
 type Props = {
   current: Question; // current question
@@ -56,6 +57,17 @@ const DragAndDrop: React.FC<Props> = ({
 }) => {
   const [draggedAnswer, setDraggedAnswer] = useState<string | null>(null);
   const [availableAnswers, setAvailableAnswers] = useState<string[]>([]);
+
+  const getPlacementPrefix = (placement: string) => `${placement}_`;
+
+  const getNextPlacementKey = (placement: string, answers: Record<string, string>) => {
+    const prefix = getPlacementPrefix(placement);
+    let idx = 0;
+    while (Object.prototype.hasOwnProperty.call(answers, `${prefix}${idx}`)) {
+      idx += 1;
+    }
+    return `${prefix}${idx}`;
+  };
 
 
 
@@ -139,11 +151,8 @@ const DragAndDrop: React.FC<Props> = ({
         delete newAnswers[key];
       }
     });
-    // Simple placement-based key: placement_0, placement_1, etc.
-    const existingCount = Object.entries(newAnswers).filter(
-      ([key]) => key.startsWith(placement)
-    ).length;
-    const zoneKey = `${placement}_${existingCount}`;
+    // Use the first free index in this placement to avoid overwriting existing answers.
+    const zoneKey = getNextPlacementKey(placement, newAnswers);
     newAnswers[zoneKey] = draggedAnswer;
     setDroppedAnswers(newAnswers);
     setDraggedAnswer(null);
@@ -179,9 +188,9 @@ const DragAndDrop: React.FC<Props> = ({
 
       <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 mb-2">
         {current.CATEGORY} <span className="text-yellow-600">&gt;</span>{" "}
-        {current.SUBCATEGORY}
+        {formatSubcategoryLabel(current.SUBCATEGORY)}
         <span className="block text-sm sm:text-base md:text-xl text-gray-500 font-normal mt-1 sm:mt-0">
-          (Exam Date: {current.AUTHOR_EXAM_ID})
+          (Credit: {current.AUTHOR_EXAM_ID})
         </span>
       </h1>
 
@@ -213,7 +222,7 @@ const DragAndDrop: React.FC<Props> = ({
               {/* show answers in this placement zone */}
               <div className="flex flex-wrap gap-2">
                 {Object.entries(droppedAnswers)
-                  .filter(([key]) => key.startsWith(placement))
+                  .filter(([key]) => key.startsWith(getPlacementPrefix(placement)))
                   .map(([key, answer]) => (
                     <div
                       key={key}

@@ -68,21 +68,31 @@ const TopicTestPage: React.FC = () => {
   const current = problems[currentIndex];
   const questionType = current?.QUESTION_TYPE || "multiple_choice";
 
+  const formatSubcategoryLabel = (subcategory?: string) => {
+    return subcategory === "InputOutput" ? "Input/Output" : String(subcategory || "");
+  };
+
+  const displayCurrent = current
+    ? { ...current, SUBCATEGORY: formatSubcategoryLabel(current.SUBCATEGORY) }
+    : current;
+
   const normalizeQuestionType = (
     type?: string
   ): Question["QUESTION_TYPE"] => {
-    switch (type) {
-      case "Multiple Choice":
+    const normalized = (type || "").trim().toLowerCase();
+
+    switch (normalized) {
+      case "multiple choice":
         return "multiple_choice";
-      case "Fill in the Blanks":
+      case "fill in the blanks":
         return "fill_in_blank";
-      case "Select All That Apply":
+      case "select all that apply":
         return "select_all_that_apply";
-      case "Ranked Choice":
+      case "ranked choice":
         return "ranked_choice";
-      case "Drag and Drop":
+      case "drag and drop":
         return "drag_and_drop";
-      case "Programming":
+      case "programming":
         return "programming";
       default:
         return undefined;
@@ -132,7 +142,9 @@ const TopicTestPage: React.FC = () => {
   useEffect(() => {
     const fetchProblems = async () => {
       try {
-        const res = await api.get<RawQuestion[]>(`/api/test/topic/${topicName}`);
+        const rawTopicName = (topicName || "").trim();
+        const normalizedTopicName = encodeURIComponent(rawTopicName);
+        const res = await api.get<RawQuestion[]>(`/api/test/topic/${normalizedTopicName}`);
         const data = res.data;
 
         // shuffle problems
@@ -635,7 +647,7 @@ const TopicTestPage: React.FC = () => {
         {/* Render the appropriate question component by type */}
         {questionType === "multiple_choice" ? (
         <MultipleChoice
-          current={current}
+          current={displayCurrent}
           currentIndex={currentIndex}
           total={problems.length}
           selectedAnswer={selectedAnswer}
@@ -649,7 +661,7 @@ const TopicTestPage: React.FC = () => {
         />
       ) : questionType === "ranked_choice" ? (
         <RankedChoice
-          current={current}
+          current={displayCurrent}
           currentIndex={currentIndex}
           total={problems.length}
           selectedOrder={selectedOrder}
@@ -663,7 +675,7 @@ const TopicTestPage: React.FC = () => {
         />
       ) : questionType === "drag_and_drop" ? (
         <DragAndDrop
-          current={current}
+          current={displayCurrent}
           currentIndex={currentIndex}
           total={problems.length}
           droppedAnswers={droppedAnswers}
@@ -677,7 +689,7 @@ const TopicTestPage: React.FC = () => {
         />
       ) : questionType === "programming" ? (
         <Programming
-          current={current}
+          current={displayCurrent}
           currentIndex={currentIndex}
           total={problems.length}
           editorContent={programmingAnswer}
@@ -699,7 +711,7 @@ const TopicTestPage: React.FC = () => {
         />
       ) : questionType === "select_all_that_apply" ? (
         <SelectAllThatApply
-          current={current}
+          current={displayCurrent}
           currentIndex={currentIndex}
           total={problems.length}
           selectedAnswers={selectedAnswers}
@@ -713,7 +725,7 @@ const TopicTestPage: React.FC = () => {
         />
       ) : (
         <FillInTheBlank
-          current={current}
+          current={displayCurrent}
           currentIndex={currentIndex}
           total={problems.length}
           selectedAnswer={selectedAnswer}
