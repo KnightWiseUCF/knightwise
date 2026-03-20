@@ -13,7 +13,7 @@
 ////////////////////////////////////////////////////////////////
 
 import React, { useEffect, useState } from "react";
-import { UNSAFE_ErrorResponseImpl, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 
 const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
