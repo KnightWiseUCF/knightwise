@@ -11,6 +11,7 @@
 //                 react-router-dom
 //                 api instance
 //                 models
+//                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
 
@@ -21,6 +22,7 @@ import api from "../api";
 import { HistoryEntry, UserInfoResponse } from "../models";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
+import { ALL_TOPICS, formatSubcategoryLabel } from "../utils/topicLabels";
 
 interface MessageDataResponse {
   history?: Array<{ datetime: string; topic: string }>;
@@ -43,47 +45,13 @@ const DAILY_GOAL_QUESTIONS = 10;
 const DAILY_GOAL_FIRE_MULTIPLIER = 2;
 const DAILY_GOAL_GOOUTSIDE_MULTIPLIER = 3;
 
-const VALID_TOPIC_SLUGS = new Set([
-  "InputOutput",
-  "Branching",
-  "Loops",
-  "Variables",
-  "Arrays",
-  "Linked Lists",
-  "Strings",
-  "Classes",
-  "Methods",
-  "Trees",
-  "Stacks",
-  "Heaps",
-  "Tries",
-  "Bitwise Operators",
-  "Dynamic Memory",
-  "Algorithm Analysis",
-  "Recursion",
-  "Sorting",
-]);
-
 const toCanonicalTopicSlug = (topic?: string): string | null => {
   const value = String(topic || "").trim();
   if (!value) {
     return null;
   }
-
   const normalized = value === "Input/Output" ? "InputOutput" : value;
-  return VALID_TOPIC_SLUGS.has(normalized) ? normalized : null;
-};
-
-const formatTopicLabel = (topic?: string): string => {
-  const normalized = toCanonicalTopicSlug(topic);
-  if (!normalized) {
-    return String(topic || "").trim();
-  }
-  return normalized === "InputOutput" ? "Input/Output" : normalized;
-};
-
-const toTopicSlug = (topic?: string): string => {
-  return toCanonicalTopicSlug(topic) || "";
+  return (ALL_TOPICS as readonly string[]).includes(normalized) ? normalized : null;
 };
 
 const getStoredUserId = (): number | null => {
@@ -254,7 +222,7 @@ const Dashboard: React.FC = () => {
   const todayEntries = useMemo(() => {
     return recentHistory.filter((entry) => new Date(entry.datetime).toDateString() === todayKey);
   }, [recentHistory, todayKey]);
-  
+
   const correctTodayEntries = useMemo(() => {
     return todayEntries.filter((entry) => Boolean(entry.isCorrect));
   }, [todayEntries]);
@@ -349,11 +317,11 @@ const Dashboard: React.FC = () => {
 
   const lastAttempt = recentHistory[0] || null;
   const lastTopicSlug = toCanonicalTopicSlug(lastAttempt?.topic);
-  const lastTopicLabel = formatTopicLabel(lastTopicSlug || lastAttempt?.topic);
-  const weakTopicLabel = weakestTopics.length > 0 ? formatTopicLabel(weakestTopics[0][0]) : null;
+  const lastTopicLabel = formatSubcategoryLabel(lastTopicSlug || lastAttempt?.topic);
+  const weakTopicLabel = weakestTopics.length > 0 ? formatSubcategoryLabel(weakestTopics[0][0]) : null;
 
   const handlePracticeTopic = (topic: string) => {
-    const slug = toTopicSlug(topic);
+    const slug = toCanonicalTopicSlug(topic);
     if (!slug) {
       navigate("/topic-practice");
       return;
@@ -517,7 +485,7 @@ const Dashboard: React.FC = () => {
                 {weakestTopics.map(([topic, score]) => (
                   <div key={topic} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 bg-gray-50">
                     <div>
-                      <p className="font-semibold text-gray-900">{formatTopicLabel(topic)}</p>
+                      <p className="font-semibold text-gray-900">{formatSubcategoryLabel(topic)}</p>
                       <p className="text-xs text-gray-500">Mastery: {Math.round(score)}%</p>
                     </div>
                     <button
