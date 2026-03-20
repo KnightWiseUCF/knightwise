@@ -56,7 +56,6 @@ beforeAll(async () => {
   await verifyTestDatabase(pool);
 
   await pool.query("DELETE FROM User");
-  await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query('DELETE FROM AnswerText');
   await pool.query('DELETE FROM Question');
@@ -64,7 +63,6 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await pool.query('DELETE FROM Response');
-  await pool.query("DELETE FROM Professor");
   await pool.query('DELETE FROM AnswerText');
   await pool.query('DELETE FROM Question');
   await pool.query("DELETE FROM User");

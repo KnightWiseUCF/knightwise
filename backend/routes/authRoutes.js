@@ -141,7 +141,17 @@ router.post("/login", asyncHandler(async (req, res) => {
     throw new AppError(`Login failed, invalid password for user: ${username}`, 400, "Invalid credentials");
   }
 
-  const token = jwt.sign({ userId: user.ID }, process.env.JWT_SECRET, {
+  // Unverified professors can't login until admin approves
+  if (user.IS_PROF && !user.VERIFIED)
+  {
+    throw new AppError(`Login failed, professor not yet verified: ${username}`, 403, "Account pending verification.");
+  }
+
+  const token = jwt.sign({
+    userId: user.ID,
+    role: (user.IS_PROF) ? 'professor' : 'student',
+    verified: Boolean(user.VERIFIED) // double-check
+  }, process.env.JWT_SECRET, {
     expiresIn: "1h",
   });
   res.status(200).json({
@@ -153,6 +163,7 @@ router.post("/login", asyncHandler(async (req, res) => {
       email: user.EMAIL,
       firstName: user.FIRSTNAME,
       lastName: user.LASTNAME,
+      account_type: (user.IS_PROF) ? 'professor' : 'student'
     },
   });
 }));
@@ -189,13 +200,7 @@ router.post("/sendotp", asyncHandler(async (req, res) => {
   // check if the email is already registered to avoid unregistered users from reset password
   if (purpose === "reset") 
   {
-    // If a professor is trying to reset their password
-    const [profUsers] = await req.db.query(
-      'SELECT * FROM Professor WHERE EMAIL = ?',
-      [email]
-    );
-
-    if (users.length === 0 && profUsers.length === 0) 
+    if (users.length === 0) 
     {
       throw new AppError(`Password reset failed, email not registered: ${email}`, 404, "User not found");
     }

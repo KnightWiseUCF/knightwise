@@ -93,6 +93,8 @@ paths:
           description: OK
         400:
           description: Bad Request
+        403:
+          description: Forbidden - Account pending admin verification
         404:
           description: URL Not Found
         500:
@@ -228,62 +230,6 @@ paths:
           description: Created
         400:
           description: Bad Request
-        500:
-          description: Server Error
-
-  /profauth/login:
-    post:
-      tags:
-      - Professors
-      summary: Login professor.
-      operationId: loginProfessor
-      description: Authenticates a verified professor and returns a JWT with professor role attached. Unverified professors will receive 403.
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      parameters:
-      - in: body
-        name: loginItem
-        description: Login credentials.
-        schema:
-          $ref: '#/definitions/Login'
-      responses:
-        200:
-          description: OK
-        400:
-          description: Bad Request
-        403:
-          description: Forbidden - Account pending admin verification
-        500:
-          description: Server Error
-
-  /profauth/resetPassword:
-    post:
-      tags:
-      - Professors
-      summary: Reset professor password.
-      operationId: resetProfessorPassword
-      description: Resets a professor's password after email OTP verification. Uses the shared /auth/sendotp and /auth/verify endpoints.
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      parameters:
-      - in: body
-        name: resetItem
-        description: Password reset details.
-        schema:
-          $ref: '#/definitions/ResetPassword'
-      responses:
-        200:
-          description: OK
-        400:
-          description: Bad Request
-        403:
-          description: Forbidden - Email not verified
-        404:
-          description: Professor Not Found
         500:
           description: Server Error
 
