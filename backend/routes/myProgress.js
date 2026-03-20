@@ -11,6 +11,7 @@
 //                 express
 //                 authMiddleware
 //                 errorHandler
+//                 validationUtils
 //
 ////////////////////////////////////////////////////////////////
 
@@ -18,6 +19,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
+const { normalizeDBString } = require('../utils/validationUtils');
 
 /**
  * Helper function to process answers and calculate user progress by topic
@@ -30,7 +32,8 @@ const processProgressData = (answers) => {
   const progress = {};
 
   answers.forEach((answer) => {
-    const topic = answer.TOPIC;
+    // Prevent database inconsistencies from breaking logic
+    const topic = normalizeDBString(answer.TOPIC);
     const isCorrect = answer.ISCORRECT;
 
     // Initialize topic if not already in progress
@@ -111,20 +114,30 @@ router.get("/messageData", authMiddleware, asyncHandler(async (req, res) => {
   );
 
   // Process history and mastery levels
-  const history = userAnswers.map(({ DATETIME, TOPIC }) => ({
-    datetime: DATETIME,
-    topic: TOPIC,
+  const history = userAnswers.map((row) => ({
+    datetime: row.DATETIME,
+    // Prevent database inconsistencies from breaking logic
+    topic: normalizeDBString(row.TOPIC),
   }));
 
   // Compute mastery levels
   const mastery = {};
-  userAnswers.forEach(({ TOPIC, ISCORRECT }) => {
-    if (!mastery[TOPIC]) {
-      mastery[TOPIC] = { correct: 0, total: 0 };
+  userAnswers.forEach((row) => {
+
+    // Prevent database inconsistencies from breaking logic
+    // NOTE: We call it TOPIC in the Response table,
+    // but it actually refers to the corresponding Question's
+    // SUBCATEGORY field. Really we should just remove
+    // all fields from Response that can be accessed through
+    // Question since Response has a foreign key to Question.
+    const normalizedSubcategory = normalizeDBString(row.TOPIC);
+
+    if (!mastery[normalizedSubcategory]) {
+      mastery[normalizedSubcategory] = { correct: 0, total: 0 };
     }
-    mastery[TOPIC].total += 1;
-    if (ISCORRECT) {
-      mastery[TOPIC].correct += 1;
+    mastery[normalizedSubcategory].total += 1;
+    if (row.ISCORRECT) {
+      mastery[normalizedSubcategory].correct += 1;
     }
   });
 
@@ -218,7 +231,8 @@ router.get('/history', authMiddleware, asyncHandler(async (req, res) => {
   res.status(200).json({
     history: history.map(row => ({
       datetime:       row.DATETIME,
-      topic:          row.TOPIC,
+      // Prevent database inconsistencies from breaking logic
+      topic:          normalizeDBString(row.TOPIC),
       type:           row.TYPE,
       isCorrect:      row.ISCORRECT,
       problem_id:     row.PROBLEM_ID,
