@@ -18,7 +18,7 @@
 
 const request = require('supertest');
 const { app, pool } = require('../server');
-const { TEST_USER, getAuthToken, verifyTestDatabase, insertPurchase } = require('./testHelpers');
+const { TEST_USER, getAuthToken, verifyTestDatabase, insertPurchase, insertUser } = require('./testHelpers');
 const { ITEM_TYPES, EQUIP_LIMITS } = require('../../shared/itemConfig');
 
 // Mock Discord webhook
@@ -573,6 +573,161 @@ describe('GET /api/users/:id/purchases', () => {
   test('401 - no auth token', async () => {
     const res = await request(app)
       .get(`/api/users/${userId}/purchases`);
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// Test user following
+describe('POST /api/users/:id/follow', () => {
+
+  test('200 - successfully follows existing, currently unfollowed user', async () => {
+    // Insert generic user to follow
+    const followeeId = await insertUser();
+
+    // Follow
+    const res = await request(app)
+      .post(`/api/users/${followeeId}/follow`)
+      .set('Authorization', `Bearer ${token}`);
+
+    // Verify successful follow and creation of the following relationship
+    expect(res.status).toBe(200);
+    const [follows] = await pool.query(
+      'SELECT FOLLOWER_ID, FOLLOWING_ID FROM Follower WHERE FOLLOWER_ID = ? AND FOLLOWING_ID = ?',
+      [userId, followeeId]
+    );
+    expect(follows.length).toBe(1);
+
+    // Cleanup generic user we inserted (cascades to follow)
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('400 - cannot follow a user that you are already following', async () => {
+    // Insert generic user to follow
+    const followeeId = await insertUser();
+
+    // Insert following relationship
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [userId, followeeId]
+    );
+
+    // Try to follow again
+    const res = await request(app)
+      .post(`/api/users/${followeeId}/follow`)
+      .set('Authorization', `Bearer ${token}`);
+
+    // Failed
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('User is already followed.');
+
+    // Cleanup generic user we inserted (cascades to follow)
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('400 - cannot follow invalid user ID', async () => {
+    const res = await request(app)
+      .post('/api/users/abc/follow')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Invalid user ID');
+  });
+
+  test('400 - user cannot follow themselves', async () => {
+    const res = await request(app)
+      .post(`/api/users/${userId}/follow`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('User cannot follow themselves.');
+  });
+
+  test('404 - cannot follow non-existent user ID', async () => {
+    const res = await request(app)
+      .post(`/api/users/999/follow`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('User not found');
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .post(`/api/users/999/follow`);
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// Test user unfollowing
+describe('DELETE /api/users/:id/follow', () => {
+
+  test('200 - successfully unfollows existing, currently followed user', async () => {
+    // Insert generic user to follow
+    const followeeId = await insertUser();
+
+    // Insert follow relationship
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [userId, followeeId]
+    );
+
+    // Now unfollow
+    const res = await request(app)
+      .delete(`/api/users/${followeeId}/follow`)
+      .set('Authorization', `Bearer ${token}`);
+
+    // Verify successful unfollow and deletion of the following relationship
+    expect(res.status).toBe(200);
+    const [unfollows] = await pool.query(
+      'SELECT FOLLOWER_ID, FOLLOWING_ID FROM Follower WHERE FOLLOWER_ID = ? AND FOLLOWING_ID = ?',
+      [userId, followeeId]
+    );
+    expect(unfollows.length).toBe(0);
+
+    // Cleanup generic user we inserted (cascades to follow)
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('400 - cannot unfollow a user that you are not already following', async () => {
+    // Insert generic user, but we don't follow them
+    const followeeId = await insertUser();
+
+    // Try to unfollow
+    const res = await request(app)
+      .delete(`/api/users/${followeeId}/follow`)
+      .set('Authorization', `Bearer ${token}`);
+
+    // Failed
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('User is not followed.');
+
+    // Cleanup generic user we inserted (cascades to follow)
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('400 - cannot unfollow invalid user ID', async () => {
+    const res = await request(app)
+      .delete('/api/users/abc/follow')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Invalid user ID');
+  });
+
+  test('404 - cannot unfollow non-existent user ID', async () => {
+    const res = await request(app)
+      .delete(`/api/users/999/follow`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('User not found');
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .delete(`/api/users/999/follow`);
 
     expect(res.status).toBe(401);
   });

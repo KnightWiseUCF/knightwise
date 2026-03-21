@@ -24,6 +24,8 @@ const {
         getPurchases,
         equipItem,
         unequipItem,
+        followUser,
+        unfollowUser,
       } = require("../controllers/userController");
 
 /**
@@ -67,5 +69,19 @@ router.put("/:id/equip", authMiddleware, equipItem);
  * @access  Protected
  */
 router.put("/:id/unequip", authMiddleware, unequipItem);
+
+/**
+ * @route   POST /api/users/:id/follow
+ * @desc    Follow the user with the given ID
+ * @access  Protected
+ */
+router.post("/:id/follow", authMiddleware, followUser);
+
+/**
+ * @route   DELETE /api/users/:id/follow
+ * @desc    Unfollow the user with the given ID
+ * @access  Protected
+ */
+router.delete("/:id/follow", authMiddleware, unfollowUser);
 
 module.exports = router;

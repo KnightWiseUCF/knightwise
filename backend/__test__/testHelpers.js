@@ -30,6 +30,36 @@ const TEST_USER = {
 };
 
 /**
+ * Inserts a generic user with the specified parameters
+ * NOTE: Avoid inserting multiple users with duplicate info
+ *       that should be unique (email, username)
+ * @param {string}  firstName       - First name of the user to insert. Default 'Generic'
+ * @param {string}  lastName        - First name of the user to insert. Default 'User'
+ * @param {string}  username        - Username of the user to insert. Default 'genericuser'
+ * @param {string}  password        - Password of the user to insert. Default 'genericpassword'
+ * @param {string}  email           - Email of the user to insert. Default 'generic@gmail.com'
+ * @param {boolean} isProf          - Whether the inserted user is a professor. Default false
+ * @param {boolean} verified        - If isProf = true, whether the inserted professor is verified. Default false
+ * @param {number}  lifetimeExp     - Lifetime exp of the user to insert. Default 0
+ * @param {number}  weeklyExp       - Weekly exp of the user to insert. Default 0
+ * @param {number}  dailyExp        - Daily exp of the user to insert. Default 0
+ * @param {number}  coins           - Coin balance of the user to insert. Default 0
+ * @param {boolean} isSharingStats  - Whether user is opted in to share stats to the aggregate pool. Default false
+ * @returns {Promise<number>} Inserted user ID
+ */
+const insertUser = async ({ firstName = 'Generic', lastName = 'User', username = 'genericuser', password = 'genericpassword', email = 'generic@gmail.com', isProf = false, verified = false, lifetimeExp = 0, weeklyExp = 0, dailyExp = 0, coins = 0, isSharingStats = false } = {}) => {
+
+  // Insert generic user from provided or overridden arguments
+  const [result] = await pool.query(
+    `INSERT INTO User (FIRSTNAME, LASTNAME, USERNAME, PASSWORD, EMAIL, IS_PROF, VERIFIED, LIFETIME_EXP, WEEKLY_EXP, DAILY_EXP, COINS, IS_SHARING_STATS)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [firstName, lastName, username, password, email, isProf ? 1 : 0, verified ? 1 : 0, lifetimeExp, weeklyExp, dailyExp, coins, isSharingStats ? 1 : 0]
+  );
+
+  return result.insertId;
+};
+
+/**
  * Inserts a guild with the specified parameters
  * @param {string}  name        - Name of the guild to insert. Default 'Ancient Wolves'
  * @param {number}  ownerId     - ID of user to make owner of the guild. Default null
@@ -193,6 +223,7 @@ async function verifyTestDatabase(pool)
 
 module.exports = {
   TEST_USER,
+  insertUser,
   insertGuild,
   insertPurchase,
   insertQuestion,

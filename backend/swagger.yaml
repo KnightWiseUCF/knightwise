@@ -423,6 +423,58 @@ paths:
         500:
           description: Server Error
 
+  /users/{id}/follow:
+    post:
+      tags:
+        - Users
+      summary: Follow a user.
+      operationId: followUser
+      description: Follows the user with the given ID. Following is immediate and one-way, no acceptance required from the followee. A user cannot follow themselves or follow the same user twice.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user to follow.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid user ID, user already followed, or attempting to follow yourself
+        401:
+          description: Unauthorized
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+    delete:
+      tags:
+        - Users
+      summary: Unfollow a user.
+      operationId: unfollowUser
+      description: Unfollows the user with the given ID. One-way, does not affect whether the followee follows the requesting user.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user to unfollow.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid user ID or user not currently followed
+        401:
+          description: Unauthorized
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+
   /store:
     get:
       tags:
