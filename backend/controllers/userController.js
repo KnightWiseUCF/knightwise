@@ -13,6 +13,7 @@
 //                errorHandler
 //                validationUtils
 //                itemConfig
+//                paginationConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -20,6 +21,7 @@ const { notifyUserEvent } = require('../services/discordWebhook');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { parseUserId, validateName } = require('../utils/validationUtils');
 const { EQUIP_LIMITS } = require('../../shared/itemConfig');
+const { PAGE_SIZES } = require('../config/paginationConfig');
 
 /**
  * Helper function, ensures followee exists 
@@ -466,6 +468,52 @@ const unfollowUser = asyncHandler(async (req, res) => {
   return res.status(200).json({ message: 'User unfollowed successfully' });
 });
 
+/**
+ * @route   GET /api/users/search
+ * @desc    Search users by username (partial, case-insensitive), paginated
+ *          Call with username and page as query parameters
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @returns {Promise<void>}                 - Sends HTTP/JSON response with paginated user results
+ */
+const searchUsers = asyncHandler(async (req, res) => {
+  const username = req.query.username ?? '';
+  const page     = parseInt(req.query.page) || 1;
+
+  // Get total user count for pagination metadata
+  const [[{ totalUsers }]] = await req.db.query(
+    'SELECT COUNT(*) AS totalUsers FROM User WHERE USERNAME LIKE ?',
+    [`%${username}%`]
+  );
+
+  // Pagination
+  const totalPages = Math.ceil(totalUsers / PAGE_SIZES.USER_SEARCH);
+  const safePage   = Math.min(Math.max(1, page), totalPages || 1);
+  const offset     = (safePage - 1) * PAGE_SIZES.USER_SEARCH;
+
+  // Use LIKE with % for partial, case-insensitive match
+  const [users] = await req.db.query(
+    `SELECT ID, USERNAME, FIRSTNAME, LASTNAME
+     FROM User
+     WHERE USERNAME LIKE ?
+     ORDER BY USERNAME ASC
+     LIMIT ? OFFSET ?`,
+    [`%${username}%`, PAGE_SIZES.USER_SEARCH, offset]
+  );
+
+  return res.status(200).json({
+    users,
+    pagination: {
+      page: safePage,
+      pageSize: PAGE_SIZES.USER_SEARCH,
+      totalUsers,
+      totalPages,
+    }
+  });
+});
+
 module.exports = {
   deleteAccount,
   getUserInfo,
@@ -475,4 +523,5 @@ module.exports = {
   unequipItem,
   followUser,
   unfollowUser,
+  searchUsers,
 };

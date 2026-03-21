@@ -9,13 +9,12 @@
 //
 //  Dependencies:  mysql2 connection pool (req.db)
 //                 errorHandler
+//                 paginationConfig
 //
 ////////////////////////////////////////////////////////////////
 
 const { asyncHandler } = require('../middleware/errorHandler');
-
-// Max number of users shown on a page of the leaderboard
-const PAGE_SIZE = 50;
+const { PAGE_SIZES } = require('../config/paginationConfig');
 
 /**
  * Helper function, fetches followed user IDs and queries paginated 
@@ -69,11 +68,11 @@ const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
     filterParams
   );
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / PAGE_SIZES.LEADERBOARD);
 
   // Ensure page between 1 and totalPages
   const safePage = Math.min(Math.max(1, page), totalPages || 1);
-  const offset   = (safePage - 1) * PAGE_SIZE;
+  const offset   = (safePage - 1) * PAGE_SIZES.LEADERBOARD;
 
   // Rank filtered users and paginate
   // Include username, firstname, and profile picture for displaying
@@ -97,7 +96,7 @@ const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
     ) ranked
     ORDER BY \`rank\` ASC, USERNAME ASC
     LIMIT ? OFFSET ?`,
-    [...filterParams, PAGE_SIZE, offset]
+    [...filterParams, PAGE_SIZES.LEADERBOARD, offset]
   );
 
   // Find requesting user's rank and exp regardless of page

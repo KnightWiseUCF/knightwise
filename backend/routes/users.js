@@ -26,7 +26,22 @@ const {
         unequipItem,
         followUser,
         unfollowUser,
+        searchUsers
       } = require("../controllers/userController");
+
+/**
+ * @route   GET /api/users/search
+ * @desc    Search users by username (partial, case-insensitive), paginated
+ *          Call with username and page as query parameters
+ * @access  Protected
+ */
+router.get("/search", authMiddleware, searchUsers);
+
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//   ##### ALL NON-WILDCARD ROUTES MUST GO BEFORE THESE WILDCARD (/:id) ROUTES #####
+//
+//////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @route   DELETE /api/users/:id

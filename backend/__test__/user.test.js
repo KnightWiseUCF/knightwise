@@ -13,6 +13,7 @@
 //                 mysql2 connection pool (server.js)
 //                 testHelpers
 //                 discordWebhook (mocked)
+//                 paginationConfig (mocked)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -27,6 +28,15 @@ jest.mock('../services/discordWebhook', () => ({
   sendNotification: jest.fn().mockResolvedValue(true),
   notifyUserEvent: jest.fn().mockResolvedValue(true),
   notifyError: jest.fn().mockResolvedValue(true),
+}));
+
+// Mock paginationConfig to a small page size for pagination tests
+const { PAGE_SIZES } = require('../config/paginationConfig'); 
+jest.mock('../config/paginationConfig', () => ({
+  PAGE_SIZES: {
+    LEADERBOARD: 50,
+    USER_SEARCH: 2, // So we don't have to insert a bunch of users
+  }
 }));
 
 let token;
@@ -728,6 +738,155 @@ describe('DELETE /api/users/:id/follow', () => {
   test('401 - no auth token', async () => {
     const res = await request(app)
       .delete(`/api/users/999/follow`);
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// Test user searching
+describe('GET /api/users/search', () => {
+
+  let searchUserIds = [];
+
+  beforeAll(async () => {
+    // Insert 3 users with "knight" in the username, enough to spill onto page 2 with PAGE_SIZE mocked to 2
+    searchUserIds.push(await insertUser({ username: 'knightking',  firstName: 'Arthur',   lastName: 'Pendragon', email: 'arthur@gmail.com' }));
+    searchUserIds.push(await insertUser({ username: 'knightmare',  firstName: 'Bors',     lastName: 'Ganis'    , email: 'bors@hotmail.com' }));
+    searchUserIds.push(await insertUser({ username: 'knightrider', firstName: 'Lancelot', lastName: 'Du Lac'   , email: 'lancelot@cs.com'  }));
+    searchUserIds.push(await insertUser({ username: 'roundtable',  firstName: 'Gawain',   lastName: 'Orkney'   , email: 'gawain@aol.com' }));
+  });
+
+  afterAll(async () => {
+    await pool.query(
+      `DELETE FROM User WHERE ID IN (${searchUserIds.map(() => '?').join(',')})`,
+      searchUserIds
+    );
+  });
+
+  test('200 - partial match returns matching users', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=knight')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const usernames = res.body.users.map(u => u.USERNAME);
+    expect(usernames).toContain('knightking');
+    expect(usernames).not.toContain('roundtable');
+  });
+
+  test('200 - search is case insensitive', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=KNIGHT')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const usernames = res.body.users.map(u => u.USERNAME);
+    expect(usernames).toContain('knightking');
+    expect(usernames).toContain('knightmare');
+  });
+
+  test('200 - empty username returns all users', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.users.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('200 - no username param returns all users', async () => {
+    const res = await request(app)
+      .get('/api/users/search')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.users.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('200 - no match returns empty list, not error', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=zzznomatchzzz')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.users).toHaveLength(0);
+    expect(res.body.pagination.totalUsers).toBe(0);
+    expect(res.body.pagination.totalPages).toBe(0);
+  });
+
+  test('200 - response includes expected user fields', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=knightking')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.users).toHaveLength(1);
+    const user = res.body.users[0];
+    expect(user).toHaveProperty('ID');
+    expect(user).toHaveProperty('USERNAME', 'knightking');
+    expect(user).toHaveProperty('FIRSTNAME');
+    expect(user).toHaveProperty('LASTNAME');
+  });
+
+  test('200 - does not expose sensitive fields', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=knightking')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const user = res.body.users[0];
+    expect(user).not.toHaveProperty('PASSWORD');
+    expect(user).not.toHaveProperty('EMAIL');
+    expect(user).not.toHaveProperty('COINS');
+  });
+
+  test('200 - pagination metadata present and correct on page 1', async () => {
+    // 3 knight users, page size mocked to 2
+    // So we'll have first page with 2 users and second page with 1
+    const res = await request(app)
+      .get('/api/users/search?username=knight&page=1')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('pagination');
+    expect(res.body.pagination).toHaveProperty('page', 1);
+    expect(res.body.pagination).toHaveProperty('pageSize', 2);
+    expect(res.body.pagination).toHaveProperty('totalUsers', 3);
+    expect(res.body.pagination).toHaveProperty('totalPages', 2);
+    expect(res.body.users).toHaveLength(2); // Page 1 full
+  });
+
+  test('200 - page 2 returns remaining results', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=knight&page=2')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.pagination.page).toBe(2);
+    expect(res.body.users).toHaveLength(1); // Only 1 user with "knight" left on page 2
+  });
+
+  test('200 - invalid page clamps to 1', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=knight&page=abc')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.pagination.page).toBe(1);
+  });
+
+  test('200 - out of range page clamps to last page', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=knight&page=99999')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.pagination.page).toBe(res.body.pagination.totalPages);
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=knight');
 
     expect(res.status).toBe(401);
   });
