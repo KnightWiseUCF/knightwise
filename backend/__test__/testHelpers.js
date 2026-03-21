@@ -29,6 +29,40 @@ const TEST_USER = {
   lastName: "User"
 };
 
+// Default test professor template, can be overridden for individual tests
+const TEST_PROF = {
+  email:     "testprof@ucf.edu",
+  username:  "testprofessor",
+  password:  "Testpass123!",
+  firstName: "Test",
+  lastName:  "Professor"
+};
+
+/**
+ * Inserts a Response row with the specified parameters
+ * Use this for adding deterministic test data for analytics/stats tests
+ * Does NOT trigger grading, currency awarding, or any other side effects
+ *
+ * @param {number}      userId         - User ID
+ * @param {number}      questionId     - Question ID
+ * @param {number}      pointsEarned   - Points earned. Default 0
+ * @param {number}      pointsPossible - Points possible. Default 1
+ * @param {boolean}     isCorrect      - Whether correct. Default false
+ * @param {number|null} elapsedTime    - Elapsed time in seconds. Default null
+ * @param {string}      topic          - Topic/subcategory. Default 'Arrays'
+ * @param {string}      category       - Category. Default 'Introductory Programming'
+ * @returns {Promise<number>} Inserted response ID
+ */
+const insertResponse = async (userId, questionId, { pointsEarned = 0, pointsPossible = 1, isCorrect = false, elapsedTime = null, topic = 'Arrays', category = 'Introductory Programming' } = {}) => {
+  const [result] = await pool.query(
+    `INSERT INTO Response
+     (USERID, PROBLEM_ID, POINTS_EARNED, POINTS_POSSIBLE, ISCORRECT, ELAPSED_TIME, TOPIC, CATEGORY, DATETIME)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [userId, questionId, pointsEarned, pointsPossible, isCorrect ? 1 : 0, elapsedTime, topic, category]
+  );
+  return result.insertId;
+};
+
 /**
  * Inserts a generic user with the specified parameters
  * NOTE: Avoid inserting multiple users with duplicate info
@@ -121,7 +155,7 @@ const insertPurchase = async (userId, itemInfo = {}, isEquipped = false) => {
 const insertQuestion = async (type, answers = [], { points = 2.00, isPublished = true, ownerId = null } = {}) => {
   const [result] = await pool.query(
     'INSERT INTO Question (QUESTION_TEXT, TYPE, SUBCATEGORY, SECTION, CATEGORY, POINTS_POSSIBLE, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    ['Test question', type, 'Test Topic', 'A', 'Test Category', points, isPublished ? 1 : 0, ownerId]
+    ['Test question', type, 'Arrays', 'A', 'Introductory Programming', points, isPublished ? 1 : 0, ownerId]
   );
   const questionId = result.insertId;
 
@@ -146,8 +180,8 @@ const submitAndFetch = async (questionId, userAnswer, token) => {
     .send({
       problem_id: questionId,
       userAnswer,
-      category:   'Test Category',
-      topic:      'Test Topic',
+      category:   'Introductory Programming',
+      topic:      'Arrays',
     });
 
   const [rows] = await pool.query(
@@ -193,6 +227,39 @@ async function getAuthToken()
 }
 
 /**
+ * Get a JWT auth token for the test professor
+ * Creates the professor if it doesn't exist, then logs in.
+ * Professor is inserted as verified so login is permitted.
+ *
+ * @returns {Promise<string>} - JWT token
+ */
+async function getProfAuthToken()
+{
+  const hashedPass = await bcrypt.hash(TEST_PROF.password, 10);
+
+  await pool.query(
+    `INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED)
+     VALUES (?, ?, ?, ?, ?, 1, 1)
+     ON DUPLICATE KEY UPDATE PASSWORD = VALUES(PASSWORD)`,
+    [TEST_PROF.username, TEST_PROF.email, hashedPass, TEST_PROF.firstName, TEST_PROF.lastName]
+  );
+
+  const res = await request(app)
+    .post("/api/auth/login")
+    .send({
+      username: TEST_PROF.username,
+      password: TEST_PROF.password
+    });
+
+  if (!res.body.token)
+  {
+    throw new Error("Failed to get prof auth token: " + JSON.stringify(res.body));
+  }
+
+  return res.body.token;
+}
+
+/**
  * Verifies connection to test database, exits if wrong database
  * !!! CALL THIS IN beforeAll() OF EVERY TEST FILE !!!
  * 
@@ -223,11 +290,14 @@ async function verifyTestDatabase(pool)
 
 module.exports = {
   TEST_USER,
+  TEST_PROF,
+  insertResponse,
   insertUser,
   insertGuild,
   insertPurchase,
   insertQuestion,
   submitAndFetch,
   getAuthToken,
+  getProfAuthToken,
   verifyTestDatabase
 };

@@ -30,6 +30,7 @@ const router = express.Router();
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const adminMiddleware = require("../middleware/adminMiddleware");
 const authMiddleware = require('../middleware/authMiddleware');
+const adminOrProf = require('../middleware/adminOrProf');
 const requireRole = require('../middleware/requireRole');
 const { notifyUserEvent } = require("../services/discordWebhook");
 const { ITEM_TYPES } = require('../../shared/itemConfig');
@@ -40,23 +41,6 @@ const mailjet = Mailjet.apiConnect(
   process.env.MJ_APIKEY_PUBLIC,
   process.env.MJ_APIKEY_PRIVATE
 );
-
-/**
- * Helper middleware for endpoints shared between admins and professors
- * Routes admin requests (requests with ADMIN_KEY) through adminMiddleware
- * Routes professor requests (requests without ADMIN_KEY) through authMiddleware
- * Enforces role to ensure only admins and professors get intended access
- * @type {import('express').RequestHandler[]}
- */
-const adminOrProf = [
-  (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1]?.trim();
-    token === process.env.ADMIN_KEY
-      ? adminMiddleware(req, res, next)
-      : authMiddleware(req, res, next);
-  },
-  requireRole('admin', 'professor')
-];
 
 /**
  * Helper function, gets questions for a given draft/published state

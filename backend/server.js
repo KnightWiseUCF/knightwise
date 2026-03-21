@@ -106,6 +106,7 @@ app.use('/api/profauth', require('./routes/profAuthRoutes'));
 app.use('/api/store', require('./routes/store'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/guilds', require('./routes/guilds'));
+app.use('/api/stats', require('./routes/stats'));
 
 // Start background jobs (skip during tests)
 if (process.env.NODE_ENV !== 'test')
