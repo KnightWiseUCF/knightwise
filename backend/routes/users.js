@@ -26,7 +26,8 @@ const {
         unequipItem,
         followUser,
         unfollowUser,
-        searchUsers
+        searchUsers,
+        updateStatsOptIn,
       } = require("../controllers/userController");
 
 /**
@@ -98,5 +99,12 @@ router.post("/:id/follow", authMiddleware, followUser);
  * @access  Protected
  */
 router.delete("/:id/follow", authMiddleware, unfollowUser);
+
+/**
+ * @route   PUT /api/users/:id/stats-opt-in
+ * @desc    Toggle IS_SHARING_STATS for the user
+ * @access  Protected
+ */
+router.put("/:id/stats-opt-in", authMiddleware, updateStatsOptIn);
 
 module.exports = router;

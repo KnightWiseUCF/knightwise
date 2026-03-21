@@ -509,6 +509,103 @@ paths:
         500:
           description: Server Error
 
+  /users/{id}/stats-opt-in:
+    put:
+      tags:
+        - Users
+      summary: Update stats sharing opt-in.
+      operationId: updateStatsOptIn
+      description: |
+        Sets whether the user's response data is included in professor-facing aggregate analytics.
+        - Explicitly sets the value rather than toggling, so repeated calls with the same value don't change it.
+        - Can only be performed by the account owner.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+        - in: body
+          name: statsOptInItem
+          description: Desired opt-in state.
+          schema:
+            $ref: '#/definitions/StatsOptIn'
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/StatsOptInResponse'
+        400:
+          description: Bad Request - Invalid user ID or optIn is not a boolean
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Can only update own settings
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+
+  /stats/aggregate:
+    get:
+      tags:
+        - Stats
+      summary: Fetch aggregate stats across all opted-in users.
+      operationId: getAggregateStats
+      description: |
+        Returns median accuracy and median elapsed time across all responses from opted-in users.
+        - Also includes a per-subcategory breakdown of the same metrics.
+        - Median is used rather than mean to reduce skew from outliers such as users who left their computer mid-question.
+        - Returns nulls and an empty breakdown if no opted-in responses exist.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/AggregateStatsResponse'
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Professor or admin access only
+        500:
+          description: Server Error
+
+  /stats/aggregate/{questionId}:
+    get:
+      tags:
+        - Stats
+      summary: Fetch aggregate stats for a single question.
+      operationId: getAggregateStatsByQuestion
+      description: |
+        Returns median accuracy and median elapsed time for a single question, computed across all responses from opted-in users.
+        - Returns nulls if no opted-in responses exist for the question.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the question.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/AggregateStatsByQuestionResponse'
+        400:
+          description: Bad Request - Invalid question ID
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Professor or admin access only
+        404:
+          description: Question Not Found
+        500:
+          description: Server Error
+
   /store:
     get:
       tags:
@@ -1507,6 +1604,10 @@ definitions:
         type: string
         example: "I/O"
         description: The subcategory/topic of the question.
+      elapsedTime:
+        type: integer
+        example: 45
+        description: Time in seconds from question display to submission. Optional, null if not provided.
   
   SubmitResponse:
     type: object
@@ -1786,6 +1887,82 @@ definitions:
       name:
         type: string
         example: "Blazing Dragons"
+
+  StatsOptIn:
+    type: object
+    required:
+      - optIn
+    properties:
+      optIn:
+        type: boolean
+        example: true
+        description: True to include this user's responses in aggregate stats, false to exclude.
+
+  StatsOptInResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Stats sharing enabled"
+      optIn:
+        type: boolean
+        example: true
+
+  AggregateStatsResponse:
+    type: object
+    properties:
+      medianAccuracy:
+        type: number
+        example: 0.75
+        nullable: true
+        description: Median normalized score (0-1) across all opted-in responses. Null if no data.
+      medianElapsedTime:
+        type: number
+        example: 60
+        nullable: true
+        description: Median elapsed time in seconds across opted-in responses with non-null times. Null if no data.
+      responseCount:
+        type: integer
+        example: 120
+        description: Total number of opted-in responses included in the calculation.
+      subcategoryBreakdown:
+        type: object
+        description: Per-subcategory aggregate stats. Keys are Question.SUBCATEGORY strings.
+        additionalProperties:
+          type: object
+          properties:
+            medianAccuracy:
+              type: number
+              example: 0.6
+              nullable: true
+            medianElapsedTime:
+              type: number
+              example: 45
+              nullable: true
+            responseCount:
+              type: integer
+              example: 30
+
+  AggregateStatsByQuestionResponse:
+    type: object
+    properties:
+      questionId:
+        type: integer
+        example: 42
+      medianAccuracy:
+        type: number
+        example: 0.5
+        nullable: true
+        description: Median normalized score (0-1) across opted-in responses for this question. Null if no data.
+      medianElapsedTime:
+        type: number
+        example: 60
+        nullable: true
+        description: Median elapsed time in seconds across opted-in responses for this question. Null if no data.
+      responseCount:
+        type: integer
+        example: 3
+        description: Number of opted-in responses for this question.
 
 host: www.knightwise.dev
 basePath: /api

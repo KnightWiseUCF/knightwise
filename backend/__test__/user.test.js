@@ -891,3 +891,112 @@ describe('GET /api/users/search', () => {
     expect(res.status).toBe(401);
   });
 });
+
+// Test stats opt-in toggle
+describe('PUT /api/users/:id/stats-opt-in', () => {
+
+  test('200 - successfully enables stats sharing', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('optIn', true);
+
+    const [rows] = await pool.query('SELECT IS_SHARING_STATS FROM User WHERE ID = ?', [userId]);
+    expect(rows[0].IS_SHARING_STATS).toBe(1);
+  });
+
+  test('200 - successfully disables stats sharing', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('optIn', false);
+
+    const [rows] = await pool.query('SELECT IS_SHARING_STATS FROM User WHERE ID = ?', [userId]);
+    expect(rows[0].IS_SHARING_STATS).toBe(0);
+  });
+
+  test('200 - setting same value twice leaves it unchanged', async () => {
+    await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: true });
+
+    // Set it true again
+    const res = await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: true });
+
+    // Still true
+    expect(res.status).toBe(200);
+    const [rows] = await pool.query('SELECT IS_SHARING_STATS FROM User WHERE ID = ?', [userId]);
+    expect(rows[0].IS_SHARING_STATS).toBe(1);
+  });
+
+  test('400 - rejects non-boolean optIn', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: 'yes' });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('400 - rejects missing optIn field', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+
+  test('400 - invalid user ID', async () => {
+    const res = await request(app)
+      .put('/api/users/abc/stats-opt-in')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: true });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .send({ optIn: true });
+
+    expect(res.status).toBe(401);
+  });
+
+  test('403 - cannot update another user', async () => {
+    const res = await request(app)
+      .put('/api/users/999999/stats-opt-in')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: true });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('404 - user not found', async () => {
+    // Delete user
+    await pool.query('DELETE FROM User WHERE ID = ?', [userId]);
+
+    const res = await request(app)
+      .put(`/api/users/${userId}/stats-opt-in`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ optIn: true });
+
+    expect(res.status).toBe(404);
+
+    // Add user back for any future tests
+    token = await getAuthToken();
+    const [rows] = await pool.query('SELECT ID FROM User WHERE EMAIL = ?', [TEST_USER.email]);
+    userId = rows[0].ID;
+  });
+});

@@ -514,6 +514,53 @@ const searchUsers = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @route   PUT /api/users/:id/stats-opt-in
+ * @desc    Toggle IS_SHARING_STATS for the user
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @throws  {AppError} 400                  - Throwable by parseUserId
+ * @throws  {AppError} 403                  - Throwable by assertUserOwnership
+ * @throws  {AppError} 404                  - If user not found
+ * @returns {Promise<void>}                 - Sends HTTP/JSON with new opt-in state
+ */
+const updateStatsOptIn = asyncHandler(async (req, res) => {
+  const context = 'updateStatsOptIn';
+  const userId  = parseUserId(req.params.id, context);
+
+  // Ensure user is toggling for themselves
+  assertUserOwnership(req.user, userId, context);
+
+  const { optIn } = req.body;
+  if (typeof optIn !== 'boolean')
+  {
+    throw new AppError(`[${context}] Invalid optIn value: ${optIn}`, 400, 'optIn must be a boolean');
+  }
+
+  // Get user
+  const [users] = await req.db.query(
+    'SELECT ID FROM User WHERE ID = ?',
+    [userId]
+  );
+  if (users.length === 0)
+  {
+    throw new AppError(`[${context}] User not found: ${userId}`, 404, 'User not found');
+  }
+
+  // Set opt-in status
+  await req.db.query(
+    'UPDATE User SET IS_SHARING_STATS = ? WHERE ID = ?',
+    [optIn ? 1 : 0, userId]
+  );
+
+  return res.status(200).json({
+    message: `Stats sharing ${optIn ? 'enabled' : 'disabled'}`,
+    optIn,
+  });
+});
+
 module.exports = {
   deleteAccount,
   getUserInfo,
@@ -524,4 +571,5 @@ module.exports = {
   followUser,
   unfollowUser,
   searchUsers,
+  updateStatsOptIn,
 };
