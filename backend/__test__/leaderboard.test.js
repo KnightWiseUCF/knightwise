@@ -17,7 +17,13 @@
 
 const request = require('supertest');
 const { app, pool } = require('../server');
-const { TEST_USER, getAuthToken, verifyTestDatabase, insertPurchase } = require('./testHelpers');
+const { 
+        TEST_USER,
+        getAuthToken,
+        verifyTestDatabase,
+        insertPurchase,
+        insertUser,
+      } = require('./testHelpers');
 const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 let token;
@@ -318,6 +324,187 @@ describe('GET /api/leaderboard/lifetime', () => {
   test('401 - missing token', async () => {
     const res = await request(app)
       .get('/api/leaderboard/lifetime');
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// Test followed weekly leaderboard endpoint
+describe('GET /api/leaderboard/followed/weekly', () => {
+
+  // Insert a follow relationship before each test, clean up after
+  let followeeId;
+  beforeEach(async () => {
+    followeeId = await insertUser({
+      username:   'followed_user',
+      email:      'followed@test.com',
+      weeklyExp:  600,
+      lifetimeExp: 1000,
+    });
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [userId, followeeId]
+    );
+  });
+  afterEach(async () => {
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('200 - returns correct shape', async () => {
+    const res = await request(app)
+      .get('/api/leaderboard/followed/weekly')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('userRank');
+    expect(res.body).toHaveProperty('userExp');
+    expect(res.body).toHaveProperty('page');
+    expect(res.body).toHaveProperty('totalPages');
+    expect(res.body).toHaveProperty('leaderboard');
+    expect(Array.isArray(res.body.leaderboard)).toBe(true);
+  });
+
+  test('200 - only shows followed users, not all users', async () => {
+    const res = await request(app)
+      .get('/api/leaderboard/followed/weekly')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+
+    // lb_user1/2/3 from the global setup are not followed, shouldn't appear
+    const usernames = res.body.leaderboard.map(e => e.username);
+    expect(usernames).not.toContain('lb_user1');
+    expect(usernames).not.toContain('lb_user2');
+    expect(usernames).not.toContain('lb_user3');
+    expect(usernames).toContain('followed_user');
+  });
+
+  test('200 - returns empty leaderboard when following nobody', async () => {
+    // Remove the follow relationship set up in beforeEach
+    await pool.query(
+      'DELETE FROM Follower WHERE FOLLOWER_ID = ? AND FOLLOWING_ID = ?',
+      [userId, followeeId]
+    );
+
+    const res = await request(app)
+      .get('/api/leaderboard/followed/weekly')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.leaderboard).toHaveLength(0);
+    expect(res.body.totalPages).toBe(0);
+    expect(res.body.userRank).toBeNull();
+    expect(res.body.userExp).toBeNull();
+  });
+
+  test('200 - userRank and userExp reflect test user weekly exp within followed pool', async () => {
+    await pool.query(
+      'UPDATE User SET WEEKLY_EXP = 100 WHERE ID = ?',
+      [userId]
+    );
+
+    const res = await request(app)
+      .get('/api/leaderboard/followed/weekly')
+      .set('Authorization', `Bearer ${token}`);
+
+    // followee has 600, test user has 100, userRank is from global pool, not followed pool
+    expect(res.status).toBe(200);
+    expect(Number(res.body.userExp)).toBe(100);
+  });
+
+  test('200 - followed leaderboard rankings are independent of global leaderboard', async () => {
+    const [global, followed] = await Promise.all([
+      request(app).get('/api/leaderboard/weekly').set('Authorization', `Bearer ${token}`),
+      request(app).get('/api/leaderboard/followed/weekly').set('Authorization', `Bearer ${token}`)
+    ]);
+
+    expect(global.body.leaderboard.length).toBeGreaterThan(followed.body.leaderboard.length);
+  });
+
+  test('200 - out of range page clamps to last page', async () => {
+    const res = await request(app)
+      .get('/api/leaderboard/followed/weekly?page=999999')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(res.body.totalPages);
+  });
+
+  test('401 - missing token', async () => {
+    const res = await request(app)
+      .get('/api/leaderboard/followed/weekly');
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// Test followed lifetime leaderboard endpoint
+describe('GET /api/leaderboard/followed/lifetime', () => {
+
+  let followeeId;
+  beforeEach(async () => {
+    followeeId = await insertUser({
+      username:    'followed_user',
+      email:       'followed@test.com',
+      weeklyExp:   600,
+      lifetimeExp: 1000,
+    });
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [userId, followeeId]
+    );
+  });
+  afterEach(async () => {
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('200 - returns correct shape', async () => {
+    const res = await request(app)
+      .get('/api/leaderboard/followed/lifetime')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('userRank');
+    expect(res.body).toHaveProperty('userExp');
+    expect(res.body).toHaveProperty('page');
+    expect(res.body).toHaveProperty('totalPages');
+    expect(res.body).toHaveProperty('leaderboard');
+    expect(Array.isArray(res.body.leaderboard)).toBe(true);
+  });
+
+  test('200 - returns empty leaderboard when following nobody', async () => {
+    await pool.query(
+      'DELETE FROM Follower WHERE FOLLOWER_ID = ? AND FOLLOWING_ID = ?',
+      [userId, followeeId]
+    );
+
+    const res = await request(app)
+      .get('/api/leaderboard/followed/lifetime')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.leaderboard).toHaveLength(0);
+    expect(res.body.totalPages).toBe(0);
+  });
+
+  test('200 - weekly and lifetime followed rankings are independent', async () => {
+    await pool.query(
+      'UPDATE User SET WEEKLY_EXP = 0, LIFETIME_EXP = 1000 WHERE ID = ?',
+      [userId]
+    );
+
+    const [weekly, lifetime] = await Promise.all([
+      request(app).get('/api/leaderboard/followed/weekly').set('Authorization', `Bearer ${token}`),
+      request(app).get('/api/leaderboard/followed/lifetime').set('Authorization', `Bearer ${token}`)
+    ]);
+
+    expect(Number(weekly.body.userExp)).toBe(0);
+    expect(Number(lifetime.body.userExp)).toBe(1000);
+  });
+
+  test('401 - missing token', async () => {
+    const res = await request(app)
+      .get('/api/leaderboard/followed/lifetime');
 
     expect(res.status).toBe(401);
   });

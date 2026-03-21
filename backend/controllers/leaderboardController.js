@@ -18,27 +18,64 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const PAGE_SIZE = 50;
 
 /**
+ * Helper function, fetches followed user IDs and queries paginated 
+ * leaderboard data for a given exp column.
+ * Returns an empty leaderboard if the requesting user follows nobody
+ * Called by getFollowedWeeklyLeaderboard() and getFollowedLifetimeLeaderboard()
+ *
+ * @param {import('express').Request} req - Express request object
+ * @param {string} expCol - Column to rank by ('WEEKLY_EXP' or 'LIFETIME_EXP')
+ * @returns {Promise<{ userRank, userExp, page, totalPages, leaderboard }>}
+ */
+const getFollowedLeaderboardData = async (req, expCol) => {
+  const [followed] = await req.db.query(
+    'SELECT FOLLOWING_ID FROM Follower WHERE FOLLOWER_ID = ?',
+    [req.user.id]
+  );
+  const followedIds = followed.map(f => f.FOLLOWING_ID);
+
+  // Return empty leaderboard if followedIds empty to avoid SQL error
+  if (followedIds.length === 0)
+  {
+    return { userRank: null, userExp: null, page: 1, totalPages: 0, leaderboard: [] };
+  }
+
+  const page = parseInt(req.query.page) || 1;
+  return getLeaderboard(req.db, req.user.id, expCol, page, followedIds);
+};
+
+/**
  * Helper function, queries paginated leaderboard data for a given exp column
+ * Generic but can be provided filtered IDs for follower leaderboard
  * Returns a page of all users ranked by exp
  * Returns requesting user's rank and exp regardless of page
  *
- * @param {Object} db     - Database connection pool
- * @param {number} userId - Requesting user's ID
- * @param {string} expCol - Column to rank by ('WEEKLY_EXP' or 'LIFETIME_EXP')
- * @param {number} page   - Page number to fetch (1-indexed)
- * @returns {Promise<{ userRank, userExp, total, page, totalPages, leaderboard }>}
+ * @param {Object}        db        - Database connection pool
+ * @param {number}        userId    - Requesting user's ID
+ * @param {string}        expCol    - Column to rank by ('WEEKLY_EXP' or 'LIFETIME_EXP')
+ * @param {number}        page      - Page number to fetch (1-indexed)
+ * @param {number[]|null} filterIds - If provided, only rank these user IDs. null = all users.
+ * @returns {Promise<{ userRank, userExp, page, totalPages, leaderboard }>}
  */
-const getLeaderboard = async (db, userId, expCol, page) =>
+const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
 {
-  // Get total user count for pagination
-  const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM User');
+  // Filter IDs based on given argument
+  const whereClause = filterIds ? `WHERE u.ID IN (${filterIds.map(() => '?').join(',')})` : '';
+  const filterParams = filterIds ?? [];
+
+  // Get total filtered user count for pagination
+  const [[{ total }]] = await db.query(
+    `SELECT COUNT(*) AS total FROM User u ${whereClause}`,
+    filterParams
+  );
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   // Ensure page between 1 and totalPages
   const safePage = Math.min(Math.max(1, page), totalPages || 1);
   const offset   = (safePage - 1) * PAGE_SIZE;
 
-  // Rank users and paginate
+  // Rank filtered users and paginate
   // Include username, firstname, and profile picture for displaying
   const [rows] = await db.query(
     `SELECT * FROM (
@@ -56,10 +93,11 @@ const getLeaderboard = async (db, userId, expCol, page) =>
         JOIN StoreItem si ON si.ID = p.ITEM_ID
         WHERE p.IS_EQUIPPED = 1 AND si.TYPE = 'profile_picture'
       ) pfp ON pfp.USER_ID = u.ID
+      ${whereClause}
     ) ranked
     ORDER BY \`rank\` ASC, USERNAME ASC
     LIMIT ? OFFSET ?`,
-    [PAGE_SIZE, offset]
+    [...filterParams, PAGE_SIZE, offset]
   );
 
   // Find requesting user's rank and exp regardless of page
@@ -122,7 +160,39 @@ const getLifetimeLeaderboard = asyncHandler(async (req, res) =>
   return res.status(200).json(data);
 });
 
+/**
+ * @route   GET /api/leaderboard/followed/weekly
+ * @desc    Fetch paginated followed users leaderboard ranked by weekly exp
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>}                - Sends HTTP/JSON response with follower weekly leaderboard
+ */
+const getFollowedWeeklyLeaderboard = asyncHandler(async (req, res) =>
+{
+  const data = await getFollowedLeaderboardData(req, 'WEEKLY_EXP');
+  return res.status(200).json(data);
+});
+
+/**
+ * @route   GET /api/leaderboard/followed/lifetime
+ * @desc    Fetch paginated followed users leaderboard ranked by lifetime exp
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>}                - Sends HTTP/JSON response with lifetime leaderboard
+ */
+const getFollowedLifetimeLeaderboard = asyncHandler(async (req, res) =>
+{
+  const data = await getFollowedLeaderboardData(req, 'LIFETIME_EXP');
+  return res.status(200).json(data);
+});
+
 module.exports = {
   getWeeklyLeaderboard,
   getLifetimeLeaderboard,
+  getFollowedWeeklyLeaderboard,
+  getFollowedLifetimeLeaderboard,
 };

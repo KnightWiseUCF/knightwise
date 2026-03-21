@@ -17,7 +17,12 @@ const express = require('express');
 const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
-const { getWeeklyLeaderboard, getLifetimeLeaderboard } = require('../controllers/leaderboardController');
+const { 
+        getWeeklyLeaderboard,
+        getLifetimeLeaderboard,
+        getFollowedWeeklyLeaderboard,
+        getFollowedLifetimeLeaderboard,
+      } = require('../controllers/leaderboardController');
 
 /**
  * @route   GET /api/leaderboard/weekly
@@ -32,5 +37,19 @@ router.get('/weekly', authMiddleware, getWeeklyLeaderboard);
  * @access  Protected
  */
 router.get('/lifetime', authMiddleware, getLifetimeLeaderboard);
+
+/**
+ * @route   GET /api/leaderboard/followed/weekly
+ * @desc    Fetch paginated followed users leaderboard ranked by weekly exp
+ * @access  Protected
+ */
+router.get('/followed/weekly', authMiddleware, getFollowedWeeklyLeaderboard);
+
+/**
+ * @route   GET /api/leaderboard/followed/lifetime
+ * @desc    Fetch paginated followed users leaderboard ranked by lifetime exp
+ * @access  Protected
+ */
+router.get('/followed/lifetime', authMiddleware, getFollowedLifetimeLeaderboard);
 
 module.exports = router;
