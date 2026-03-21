@@ -136,7 +136,7 @@ const submitCode = asyncHandler(async (req, res) => {
   // Code can only be submitted by account owner
   const userId = req.user.id; // Set by authMiddleware.js
 
-  const { problemId, code, languageId, isTestRun } = req.body;
+  const { problemId, code, languageId, isTestRun, elapsedTime } = req.body;
 
   if (!problemId || !code || !languageId || code.trim().length === 0 || isTestRun === undefined)
   {
@@ -270,9 +270,10 @@ const submitCode = asyncHandler(async (req, res) => {
           POINTS_POSSIBLE,
           CATEGORY,
           TOPIC,
+          ELAPSED_TIME,
           DATETIME
         ) 
-        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?, ?, ?)`,
         [
           userId, 
           problemId, 
@@ -280,6 +281,7 @@ const submitCode = asyncHandler(async (req, res) => {
           question.POINTS_POSSIBLE, 
           question.CATEGORY, 
           question.SUBCATEGORY,
+          elapsedTime ?? null,
           new Date()
         ]
       );
@@ -336,9 +338,10 @@ const submitCode = asyncHandler(async (req, res) => {
       POINTS_POSSIBLE,
       CATEGORY,
       TOPIC,
+      ELAPSED_TIME,
       DATETIME
     ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId, 
       problemId, 
@@ -348,6 +351,7 @@ const submitCode = asyncHandler(async (req, res) => {
       question.POINTS_POSSIBLE, 
       question.CATEGORY, 
       question.SUBCATEGORY,
+      elapsedTime ?? null,
       new Date()
     ]
   );

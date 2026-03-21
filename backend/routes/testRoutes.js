@@ -206,7 +206,7 @@ router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
  * @returns {Promise<void>} - JSON response to confirm successful submission
  */
 router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
-  const { problem_id, userAnswer, category, topic } = req.body;
+  const { problem_id, userAnswer, category, topic, elapsedTime } = req.body;
   const user_id = req.user.id;
 
   // Get question by ID, we care about question type and points
@@ -246,9 +246,10 @@ router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
       POINTS_POSSIBLE,
       CATEGORY,
       TOPIC,
+      ELAPSED_TIME,
       DATETIME
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       user_id,
       problem_id,
@@ -258,6 +259,7 @@ router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
       result.pointsPossible,
       category,
       topic,
+      elapsedTime ?? null,
       new Date()
     ]
   );
