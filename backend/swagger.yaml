@@ -256,12 +256,32 @@ paths:
           in: query
           required: false
           type: integer
-          description: Page number (default 1, PAGE_SIZES.USER_SEARCH page size per page, clamped to valid range).
+          description: Page number (default 1, PAGE_SIZES.USER_SEARCH per page, clamped to valid range).
       responses:
         200:
           description: OK
           schema:
             $ref: '#/definitions/UserSearchResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /users/me/guild-invites:
+    get:
+      tags:
+        - Users
+        - Guilds
+      summary: Fetch pending guild invites for the current user.
+      operationId: getMyInvites
+      description: Returns all pending guild invites sent to the requesting user. Visible to any authenticated user regardless of guild membership.
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/GuildInvitesResponse'
         401:
           description: Unauthorized
         500:
@@ -754,6 +774,564 @@ paths:
         500:
           description: Server Error
 
+  /leaderboard/guilds/weekly:
+    get:
+      tags:
+        - Guilds
+      summary: Fetch weekly exp guild leaderboard.
+      operationId: getGuildWeeklyLeaderboard
+      description: |
+        Returns guilds ranked by weekly exp using DENSE_RANK, paginated at PAGE_SIZES.LEADERBOARD_GUILD guilds per page.
+        - Includes the requesting user's guild rank and exp regardless of current page.
+        - Returns null guildRank, guildExp, and guildId if the requesting user is not in a guild.
+        - Weekly exp resets every Monday at midnight UTC.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          description: Page number (default 1, PAGE_SIZES.LEADERBOARD_GUILD guilds per page, clamped to valid range)
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/GuildLeaderboardResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /leaderboard/guilds/lifetime:
+    get:
+      tags:
+        - Guilds
+      summary: Fetch lifetime exp guild leaderboard.
+      operationId: getGuildLifetimeLeaderboard
+      description: |
+        Returns guilds ranked by lifetime exp using DENSE_RANK, paginated at PAGE_SIZES.LEADERBOARD_GUILD guilds per page.
+        - Includes the requesting user's guild rank and exp regardless of current page.
+        - Returns null guildRank, guildExp, and guildId if the requesting user is not in a guild.
+        - Lifetime exp never resets.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          description: Page number (default 1, PAGE_SIZES.LEADERBOARD_GUILD guilds per page, clamped to valid range)
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/GuildLeaderboardResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+
+  /guilds/name/generate:
+    get:
+      tags:
+        - Guilds
+      summary: Generate a random guild name.
+      operationId: generateGuildName
+      description: |
+        Returns a randomly generated guild name composed of an adjective and a plural noun from the backend word bank.
+        - Guaranteed to return a name not already in use.
+        - Intended to be called repeatedly during guild creation while the user shuffles names.
+        - The name is not persisted until POST /guilds is called.
+      security:
+        - BearerAuth: []
+      produces:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/GuildNameResponse'
+        401:
+          description: Unauthorized
+        500:
+          description: Server Error
+        503:
+          description: All possible guild name combinations are in use
+
+  /guilds:
+    post:
+      tags:
+        - Guilds
+      summary: Create a new guild.
+      operationId: createGuild
+      description: |
+        Creates a new guild with the requesting user as Owner.
+        - Atomically inserts Guild and GuildMember rows in a transaction.
+        - User must not already be in a guild.
+        - Guild name must be unique.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: body
+          name: createGuildItem
+          description: Guild creation details.
+          schema:
+            $ref: '#/definitions/CreateGuild'
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateGuildResponse'
+        400:
+          description: Bad Request - Missing or empty name
+        401:
+          description: Unauthorized
+        409:
+          description: Conflict - User already in a guild, or name already taken
+        500:
+          description: Server Error
+
+  /guilds/{id}:
+    get:
+      tags:
+        - Guilds
+      summary: Fetch guild info.
+      operationId: getGuildInfo
+      description: Returns guild info alongside currently equipped guild items. Mirrors getUserInfo structure.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/GuildInfoResponse'
+        400:
+          description: Bad Request - Invalid guild ID
+        401:
+          description: Unauthorized
+        404:
+          description: Guild Not Found
+        500:
+          description: Server Error
+    delete:
+      tags:
+        - Guilds
+      summary: Delete a guild.
+      operationId: deleteGuild
+      description: Deletes the guild and cascades to all associated GuildMember and GuildEntry rows. Owner only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid guild ID
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Owner only
+        404:
+          description: Guild Not Found
+        500:
+          description: Server Error
+
+  /guilds/{id}/leave:
+    delete:
+      tags:
+        - Guilds
+      summary: Leave a guild.
+      operationId: leaveGuild
+      description: |
+        Removes the requesting user from the guild. Member or Officer only.
+        - Owners cannot leave, they must delete the guild instead.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid guild ID
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Owners cannot leave; non-members cannot leave
+        404:
+          description: Guild Not Found
+        500:
+          description: Server Error
+
+  /guilds/{id}/contribute:
+    post:
+      tags:
+        - Guilds
+      summary: Contribute coins to guild bank.
+      operationId: contributeCoins
+      description: |
+        Deducts coins from the requesting user's balance and adds them to the guild coin bank atomically.
+        - Any guild member may contribute.
+        - After contribution, automatically unlocks any guild store items whose coin threshold (StoreItem.COST) is now met.
+        - Returns the updated coin bank total and any newly unlocked items.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - in: body
+          name: contributeItem
+          description: Contribution details.
+          schema:
+            $ref: '#/definitions/ContributeCoins'
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/ContributeCoinsResponse'
+        400:
+          description: Bad Request - Invalid amount or insufficient coins
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Must be a guild member
+        404:
+          description: Guild Not Found
+        500:
+          description: Server Error
+
+  /guilds/{id}/members/{userId}:
+    delete:
+      tags:
+        - Guilds
+      summary: Kick a member from the guild.
+      operationId: kickMember
+      description: |
+        Removes a member from the guild. Officer or Owner only.
+        - Owner can kick any Member or Officer.
+        - Officer can kick Members only, not other Officers or the Owner.
+        - Owner cannot kick themselves, delete the guild instead.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - name: userId
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the member to kick.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid IDs or Owner attempting to kick themselves
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Insufficient role to kick target
+        404:
+          description: Guild or member not found
+        500:
+          description: Server Error
+
+  /guilds/{id}/members/{userId}/role:
+    patch:
+      tags:
+        - Guilds
+      summary: Promote or demote a guild member.
+      operationId: updateMemberRole
+      description: |
+        Changes a guild member's role. Officer or Owner only.
+        - Owner can promote Members to Officer and demote Officers to Member.
+        - Officer can only promote Members to Officer. Cannot demote.
+        - Owner role cannot be changed via this endpoint.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - name: userId
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the member to promote or demote.
+        - in: body
+          name: updateRoleItem
+          description: New role to assign.
+          schema:
+            $ref: '#/definitions/UpdateMemberRole'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid IDs or invalid role value
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Insufficient role or attempting to change Owner role
+        404:
+          description: Guild or member not found
+        500:
+          description: Server Error
+
+  /guilds/{id}/equip:
+    put:
+      tags:
+        - Guilds
+      summary: Equip an unlocked guild item.
+      operationId: equipGuildItem
+      description: |
+        Equips an unlocked guild store item. Officer or Owner only.
+        - Item must have been unlocked via coin contribution threshold before equipping.
+        - Auto-swaps for item types with an equip limit of 1 (e.g. guild profile picture).
+        - Returns 409 if equip limit exceeded for types with limit greater than 1.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - in: body
+          name: equipGuildItem
+          description: Item to equip.
+          schema:
+            $ref: '#/definitions/EquipItem'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Item already equipped
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Officer or Owner only, or item not unlocked
+        404:
+          description: Guild or item not found
+        409:
+          description: Conflict - Equip limit reached for item type
+        500:
+          description: Server Error
+
+  /guilds/{id}/unequip:
+    put:
+      tags:
+        - Guilds
+      summary: Unequip an equipped guild item.
+      operationId: unequipGuildItem
+      description: Unequips a currently equipped guild store item. Officer or Owner only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - in: body
+          name: unequipGuildItem
+          description: Item to unequip.
+          schema:
+            $ref: '#/definitions/EquipItem'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Item not currently equipped
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Officer or Owner only, or item not unlocked
+        404:
+          description: Guild or item not found
+        500:
+          description: Server Error
+
+  /guilds/{id}/invite:
+    post:
+      tags:
+        - Guilds
+      summary: Invite a user to the guild.
+      operationId: inviteUser
+      description: |
+        Creates a GuildEntry record of type INVITE for the target user. Officer or Owner only.
+        - Target must not already be a member of this guild.
+        - Inviting an already-invited user is idempotent.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - in: body
+          name: inviteItem
+          description: Invite details.
+          schema:
+            $ref: '#/definitions/GuildInvite'
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Target is already a member or invalid IDs
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Officer or Owner only
+        404:
+          description: Guild or target user not found
+        500:
+          description: Server Error
+
+  /guilds/{id}/request:
+    post:
+      tags:
+        - Guilds
+      summary: Request to join a guild.
+      operationId: requestToJoin
+      description: |
+        Creates a GuildEntry record of type REQUEST for the requesting user.
+        - Guild must have IS_OPEN = true to accept join requests.
+        - User must not already be a member of this guild.
+        - Guild owners cannot request to join another guild, they must delete their guild first (returns 409).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Already a member of this guild
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Guild is not open to join requests
+        404:
+          description: Guild Not Found
+        409:
+          description: Conflict - Requesting user owns a guild and must delete it first
+        500:
+          description: Server Error
+
+  /guilds/{id}/entry/{userId}:
+    patch:
+      tags:
+        - Guilds
+      summary: Accept or reject a guild entry.
+      operationId: resolveEntry
+      description: |
+        Accepts or rejects a pending guild invite or join request.
+
+        **For INVITE**: The accepting/rejecting party must be the invitee.
+
+        **For REQUEST**: The accepting/rejecting party must be an Officer or Owner.
+
+        **On rejection**: GuildEntry row is deleted, no membership change.
+
+        **On acceptance**: GuildEntry row deleted and GuildMember row inserted atomically. Handles three membership state transitions:
+        - No existing guild: user is inserted as Member directly.
+        - Member or Officer of another guild: returns `requiresConfirmation: true` without taking action. Resubmit with `confirmLeave: true` to atomically leave the old guild and join the new one.
+        - Owner of another guild: rejected with 409. User must delete their guild first.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - name: userId
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user whose entry is being resolved.
+        - in: body
+          name: resolveEntryItem
+          description: Resolution details.
+          schema:
+            $ref: '#/definitions/ResolveEntry'
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/ResolveEntryResponse'
+        400:
+          description: Bad Request - Invalid IDs or invalid action value
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not authorized to act on this entry
+        404:
+          description: Guild or entry not found
+        409:
+          description: Conflict - Target owns another guild, or guild is at max size
+        500:
+          description: Server Error
+
+  /guilds/{id}/requests:
+    get:
+      tags:
+        - Guilds
+      summary: Fetch pending join requests for a guild.
+      operationId: getGuildRequests
+      description: Returns all pending REQUEST type GuildEntry records for the guild. Officer or Owner only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/GuildRequestsResponse'
+        400:
+          description: Bad Request - Invalid guild ID
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Officer or Owner only
+        404:
+          description: Guild Not Found
+        500:
+          description: Server Error
+
   /admin/createquestion:
     post:
       tags:
@@ -935,7 +1513,7 @@ paths:
       - Admins
       - Professors
       summary: Fetch published question metadata.
-      operationId: getQuestionsByStatus
+      operationId: getQuestionsByStatus2
       description: Returns metadata for all published questions. Professors see only their own published questions. Admins see all published questions.
       security:
         - BearerAuth: []
@@ -1074,7 +1652,6 @@ paths:
           description: Professor Not Found
         500:
           description: Server Error
-  
 
   /code/submitCode:
     post:
@@ -1260,16 +1837,16 @@ paths:
       - Users
       summary: Fetch user progress data for graph.
       operationId: getGraphData
-      description: Retrieves user performance data for a radar chart visualization.
+      description: Retrieves user performance data for a radar chart visualization using the KnightWise analytics engine. Returns per-topic weighted performance metrics.
       security:
         - BearerAuth: []
       responses:
         200:
           description: OK
+          schema:
+            $ref: '#/definitions/ProgressGraphResponse'
         401:
           description: Unauthorized
-        404: 
-          description: URL Not Found
         500:
           description: Server Error
   
@@ -1302,46 +1879,19 @@ paths:
       - Users
       summary: Fetch user progress message data.
       operationId: getMessage
-      description: Generates a message that recommends practice topics and records the user's streak.
+      description: Returns mastery levels, strongest and weakest topics, and streak data using the KnightWise analytics engine.
       security:
         - BearerAuth: []
-      responses:
-        200:
-          description: OK
-        401:
-          description: Unauthorized
-        404:
-          description: URL Not Found
-        500:
-          description: Server Error
-
-  /guilds/name/generate:
-    get:
-      tags:
-        - Guilds
-      summary: Generate a random guild name.
-      operationId: generateGuildName
-      description: |
-        Returns a randomly generated guild name composed of an adjective and a plural noun from the backend word bank.
-        - Guaranteed to return a name not already in use.
-        - Intended to be called repeatedly during guild creation while the user shuffles names.
-        - The name is not persisted until POST /guilds is called.
-      security:
-        - BearerAuth: []
-      produces:
-        - application/json
       responses:
         200:
           description: OK
           schema:
-            $ref: '#/definitions/GuildNameResponse'
+            $ref: '#/definitions/MessageDataResponse'
         401:
           description: Unauthorized
         500:
           description: Server Error
-        503:
-          description: All possible guild name combinations are in use
-          
+
 securityDefinitions:
   BearerAuth:
     type: apiKey
@@ -1580,6 +2130,10 @@ definitions:
         type: boolean
         example: false
         description: If true, runs against first test case only without grading or saving. If false, runs full graded submission.
+      elapsedTime:
+        type: integer
+        example: 45
+        description: Time in seconds from question display to submission. Optional, null if not provided.
   
   SubmitAnswer:
     type: object
@@ -1881,12 +2435,249 @@ definitions:
               nullable: true
         description: "Page of users ranked by exp. Tied users share the same rank. PAGE_SIZES.LEADERBOARD users per page."
 
+  GuildLeaderboardResponse:
+    type: object
+    properties:
+      guildRank:
+        type: integer
+        example: 2
+        nullable: true
+        description: Requesting user's guild rank. Null if user is not in a guild.
+      guildExp:
+        type: number
+        example: 600
+        nullable: true
+        description: Requesting user's guild exp value. Null if user is not in a guild.
+      guildId:
+        type: integer
+        example: 7
+        nullable: true
+        description: Requesting user's guild ID. Null if user is not in a guild.
+      page:
+        type: integer
+        example: 1
+        description: Current page number.
+      totalPages:
+        type: integer
+        example: 1
+        description: Total number of pages at PAGE_SIZES.LEADERBOARD_GUILD guilds per page.
+      leaderboard:
+        type: array
+        items:
+          type: object
+          properties:
+            rank:
+              type: integer
+              example: 1
+            id:
+              type: integer
+              example: 3
+            name:
+              type: string
+              example: "Ancient Wolves"
+            exp:
+              type: number
+              example: 9000
+            guildPicture:
+              type: string
+              example: "Golden Shield"
+              nullable: true
+        description: "Page of guilds ranked by exp. Tied guilds share the same rank. PAGE_SIZES.LEADERBOARD_GUILD guilds per page."
+
   GuildNameResponse:
     type: object
     properties:
       name:
         type: string
         example: "Blazing Dragons"
+
+  CreateGuild:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        example: "Ancient Wolves"
+        description: The name for the new guild. Must be unique.
+
+  CreateGuildResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Guild created successfully"
+      guildId:
+        type: integer
+        example: 7
+
+  GuildInfoResponse:
+    type: object
+    properties:
+      guild:
+        type: object
+        properties:
+          ID:
+            type: integer
+            example: 7
+          NAME:
+            type: string
+            example: "Ancient Wolves"
+          OWNER_ID:
+            type: integer
+            example: 1
+          LIFETIME_EXP:
+            type: number
+            example: 5000.0
+          WEEKLY_EXP:
+            type: number
+            example: 800.0
+          DAILY_EXP:
+            type: number
+            example: 120.0
+          COINS:
+            type: number
+            example: 2500.0
+          ESTABLISHED:
+            type: string
+            example: "2026-01-15T00:00:00.000Z"
+          IS_OPEN:
+            type: integer
+            example: 1
+            description: "1 if guild is accepting join requests, 0 if not."
+      equippedItems:
+        type: array
+        items:
+          $ref: '#/definitions/StoreItem'
+        description: Currently equipped guild store items.
+
+  ContributeCoins:
+    type: object
+    required:
+      - amount
+    properties:
+      amount:
+        type: number
+        example: 100
+        description: Number of coins to contribute. Must be a positive number and cannot exceed user's current balance.
+
+  ContributeCoinsResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Contribution successful"
+      coinBank:
+        type: number
+        example: 2600
+        description: Updated guild coin bank total after contribution.
+      newlyUnlocked:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 5
+            name:
+              type: string
+              example: "Guild Banner"
+            type:
+              type: string
+              example: "flair"
+        description: Guild store items newly unlocked by this contribution. Empty array if none.
+
+  UpdateMemberRole:
+    type: object
+    required:
+      - newRole
+    properties:
+      newRole:
+        type: string
+        example: "Officer"
+        description: "New role to assign. Must be 'Member' or 'Officer'. Owner role cannot be assigned via this endpoint."
+
+  GuildInvite:
+    type: object
+    required:
+      - targetUserId
+    properties:
+      targetUserId:
+        type: integer
+        example: 42
+        description: The unique ID of the user to invite.
+
+  ResolveEntry:
+    type: object
+    required:
+      - action
+    properties:
+      action:
+        type: string
+        example: "accept"
+        description: "Must be 'accept' or 'reject'."
+      confirmLeave:
+        type: boolean
+        example: true
+        description: |
+          Required only when accepting and the target user is already a member of another guild.
+          Set to true to confirm leaving the old guild and joining the new one atomically.
+          If omitted when required, the response will include requiresConfirmation: true and no action will be taken.
+
+  ResolveEntryResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Entry accepted, user is now a guild member"
+      requiresConfirmation:
+        type: boolean
+        example: true
+        nullable: true
+        description: |
+          Present and true only when the target user is already in another guild and confirmLeave was not provided.
+          Frontend should prompt the user to confirm leaving their current guild before resubmitting with confirmLeave: true.
+
+  GuildInvitesResponse:
+    type: object
+    properties:
+      invites:
+        type: array
+        items:
+          type: object
+          properties:
+            GUILD_ID:
+              type: integer
+              example: 7
+            guildName:
+              type: string
+              example: "Ancient Wolves"
+            OWNER_ID:
+              type: integer
+              example: 1
+
+  GuildRequestsResponse:
+    type: object
+    properties:
+      requests:
+        type: array
+        items:
+          type: object
+          properties:
+            USER_ID:
+              type: integer
+              example: 42
+            USERNAME:
+              type: string
+              example: "knightking"
+            FIRSTNAME:
+              type: string
+              example: "Arthur"
+              nullable: true
+            LASTNAME:
+              type: string
+              example: "Pendragon"
+              nullable: true
 
   StatsOptIn:
     type: object
@@ -1963,6 +2754,61 @@ definitions:
         type: integer
         example: 3
         description: Number of opted-in responses for this question.
+
+  ProgressGraphResponse:
+    type: object
+    properties:
+      progress:
+        type: object
+        description: Map of topic name to performance metric data. Keys are Response.TOPIC strings.
+        additionalProperties:
+          type: object
+          properties:
+            metric:
+              type: number
+              example: 0.7342
+              description: Point-weighted performance metric from 0.0 to 1.0. Higher is better.
+            responseCount:
+              type: integer
+              example: 12
+              description: Number of responses contributing to this topic's metric.
+
+  MessageDataResponse:
+    type: object
+    properties:
+      history:
+        type: array
+        items:
+          type: object
+          properties:
+            datetime:
+              type: string
+              example: "2026-03-15T14:30:00.000Z"
+            topic:
+              type: string
+              example: "Arrays"
+      mastery:
+        type: object
+        description: Map of topic name to weighted performance metric (0.0 to 1.0).
+        additionalProperties:
+          type: number
+          example: 0.6821
+      strongestTopics:
+        type: array
+        items:
+          type: string
+        example: ["Trees", "Recursion", "Sorting"]
+        description: Up to 3 topics with the highest performance metrics.
+      weakestTopics:
+        type: array
+        items:
+          type: string
+        example: ["Variables", "InputOutput", "Branching"]
+        description: Up to 3 topics with the lowest performance metrics.
+      streak:
+        type: integer
+        example: 5
+        description: Number of consecutive days the user has submitted at least one answer.
 
 host: www.knightwise.dev
 basePath: /api

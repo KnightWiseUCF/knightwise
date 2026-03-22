@@ -10,6 +10,7 @@
 //  Dependencies:  express
 //                 authMiddleware
 //                 userController
+//                 guildController
 //
 ////////////////////////////////////////////////////////////////
 
@@ -29,6 +30,7 @@ const {
         searchUsers,
         updateStatsOptIn,
       } = require("../controllers/userController");
+const { getMyInvites } = require('../controllers/guildController');
 
 /**
  * @route   GET /api/users/search
@@ -37,6 +39,14 @@ const {
  * @access  Protected
  */
 router.get("/search", authMiddleware, searchUsers);
+
+/**
+ * @route   GET /api/users/me/guild-invites
+ * @desc    Search users by username (partial, case-insensitive), paginated
+ *          Call with username and page as query parameters
+ * @access  Protected
+ */
+router.get('/me/guild-invites', authMiddleware, getMyInvites);
 
 //////////////////////////////////////////////////////////////////////////////////////
 //

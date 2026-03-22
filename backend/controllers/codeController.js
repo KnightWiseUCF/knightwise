@@ -21,7 +21,7 @@ const {
         MAX_TEST_RUNS_PER_PROBLEM,
         getProgrammingSubmissionsRemaining,
       } = require('../config/codeLimits'); 
-const { awardCurrency } = require('../utils/currencyUtils');
+const { awardCurrency, awardGuildExp } = require('../utils/currencyUtils');
 
 /**
  * Grade test case results, calculate score
@@ -357,7 +357,9 @@ const submitCode = asyncHandler(async (req, res) => {
   );
 
   // Award currency to user (respects daily exp cap)
+  // Also award exp to user's guild if they're in one
   await awardCurrency(req.db, userId, gradingResults.pointsEarned);
+  await awardGuildExp(req.db, userId, gradingResults.pointsEarned);
 
   // Return results
   return res.status(200).json({

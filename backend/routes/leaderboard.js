@@ -22,6 +22,8 @@ const {
         getLifetimeLeaderboard,
         getFollowedWeeklyLeaderboard,
         getFollowedLifetimeLeaderboard,
+        getGuildWeeklyLeaderboard,
+        getGuildLifetimeLeaderboard,
       } = require('../controllers/leaderboardController');
 
 /**
@@ -51,5 +53,19 @@ router.get('/followed/weekly', authMiddleware, getFollowedWeeklyLeaderboard);
  * @access  Protected
  */
 router.get('/followed/lifetime', authMiddleware, getFollowedLifetimeLeaderboard);
+
+/**
+ * @route   GET /api/leaderboard/guilds/weekly
+ * @desc    Fetch all guilds ranked by weekly exp
+ * @access  Protected
+ */
+router.get('/guilds/weekly', authMiddleware, getGuildWeeklyLeaderboard);
+
+/**
+ * @route   GET /api/leaderboard/guilds/lifetime
+ * @desc    Fetch all guilds ranked by lifetime exp
+ * @access  Protected
+ */
+router.get('/guilds/lifetime', authMiddleware, getGuildLifetimeLeaderboard);
 
 module.exports = router;

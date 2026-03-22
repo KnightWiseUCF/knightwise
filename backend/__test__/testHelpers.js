@@ -122,6 +122,40 @@ const insertGuild = async ({ name = 'Ancient Wolves', ownerId = null, lifetimeEx
 };
 
 /**
+ * Inserts a guild AND its owner's GuildMember row atomically
+ * Use this instead of insertGuild when you need the owner to
+ * pass assertGuildRole checks.
+ *
+ * @param {number} ownerId  - User ID of the guild owner
+ * @param {Object} options  - Same options as insertGuild
+ * @returns {Promise<number>} Inserted guild ID
+ */
+const insertGuildWithOwner = async (ownerId, options = {}) => {
+  const guildId = await insertGuild({ ...options, ownerId });
+  await pool.query(
+    'INSERT INTO GuildMember (USER_ID, GUILD_ID, ROLE) VALUES (?, ?, ?)',
+    [ownerId, guildId, 'Owner']
+  );
+  return guildId;
+};
+
+/**
+ * Inserts a GuildMember row directly.
+ * Use for adding membership state in guild tests.
+ *
+ * @param {number} userId  - User ID
+ * @param {number} guildId - Guild ID
+ * @param {string} role    - 'Member' | 'Officer' | 'Owner'
+ * @returns {Promise<void>}
+ */
+const insertGuildMember = async (userId, guildId, role = 'Member') => {
+  await pool.query(
+    'INSERT INTO GuildMember (USER_ID, GUILD_ID, ROLE) VALUES (?, ?, ?)',
+    [userId, guildId, role]
+  );
+};
+
+/**
  * Inserts a store item and purchase for it, optionally equips
  * @param {number} userId      - User to purchase for
  * @param {Object} itemInfo    - Optional store item info, default fields used otherwise
@@ -294,6 +328,8 @@ module.exports = {
   insertResponse,
   insertUser,
   insertGuild,
+  insertGuildWithOwner,
+  insertGuildMember,
   insertPurchase,
   insertQuestion,
   submitAndFetch,

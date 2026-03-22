@@ -22,7 +22,7 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 const { gradeQuestion } = require("../controllers/gradingController");
-const { awardCurrency } = require("../utils/currencyUtils");
+const { awardCurrency, awardGuildExp } = require("../utils/currencyUtils");
 const { getProgrammingSubmissionsRemaining } = require("../config/codeLimits");
 
 /**
@@ -265,7 +265,9 @@ router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
   );
 
   // Award currency to user (respects daily exp cap)
+  // Also award exp to user's guild if they're in one
   await awardCurrency(req.db, user_id, result.pointsEarned);
+  await awardGuildExp(req.db, user_id, result.pointsEarned);
 
   res.status(201).json(
   { 
