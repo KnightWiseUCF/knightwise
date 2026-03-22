@@ -15,6 +15,7 @@
 //                 MockTestResult component
 //                 models (Question, MockTestResponse)
 //                 axios (isAxiosError)
+//                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
 
@@ -31,29 +32,9 @@ import Programming from "../components/Programming";
 import api from "../api";
 import { Question, RawQuestion } from "../models";
 import { isAxiosError } from "axios";
+import { ALL_TOPICS } from "../utils/topicLabels";
 
-const AVAILABLE_TOPICS = [
-  "Input/Output",
-  "Branching",
-  "Loops",
-  "Variables",
-  "Arrays",
-  "Linked Lists",
-  "Strings",
-  "Classes",
-  "Methods",
-  "Trees",
-  "Stacks",
-  "Heaps",
-  "Tries",
-  "Bitwise Operators",
-  "Dynamic Memory",
-  "Algorithm Analysis",
-  "Recursion",
-  "Sorting",
-];
-
-const DEFAULT_SELECTED_TOPICS = ["Input/Output", "Branching", "Loops", "Variables"];
+const DEFAULT_SELECTED_TOPICS = ["InputOutput", "Branching", "Loops", "Variables"];
 const DEFAULT_QUESTION_COUNT = 12;
 const MIN_QUESTION_COUNT = 1;
 const MAX_QUESTION_COUNT = 50;
@@ -621,7 +602,7 @@ const MockTestPage: React.FC = () => {
     <Layout>
       {step === "info" && (
         <MockTestInfo
-          availableTopics={AVAILABLE_TOPICS}
+          availableTopics={[...ALL_TOPICS]}
           selectedTopics={selectedTopics}
           questionCount={questionCount}
           timeLimitMinutes={timeLimitMinutes}
@@ -630,7 +611,7 @@ const MockTestPage: React.FC = () => {
           onToggleTopic={handleToggleTopic}
           onSelectAll={() => {
             setSetupError("");
-            setSelectedTopics(AVAILABLE_TOPICS);
+            setSelectedTopics([...ALL_TOPICS]);
           }}
           onClearAll={() => {
             setSetupError("");
