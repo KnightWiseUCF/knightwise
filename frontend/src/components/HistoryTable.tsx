@@ -9,7 +9,7 @@
 //  Dependencies:  react
 //                 api instance
 //                 models (RawQuestion, HistoryEntry, HistoryResponse)
-//                 
+//                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
 
@@ -19,6 +19,7 @@ import correctAnswerImg from "../assets/correctAnswer.png";
 import incorrectAnswerImg from "../assets/incorrectAnswer.png";
 import viewProblemImg from "../assets/viewProblem.png";
 import { RawQuestion, HistoryEntry, HistoryResponse } from '../models';
+import { formatSubcategoryLabel } from '../utils/topicLabels';
 
 const HistoryTable: React.FC = () => {
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
@@ -93,7 +94,7 @@ const HistoryTable: React.FC = () => {
         // Question data
         questionText: problem.QUESTION_TEXT,
         category:     problem.CATEGORY,
-        topic:        problem.SUBCATEGORY,
+        topic:        formatSubcategoryLabel(problem.SUBCATEGORY),
         type:         problem.TYPE,
         answers:      problem.answers ?? [],
 
@@ -150,7 +151,7 @@ const HistoryTable: React.FC = () => {
                     minute: '2-digit',
                   })}
                   </td>
-                  <td className="px-4 py-2 text-center">{entry.topic}</td>
+                  <td className="px-4 py-2 text-center">{formatSubcategoryLabel(entry.topic)}</td>
                   <td className="px-4 py-2 text-center whitespace-nowrap">{entry.type ?? '—'}</td>
                   <td className="px-4 py-2 text-center">
                     <img

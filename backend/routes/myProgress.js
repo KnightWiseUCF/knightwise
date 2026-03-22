@@ -15,6 +15,7 @@
 //                 errorHandler
 //                 paginationConfig
 //                 analyticsModel
+//                 validationUtils
 //
 ////////////////////////////////////////////////////////////////
 
@@ -24,6 +25,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 const { PAGE_SIZES } = require('../config/paginationConfig');
 const { computePerformanceMetric, computeWeightedTopicMetric } = require('../utils/analyticsModel');
+const { normalizeDBString } = require('../utils/validationUtils');
 
 /**
  * Processes response rows into per-topic performance metrics using the analytics model
@@ -230,7 +232,8 @@ router.get('/history', authMiddleware, asyncHandler(async (req, res) => {
   res.status(200).json({
     history: history.map(row => ({
       datetime:       row.DATETIME,
-      topic:          row.TOPIC,
+      // Prevent database inconsistencies from breaking logic
+      topic:          normalizeDBString(row.TOPIC),
       type:           row.TYPE,
       isCorrect:      row.ISCORRECT,
       problem_id:     row.PROBLEM_ID,

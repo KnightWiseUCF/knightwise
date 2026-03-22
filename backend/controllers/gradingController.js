@@ -13,6 +13,7 @@
 //                 rankedChoice grader
 //                 dragAndDrop grader
 //                 errorHandler
+//                 validationUtils
 //
 ////////////////////////////////////////////////////////////////
 
@@ -22,6 +23,7 @@ const { gradeSelectAllThatApply } = require('../services/graders/selectAllThatAp
 const { gradeRankedChoice } = require('../services/graders/rankedChoice');
 const { gradeDragAndDrop } = require('../services/graders/dragAndDrop');
 const { AppError } = require('../middleware/errorHandler');
+const { normalizeDBString } = require('../utils/validationUtils');
 
 /**
  * Grade question based on its type and calculate points earned
@@ -43,10 +45,13 @@ function gradeQuestion(questionId, questionType, userAnswer, allAnswers, pointsP
 {
   let result;  
 
+  // Prevent database inconsistencies from breaking logic
+  const normalizedType = normalizeDBString(questionType);
+
   // Some graders need all answers, others only need correct answers
   const correctAnswers = allAnswers.filter(a => a.IS_CORRECT_ANSWER);
 
-  switch (questionType) 
+  switch (normalizedType) 
   {
     case 'Multiple Choice':
       result = gradeMultipleChoice(userAnswer, allAnswers);
@@ -65,7 +70,7 @@ function gradeQuestion(questionId, questionType, userAnswer, allAnswers, pointsP
       break;
     default:
       throw new AppError(
-        `Unsupported question type "${questionType}" for question ${questionId}`,
+        `Unsupported question type "${normalizedType}" for question ${questionId}`,
         400,
         'Unsupported question type'
       );

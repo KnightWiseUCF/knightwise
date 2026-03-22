@@ -15,6 +15,29 @@
 const { AppError } = require('../middleware/errorHandler');
 
 /**
+ * Normalizes a database string (Heaps, Multiple Choice, etc.),
+ * removing carriage return and newline escape chars
+ * with a global replace. 
+ * 
+ * The eventual goal is to no longer need this and have
+ * the database provide consistent data through enums.
+ * 
+ * NOTE: Unlike the frontend's formatSubcategoryLabel(),
+ *       which turns the canonical InputOutput subcategory
+ *       to the displayed Input/Output from API -> frontend, 
+ *       this function does the reverse, turning
+ *       Input/Output to InputOutput on database -> API,
+ *       because some legacy data still has Input/Output when
+ *       it should have InputOutput.
+ * 
+ * @param   {string} str - Raw string from database
+ * @returns {string} Normalized string
+ */
+const normalizeDBString = (str) => {
+  return str.replace(/\r\n|\r|\n/g, ' ').trim().replace('Input/Output', 'InputOutput');
+}
+
+/**
  * Parses and validates a user ID from a route parameter
  * 
  * @param {string} rawId       - Raw route parameter (req.params.id)
@@ -57,4 +80,5 @@ const validateName = (name) => {
 module.exports = {
   parseUserId,
   validateName,
+  normalizeDBString,
 }
