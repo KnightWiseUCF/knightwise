@@ -130,8 +130,12 @@ const getFollowedLeaderboardData = async (req, expCol) => {
     return { userRank: null, userExp: null, page: 1, totalPages: 0, leaderboard: [] };
   }
 
+  // Include the requesting user in the ranked pool so their rank
+  // is considered relative to their followed users, not globally
+  const poolIds = [...new Set([...followedIds, req.user.id])];
+
   const page = parseInt(req.query.page) || 1;
-  return getLeaderboard(req.db, req.user.id, expCol, page, followedIds);
+  return getLeaderboard(req.db, req.user.id, expCol, page, poolIds);
 };
 
 /**
@@ -151,6 +155,7 @@ const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
 {
   // Filter IDs based on given argument
   const whereClause = filterIds ? `WHERE u.ID IN (${filterIds.map(() => '?').join(',')})` : '';
+  const rankWhereClause  = filterIds ? `WHERE ID IN (${filterIds.map(() => '?').join(',')})` : '';
   const filterParams = filterIds ?? [];
 
   // Get total filtered user count for pagination
@@ -199,9 +204,10 @@ const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
         DENSE_RANK() OVER (ORDER BY ${expCol} DESC) AS \`rank\`,
         ${expCol} AS exp
       FROM User
+      ${rankWhereClause}
     ) ranked
     WHERE ID = ?`,
-    [userId]
+    [...(filterIds ?? []), userId]
   );
 
   return {

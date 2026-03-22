@@ -8,6 +8,7 @@
 //                 POST  /api/guilds/:id/invite
 //                 POST  /api/guilds/:id/request
 //                 PATCH /api/guilds/:id/entry/:userId
+//                 PATCH /api/guilds/:id/open
 //                 GET   /api/users/me/guild-invites
 //                 GET   /api/guilds/:id/requests
 //
@@ -666,4 +667,146 @@ describe('GET /api/guilds/:id/requests', () => {
 
     expect(res.status).toBe(401);
   });
+});
+
+// Test guild opening/closing
+describe('PATCH /api/guilds/:id/open', () => {
+
+  test('200 - owner can open guild', async () => {
+    const guildId = await insertGuildWithOwner(userId, { name: 'Open Toggle Guild', isOpen: false });
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('isOpen', true);
+
+    const [[guild]] = await pool.query('SELECT IS_OPEN FROM Guild WHERE ID = ?', [guildId]);
+    expect(guild.IS_OPEN).toBe(1);
+  });
+
+  test('200 - owner can close guild', async () => {
+    const guildId = await insertGuildWithOwner(userId, { name: 'Close Toggle Guild', isOpen: true });
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('isOpen', false);
+
+    const [[guild]] = await pool.query('SELECT IS_OPEN FROM Guild WHERE ID = ?', [guildId]);
+    expect(guild.IS_OPEN).toBe(0);
+  });
+
+  test('200 - officer can open/close guild', async () => {
+    const ownerId = await insertUser({ username: 'openown', email: 'openown@test.com' });
+    const guildId = await insertGuildWithOwner(ownerId, { name: 'Officer Open Guild', isOpen: false });
+    await insertGuildMember(userId, guildId, 'Officer');
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(200);
+  });
+
+  test('200 - setting same value twice is idempotent', async () => {
+    const guildId = await insertGuildWithOwner(userId, { name: 'Idempotent Open Guild', isOpen: true });
+
+    await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(200);
+
+    const [[guild]] = await pool.query('SELECT IS_OPEN FROM Guild WHERE ID = ?', [guildId]);
+    expect(guild.IS_OPEN).toBe(1);
+  });
+
+  test('400 - rejects non-boolean isOpen', async () => {
+    const guildId = await insertGuildWithOwner(userId, { name: 'Bad Open Guild' });
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: 'yes' });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('400 - rejects missing isOpen field', async () => {
+    const guildId = await insertGuildWithOwner(userId, { name: 'Missing Open Guild' });
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+
+  test('403 - member cannot update open status', async () => {
+    const ownerId = await insertUser({ username: 'memopnown', email: 'memopnown@test.com' });
+    const guildId = await insertGuildWithOwner(ownerId, { name: 'Member Open Guild' });
+    await insertGuildMember(userId, guildId, 'Member');
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('403 - non-member cannot update open status', async () => {
+    const ownerId = await insertUser({ username: 'nonmemopnown', email: 'nonmemopnown@test.com' });
+    const guildId = await insertGuildWithOwner(ownerId, { name: 'Non Member Open Guild' });
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('400 - invalid guild ID', async () => {
+    const res = await request(app)
+      .patch('/api/guilds/abc/open')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('404 - guild not found', async () => {
+    const res = await request(app)
+      .patch('/api/guilds/2147483647/open')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(404);
+  });
+
+  test('401 - no auth token', async () => {
+    const guildId = await insertGuildWithOwner(userId, { name: 'Auth Open Guild' });
+
+    const res = await request(app)
+      .patch(`/api/guilds/${guildId}/open`)
+      .send({ isOpen: true });
+
+    expect(res.status).toBe(401);
+  });
+
 });

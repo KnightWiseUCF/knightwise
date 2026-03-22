@@ -32,6 +32,7 @@ const {
   requestToJoin,
   resolveEntry,
   getGuildRequests,
+  updateGuildOpen
 } = require('../controllers/guildController');
 
 /**
@@ -138,5 +139,12 @@ router.patch('/:id/entry/:userId', authMiddleware, resolveEntry);
  * @access  Protected
  */
 router.get('/:id/requests', authMiddleware, getGuildRequests);
+
+/**
+ * @route   PATCH /api/guilds/:id/open
+ * @desc    Toggle guild open/closed status for join requests
+ * @access  Protected — Officer or Owner only
+ */
+router.patch('/:id/open', authMiddleware, updateGuildOpen);
 
 module.exports = router;

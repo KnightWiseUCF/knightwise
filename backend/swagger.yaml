@@ -1332,6 +1332,46 @@ paths:
         500:
           description: Server Error
 
+  /guilds/{id}/open:
+    patch:
+      tags:
+        - Guilds
+      summary: Update guild open/closed status.
+      operationId: updateGuildOpen
+      description: |
+        Sets whether the guild accepts join requests.
+        - When open (IS_OPEN = true), any authenticated user can submit a join request.
+        - When closed (IS_OPEN = false), join requests are blocked with 403.
+        - Officer or Owner only.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the guild.
+        - in: body
+          name: updateGuildOpenItem
+          description: Desired open state.
+          schema:
+            $ref: '#/definitions/UpdateGuildOpen'
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateGuildOpenResponse'
+        400:
+          description: Bad Request - Invalid guild ID or isOpen is not a boolean
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Officer or Owner only
+        404:
+          description: Guild Not Found
+        500:
+          description: Server Error
+
   /admin/createquestion:
     post:
       tags:
@@ -1369,6 +1409,36 @@ paths:
           description: Bad Request - Missing fields, invalid item type, or negative cost
         401:
           description: Unauthorized
+        500:
+          description: Server Error
+
+  /admin/store/items/{id}:
+    delete:
+      tags:
+        - Admins
+      summary: Delete a store item.
+      operationId: deleteStoreItem
+      description: |
+        Deletes a store item by ID. Admin only.
+        - Cascades to all associated Purchase and GuildUnlock rows.
+        - Use with caution, deleting an item removes it from all users who have purchased it.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the store item to delete.
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request - Invalid item ID
+        401:
+          description: Unauthorized
+        404:
+          description: Item Not Found
         500:
           description: Server Error
 
@@ -2344,6 +2414,10 @@ definitions:
       NAME:
         type: string
         example: "Greatest of all Time"
+      IS_GUILD_ITEM:
+        type: integer
+        example: 0
+        description: "1 if this is a guild store item, 0 if it is a user store item."
 
   StoreItemsResponse:
     type: object
@@ -2381,6 +2455,10 @@ definitions:
       itemName:
         type: string
         example: "Greatest of all Time"
+      isGuildItem:
+        type: boolean
+        example: false
+        description: "If true, item appears in the guild store and can be unlocked via coin contribution. Defaults to false."
 
   CreateStoreItemResponse:
     type: object
@@ -2550,6 +2628,58 @@ definitions:
         items:
           $ref: '#/definitions/StoreItem'
         description: Currently equipped guild store items.
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/GuildMember'
+        description: Guild members ordered by role (Owner, Officer, Member) then username.
+      unlockedItems:
+        type: array
+        items:
+          $ref: '#/definitions/GuildUnlockedItem'
+        description: All store items unlocked by the guild via coin contribution, including equipped and unequipped.
+
+  UpdateGuildOpen:
+    type: object
+    required:
+      - isOpen
+    properties:
+      isOpen:
+        type: boolean
+        example: true
+        description: True to allow join requests, false to block them.
+
+  UpdateGuildOpenResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Guild is now open to join requests"
+      isOpen:
+        type: boolean
+        example: true
+
+  GuildUnlockedItem:
+    type: object
+    properties:
+      ID:
+        type: integer
+        example: 1
+      TYPE:
+        type: string
+        example: "profile_picture"
+        description: "Item type. One of: flair, profile_picture, background"
+      COST:
+        type: string
+        example: "100.00"
+        description: "Coin threshold required to unlock. Returned as string due to MySQL DECIMAL serialization."
+      NAME:
+        type: string
+        example: "Golden Shield"
+      IS_EQUIPPED:
+        type: integer
+        example: 0
+        description: "1 if currently equipped by the guild, 0 if unlocked but not equipped."
 
   ContributeCoins:
     type: object
@@ -2678,6 +2808,37 @@ definitions:
               type: string
               example: "Pendragon"
               nullable: true
+
+  GuildMember:
+    type: object
+    properties:
+      ID:
+        type: integer
+        example: 1
+      USERNAME:
+        type: string
+        example: "knightking"
+        nullable: true
+      FIRSTNAME:
+        type: string
+        example: "Arthur"
+        nullable: true
+      LASTNAME:
+        type: string
+        example: "Pendragon"
+        nullable: true
+      ROLE:
+        type: string
+        example: "Officer"
+        description: "Guild role. One of: Owner, Officer, Member"
+      COINS_CONTRIBUTED:
+        type: number
+        example: 250.0
+        description: Total coins this member has contributed to the guild bank.
+      JOINED:
+        type: string
+        example: "2026-01-15T00:00:00.000Z"
+        description: UTC datetime when the member joined the guild.
 
   StatsOptIn:
     type: object

@@ -229,7 +229,7 @@ const createGuild = asyncHandler(async (req, res) => {
     await conn.commit();
 
     // Notify Discord and return success
-    notifyUserEvent(`Guild created: ${name} by user ${userId}`);
+    notifyUserEvent(`Guild created: ${name} (ID ${guildId}) by user ${userId}`);
     return res.status(201).json({ message: 'Guild created successfully', guildId });
   }
   catch (err)
@@ -300,13 +300,13 @@ const deleteGuild = asyncHandler(async (req, res) => {
     throw new AppError(`[${context}] Invalid guild ID: ${req.params.id}`, 400, 'Invalid guild ID');
   }
 
-  await assertGuildExists(req.db, guildId, context);
+  const guild = await assertGuildExists(req.db, guildId, context);
   await assertGuildRole(req.db, userId, guildId, ['Owner'], context);
 
   await req.db.query('DELETE FROM Guild WHERE ID = ?', [guildId]);
 
   // Notify Discord and return success
-  notifyUserEvent(`Guild deleted: ID ${guildId} by user ${userId}`);
+  notifyUserEvent(`Guild deleted: ${guild.NAME} (ID ${guildId}) by user ${userId}`);
   return res.status(200).json({ message: 'Guild deleted successfully' });
 });
 
@@ -330,7 +330,7 @@ const getGuildInfo = asyncHandler(async (req, res) => {
     throw new AppError(`[${context}] Invalid guild ID: ${req.params.id}`, 400, 'Invalid guild ID');
   }
 
-  const [[guildRows], [equippedItems]] = await Promise.all([
+  const [[guildRows], [equippedItems], [members], [unlockedItems]] = await Promise.all([
     req.db.query(
       'SELECT ID, NAME, OWNER_ID, LIFETIME_EXP, WEEKLY_EXP, COINS, DAILY_EXP, ESTABLISHED, IS_OPEN FROM Guild WHERE ID = ?',
       [guildId]
@@ -341,7 +341,22 @@ const getGuildInfo = asyncHandler(async (req, res) => {
        JOIN StoreItem si ON si.ID = gu.ITEM_ID
        WHERE gu.GUILD_ID = ? AND gu.IS_EQUIPPED = 1`,
       [guildId]
-    )
+    ),
+    req.db.query(
+      `SELECT u.ID, u.USERNAME, u.FIRSTNAME, u.LASTNAME, gm.ROLE, gm.COINS_CONTRIBUTED, gm.JOINED
+      FROM GuildMember gm
+      JOIN User u ON u.ID = gm.USER_ID
+      WHERE gm.GUILD_ID = ?
+      ORDER BY FIELD(gm.ROLE, 'Owner', 'Officer', 'Member'), u.USERNAME ASC`,
+      [guildId]
+    ),
+    req.db.query(
+      `SELECT si.ID, si.TYPE, si.COST, si.NAME, gu.IS_EQUIPPED
+      FROM GuildUnlock gu
+      JOIN StoreItem si ON si.ID = gu.ITEM_ID
+      WHERE gu.GUILD_ID = ?`,
+      [guildId]
+    ),
   ]);
 
   guild = guildRows[0];
@@ -351,7 +366,7 @@ const getGuildInfo = asyncHandler(async (req, res) => {
     throw new AppError(`[${context}] Guild ${guildId} not found`, 404, 'Guild not found');
   }
 
-  return res.status(200).json({ guild, equippedItems });
+  return res.status(200).json({ guild, equippedItems, members, unlockedItems });
 });
 
 /**
@@ -410,6 +425,10 @@ const contributeCoins = asyncHandler(async (req, res) => {
     await conn.query(
       'UPDATE Guild SET COINS = COINS + ? WHERE ID = ?',
       [amount, guildId]
+    );
+    await conn.query(
+      'UPDATE GuildMember SET COINS_CONTRIBUTED = COINS_CONTRIBUTED + ? WHERE USER_ID = ? AND GUILD_ID = ?',
+      [amount, userId, guildId]
     );
 
     await conn.commit();
@@ -1060,6 +1079,48 @@ const getGuildRequests = asyncHandler(async (req, res) => {
   return res.status(200).json({ requests });
 });
 
+/**
+ * @route   PATCH /api/guilds/:id/open
+ * @desc    Toggle guild open/closed status for join requests.
+ *          Officer or Owner only.
+ *
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @throws  {AppError} 400                 - Invalid guild ID or isOpen not a boolean
+ * @throws  {AppError} 403                 - Insufficient role
+ * @throws  {AppError} 404                 - Guild not found
+ * @returns {Promise<void>}                - Sends HTTP/JSON with new open state
+ */
+const updateGuildOpen = asyncHandler(async (req, res) => {
+  const context = 'updateGuildOpen';
+  const userId  = req.user.id;
+  const guildId = parseInt(req.params.id);
+  const { isOpen } = req.body;
+
+  if (isNaN(guildId) || guildId <= 0)
+  {
+    throw new AppError(`[${context}] Invalid guild ID: ${req.params.id}`, 400, 'Invalid guild ID');
+  }
+
+  if (typeof isOpen !== 'boolean')
+  {
+    throw new AppError(`[${context}] Invalid isOpen value: ${isOpen}`, 400, 'isOpen must be a boolean');
+  }
+
+  await assertGuildExists(req.db, guildId, context);
+  await assertGuildRole(req.db, userId, guildId, ['Officer', 'Owner'], context);
+
+  await req.db.query(
+    'UPDATE Guild SET IS_OPEN = ? WHERE ID = ?',
+    [isOpen ? 1 : 0, guildId]
+  );
+
+  return res.status(200).json({
+    message: `Guild is now ${isOpen ? 'open' : 'closed'} to join requests`,
+    isOpen,
+  });
+});
+
 module.exports = {
   generateGuildName,
   createGuild,
@@ -1076,4 +1137,5 @@ module.exports = {
   resolveEntry,
   getMyInvites,
   getGuildRequests,
+  updateGuildOpen,
 };
