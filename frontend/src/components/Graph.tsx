@@ -91,8 +91,8 @@ const Graph: React.FC = () => {
         data: allTopics.map(topic => {
           // Set the mastery level (percentage) for each topic
           const topicData = progressData[topic];
-          if (topicData !== undefined && topicData.percentage !== undefined) {
-            return parseFloat(topicData.percentage.toString());
+          if (topicData !== undefined && topicData.metric !== undefined) {
+            return parseFloat((topicData.metric * 100).toFixed(1));
           }
           return 0;  // Set to 0 if no data is available for this topic
         }),

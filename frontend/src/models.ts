@@ -182,5 +182,6 @@ export interface ProgressData
 
 export interface TopicProgress
 {
-  percentage: number;
+  metric:        number;
+  responseCount: number;
 }

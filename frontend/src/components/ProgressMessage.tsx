@@ -52,7 +52,7 @@ const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, str
     .filter(([, level]) => typeof level === "number")
     .sort((a, b) => (a[1] as number) - (b[1] as number));
 
-  const weakestTopic = (attemptedTopics.length > 0 && attemptedTopics[0][1] < 100)
+  const weakestTopic = (attemptedTopics.length > 0 && attemptedTopics[0][1] < 1.0)
     ? attemptedTopics[0][0]
     : null;
 

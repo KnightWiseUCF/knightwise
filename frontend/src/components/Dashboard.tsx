@@ -518,7 +518,7 @@ const Dashboard: React.FC = () => {
                   <div key={topic} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 bg-gray-50">
                     <div>
                       <p className="font-semibold text-gray-900">{formatTopicLabel(topic)}</p>
-                      <p className="text-xs text-gray-500">Mastery: {Math.round(score)}%</p>
+                      <p className="text-xs text-gray-500">Mastery: {Math.round(score * 100)}%</p>
                     </div>
                     <button
                       type="button"
