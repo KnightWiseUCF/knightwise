@@ -9,7 +9,6 @@
 //  Dependencies:  supertest
 //                 mysql2 connection pool (server.js)
 //                 testHelpers
-//                 discordWebhook (mocked)
 //                 currencyConfig
 //
 ////////////////////////////////////////////////////////////////
@@ -23,13 +22,6 @@ const { TEST_USER,
         submitAndFetch,
       } = require("./testHelpers");
 const { DAILY_EXP_CAP, EXP_PER_POINT, COINS_PER_POINT } = require('../../shared/currencyConfig');
-
-// Mock Discord webhook
-jest.mock('../services/discordWebhook', () => ({
-  sendNotification: jest.fn().mockResolvedValue(true),
-  notifyUserEvent: jest.fn().mockResolvedValue(true),
-  notifyError: jest.fn().mockResolvedValue(true),
-}));
 
 let token;
 

@@ -10,7 +10,6 @@
 //                 mysql2 connection pool (server.js)
 //                 judge0Service
 //                 testHelpers
-//                 discordWebhook (mocked)
 //                 codeLimits
 //                 errorHandler
 //
@@ -22,13 +21,6 @@ const judge0Service = require('../services/judge0Service');
 const { TEST_USER, getAuthToken, verifyTestDatabase } = require("./testHelpers");
 const { MAX_CODE_BYTES, MAX_SUBMISSIONS_PER_DAY, MAX_TEST_RUNS_PER_PROBLEM } = require('../config/codeLimits'); 
 const { AppError } = require('../middleware/errorHandler');
-
-// Mock Discord webhook
-jest.mock('../services/discordWebhook', () => ({
-  sendNotification: jest.fn().mockResolvedValue(true),
-  notifyUserEvent: jest.fn().mockResolvedValue(true),
-  notifyError: jest.fn().mockResolvedValue(true),
-}));
 
 // Mock Judge0 service
 jest.mock('../services/judge0Service', () => {

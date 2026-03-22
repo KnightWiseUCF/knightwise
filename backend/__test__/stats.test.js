@@ -112,10 +112,6 @@ beforeAll(async () => {
   }));
 });
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
-
 afterAll(async () => {
   await pool.query('DELETE FROM User');
   try
