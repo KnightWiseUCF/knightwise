@@ -9,19 +9,21 @@
 //                 (0.0 - 1.0) per response.
 //
 //  Dependencies:  analyticsConfig
+//                 validationUtils
 //
 ////////////////////////////////////////////////////////////////
 
 const {
-  WEIGHT_ACCURACY,
-  WEIGHT_TIME,
-  WEIGHT_SUBCATEGORY,
-  WEIGHT_TYPE,
-  SUBCATEGORY_DIFFICULTY,
-  TYPE_DIFFICULTY,
-  MAX_ELAPSED_TIME_SECONDS,
-  DEFAULT_DIFFICULTY,
-} = require('../../shared/analyticsConfig');
+        WEIGHT_ACCURACY,
+        WEIGHT_TIME,
+        WEIGHT_SUBCATEGORY,
+        WEIGHT_TYPE,
+        SUBCATEGORY_DIFFICULTY,
+        TYPE_DIFFICULTY,
+        MAX_ELAPSED_TIME_SECONDS,
+        DEFAULT_DIFFICULTY,
+      } = require('../../shared/analyticsConfig');
+const { normalizeDBString } = require('../utils/validationUtils');
 
 /**
  * Computes a weighted performance metric for a single response
@@ -55,8 +57,8 @@ const computePerformanceMetric = ({ normalizedScore, elapsedTime, subcategory, t
     : 1 - Math.min(1, elapsedTime / MAX_ELAPSED_TIME_SECONDS);
 
   // Subcategory and type difficulty scalars
-  const subcategoryScore = SUBCATEGORY_DIFFICULTY[subcategory] ?? DEFAULT_DIFFICULTY;
-  const typeScore        = TYPE_DIFFICULTY[type]               ?? DEFAULT_DIFFICULTY;
+  const subcategoryScore = SUBCATEGORY_DIFFICULTY[normalizeDBString(subcategory ?? '')] ?? DEFAULT_DIFFICULTY;
+  const typeScore        = TYPE_DIFFICULTY[normalizeDBString(type ?? '')]               ?? DEFAULT_DIFFICULTY;
 
   return (
     WEIGHT_ACCURACY    * accuracyScore    +

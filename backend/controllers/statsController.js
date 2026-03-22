@@ -10,11 +10,13 @@
 //  Dependencies:  mysql2 connection pool (req.db)
 //                 errorHandler
 //                 analyticsModel
+//                 validationUtils
 //
 ////////////////////////////////////////////////////////////////
 
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { computeMedian } = require('../utils/analyticsModel');
+const { normalizeDBString } = require('../utils/validationUtils');
 
 /**
  * Helper function, computes median accuracy and median elapsed time
@@ -49,7 +51,7 @@ const computeSubcategoryBreakdown = (responses) => {
   const bySubcategory = {};
   for (const row of responses)
   {
-    const sub = row.SUBCATEGORY ?? 'Unknown';
+    const sub = normalizeDBString(row.SUBCATEGORY ?? 'Unknown');
     if (!bySubcategory[sub]) bySubcategory[sub] = [];
     bySubcategory[sub].push(row);
   }

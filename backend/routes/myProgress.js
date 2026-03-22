@@ -40,7 +40,8 @@ const processProgressData = (responses) => {
 
   for (const row of responses)
   {
-    const topic = row.TOPIC;
+    // Prevent database inconsistencies from breaking logic
+    const topic = normalizeDBString(row.TOPIC);
     // Initialize topic if not already in progress
     if (!byTopic[topic])
     {
@@ -56,8 +57,8 @@ const processProgressData = (responses) => {
     byTopic[topic].push(computePerformanceMetric({
       normalizedScore,
       elapsedTime: row.ELAPSED_TIME,
-      subcategory: row.SUBCATEGORY,
-      type:        row.TYPE,
+      subcategory: normalizeDBString(row.SUBCATEGORY ?? ''),
+      type:        normalizeDBString(row.TYPE ?? ''),
     }));
 
     // Record points possible for topic weighing
@@ -149,7 +150,7 @@ router.get("/messageData", authMiddleware, asyncHandler(async (req, res) => {
   // Build history for streak calculation
   const history = userAnswers.map(({ DATETIME, TOPIC }) => ({
     datetime: DATETIME,
-    topic:    TOPIC,
+    topic:    normalizeDBString(TOPIC),
   }));
 
   // Calculate streak

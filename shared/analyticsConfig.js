@@ -12,8 +12,6 @@
 //                 To make this .ts, the backend Jest would need to 
 //                 be configured with ts-jest or similar.
 //
-//                 TODO: USE normalizeDBString() IN THIS FILE ONCE SCRUM-204 GOES IN
-//
 ////////////////////////////////////////////////////////////////
 
 // Note that all the WEIGHT values below add up to 1.0.
