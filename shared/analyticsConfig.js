@@ -71,10 +71,26 @@ const TYPE_DIFFICULTY = Object.freeze({
   'Programming':           1.0,
 });
 
-// Elapsed time normalization ceiling in seconds
-// Responses at or above this value get the worst time score
-// Handles users who left mid-question
-const MAX_ELAPSED_TIME_SECONDS = 300;
+// Time ceilings (seconds), dependent on question type
+// If a user takes this many seconds or longer
+// to answer a question of this type, they
+// will receive the lowest time score of the metric.
+// Implicitly weighs time metric different depending
+// on question type; 10 minutes on a programming question
+// is weighed far more favorably than 10 minutes
+// on a multiple choice question.
+const MAX_ELAPSED_TIME_BY_TYPE = Object.freeze({
+  'Multiple Choice':       120,   // 2 minutes
+  'Fill in the Blanks':    180,   // 3 minutes
+  'Select All That Apply': 180,   // 3 minutes
+  'Ranked Choice':         240,   // 4 minutes 
+  'Drag and Drop':         300,   // 5 minutes
+  'Programming':           1500,  // 25 minutes
+});
+
+// Fallback time scalar for unknown types
+// (Ideally we never use this but database string inconsistencies may cause this)
+const DEFAULT_ELAPSED_TIME_CEILING = 300;
 
 // Fallback difficulty scalar for unknown subcategories/types
 // (Ideally we never use this but database string inconsistencies may cause this)
@@ -87,6 +103,7 @@ module.exports = {
   WEIGHT_TYPE,
   SUBCATEGORY_DIFFICULTY,
   TYPE_DIFFICULTY,
-  MAX_ELAPSED_TIME_SECONDS,
+  MAX_ELAPSED_TIME_BY_TYPE,
+  DEFAULT_ELAPSED_TIME_CEILING,
   DEFAULT_DIFFICULTY,
 };

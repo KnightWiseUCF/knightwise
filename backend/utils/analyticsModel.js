@@ -20,7 +20,8 @@ const {
         WEIGHT_TYPE,
         SUBCATEGORY_DIFFICULTY,
         TYPE_DIFFICULTY,
-        MAX_ELAPSED_TIME_SECONDS,
+        MAX_ELAPSED_TIME_BY_TYPE,
+        DEFAULT_ELAPSED_TIME_CEILING,
         DEFAULT_DIFFICULTY,
       } = require('../../shared/analyticsConfig');
 const { normalizeDBString } = require('../utils/validationUtils');
@@ -35,7 +36,8 @@ const { normalizeDBString } = require('../utils/validationUtils');
  * 
  * Component breakdown:
  *   - Accuracy:    normalizedScore (points_earned / points_possible)
- *   - Time:        1 - (elapsedTime / MAX_ELAPSED_TIME_SECONDS), clamped to [0, 1]
+ *   - Time:        1 - (elapsedTime / timeCeiling), clamped to [0, 1]
+ *                  timeCeiling depends on question type, see analyticsConfig
  *                  Null elapsed time uses neutral score of 0.5
  *   - Subcategory: difficulty scalar from analyticsConfig
  *   - Type:        difficulty scalar from analyticsConfig
@@ -52,9 +54,10 @@ const computePerformanceMetric = ({ normalizedScore, elapsedTime, subcategory, t
   const accuracyScore = Math.max(0, Math.min(1, normalizedScore));
 
   // Time component: clamp to [0,1], use neutral 0.5 if null
+  const timeCeiling = MAX_ELAPSED_TIME_BY_TYPE[normalizeDBString(type ?? '')] ?? DEFAULT_ELAPSED_TIME_CEILING;
   const timeScore = (elapsedTime == null)
     ? 0.5
-    : 1 - Math.min(1, elapsedTime / MAX_ELAPSED_TIME_SECONDS);
+    : 1 - Math.min(1, elapsedTime / timeCeiling);
 
   // Subcategory and type difficulty scalars
   const subcategoryScore = SUBCATEGORY_DIFFICULTY[normalizeDBString(subcategory ?? '')] ?? DEFAULT_DIFFICULTY;
