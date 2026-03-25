@@ -28,7 +28,7 @@ const { parseUserId }            = require('../utils/validationUtils');
  */
 const getStoreItems = asyncHandler(async (req, res) => {
   const [items] = await req.db.query(
-    'SELECT ID, TYPE, COST, NAME FROM StoreItem'
+    'SELECT ID, TYPE, COST, NAME, IS_GUILD_ITEM FROM StoreItem'
   );
 
   return res.status(200).json({ items });
@@ -53,7 +53,7 @@ const purchaseItem = asyncHandler(async (req, res) => {
 
   // Fetch item
   const [items] = await req.db.query(
-    'SELECT ID, TYPE, COST, NAME FROM StoreItem WHERE ID = ?',
+    'SELECT ID, TYPE, COST, NAME, IS_GUILD_ITEM FROM StoreItem WHERE ID = ?',
     [itemId]
   );
   if (items.length === 0)
@@ -61,6 +61,12 @@ const purchaseItem = asyncHandler(async (req, res) => {
     throw new AppError(`[${context}] Store item not found: ${itemId}`, 404, 'Item not found');
   }
   const item = items[0];
+
+  // Can't purchase guild items, just unlock when guild coin bank reaches threshold
+  if (item.IS_GUILD_ITEM)
+  {
+    throw new AppError(`[${context}] Item ${itemId} is a guild item and cannot be purchased directly`, 400, 'Guild items cannot be purchased directly');
+  }
 
   // Check if already purchased
   const [existing] = await req.db.query(

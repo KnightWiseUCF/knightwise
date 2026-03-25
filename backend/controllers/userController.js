@@ -13,6 +13,7 @@
 //                errorHandler
 //                validationUtils
 //                itemConfig
+//                paginationConfig
 //
 ////////////////////////////////////////////////////////////////
 
@@ -20,6 +21,40 @@ const { notifyUserEvent } = require('../services/discordWebhook');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { parseUserId, validateName } = require('../utils/validationUtils');
 const { EQUIP_LIMITS } = require('../../shared/itemConfig');
+const { PAGE_SIZES } = require('../config/paginationConfig');
+
+/**
+ * Helper function, ensures followee exists 
+ * and checks if follower is following followee
+ * Used in followUser and unfollowUser
+ * 
+ * @param   {Object} db         - Database connection pool
+ * @param   {Object} followerId - The ID of the follower user
+ * @param   {number} followeeId - The ID of the followee user
+ * @param   {string} context    - Caller name for error logging (e.g. 'followUser')
+ * @throws  {AppError} 404      - If followee ID not found
+ * @returns {Promise<boolean>}  - True if follower is currently following followee, else false
+ */
+const isFollowing = async (db, followerId, followeeId, context) => {
+  // Ensure the user we want to (un)follow exists
+  const [users] = await db.query(
+    'SELECT ID FROM User WHERE ID = ?',
+    [followeeId]
+  );
+  if (users.length === 0)
+  {
+    throw new AppError(`[${context}] Failed to check follow relationship, followee ID not found: ${followeeId}`, 404, 'User not found');
+  }
+
+  // Check if a Follower row exists for the follower-followee relationship
+  const [follows] = await db.query(
+    'SELECT FOLLOWER_ID FROM Follower WHERE FOLLOWER_ID = ? AND FOLLOWING_ID = ?',
+    [followerId, followeeId]
+  );
+
+  // True if follow relationship found, else false
+  return (follows.length !== 0 ? true : false);
+};
 
 /**
  * Helper function, asserts that requesting user matches target user ID
@@ -359,6 +394,173 @@ const unequipItem = asyncHandler(async (req, res) => {
   return res.status(200).json({ message: `Item unequipped successfully` });
 });
 
+/**
+ * @route   POST /api/users/:id/follow
+ * @desc    Follow the user with the given ID
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @throws  {AppError} 400                  - If followee is already followed, user is trying to follow themselves, or throwable by parseUserId
+ * @throws  {AppError} 404                  - Throwable by isFollowing
+ * @returns {Promise<void>}                 - Sends HTTP/JSON response confirming follow
+ */
+const followUser = asyncHandler(async (req, res) => {
+  const context    = 'followUser';
+  const followerId = req.user.id;
+  const followeeId = parseUserId(req.params.id, context);
+
+  // Ensure user is not trying to follow themselves
+  if (followerId === followeeId)
+  {
+    throw new AppError(`User ${followerId} cannot follow themselves`, 400, 'User cannot follow themselves.');
+  }
+
+  // Ensure proposed followee exists and that we _don't_ already follow them
+  const alreadyFollowing = await isFollowing(req.db, followerId, followeeId, context);
+  if (alreadyFollowing)
+  {
+    throw new AppError(`User ${followerId} is already following ${followeeId}`, 400, 'User is already followed.');
+  }
+
+  // Insert Follower row, creating follower relationship
+  // NOTE: This is a one-way relationship, this doesn't
+  //       mean that followee follows follower.
+  await req.db.query(
+    'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+    [followerId, followeeId]
+  );
+
+  return res.status(200).json({ message: 'User followed successfully' });
+});
+
+/**
+ * @route   DELETE /api/users/:id/follow
+ * @desc    Unfollow the user with the given ID
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @throws  {AppError} 400                  - Follower is not already following followee, throwable by parseUserId
+ * @throws  {AppError} 404                  - Throwable by isFollowing
+ * @returns {Promise<void>}                 - Sends HTTP/JSON response confirming unfollow
+ */
+const unfollowUser = asyncHandler(async (req, res) => {
+  const context = 'unfollowUser';
+  const followerId = req.user.id;
+  const followeeId = parseUserId(req.params.id, context);
+  
+  // Ensure proposed followee exists and that we already follow them
+  const alreadyFollowing = await isFollowing(req.db, followerId, followeeId, context);
+  if (!alreadyFollowing)
+  {
+    throw new AppError(`User ${followerId} is not following ${followeeId}`, 400, 'User is not followed.');
+  }
+  
+  // Delete Follower row, eliminating follower relationship
+  // NOTE: This is a one-way relationship, this doesn't
+  //       mean that followee no longer follows follower
+  await req.db.query(
+    'DELETE FROM Follower WHERE FOLLOWER_ID = ? AND FOLLOWING_ID = ?',
+    [followerId, followeeId]
+  );
+
+  return res.status(200).json({ message: 'User unfollowed successfully' });
+});
+
+/**
+ * @route   GET /api/users/search
+ * @desc    Search users by username (partial, case-insensitive), paginated
+ *          Call with username and page as query parameters
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @returns {Promise<void>}                 - Sends HTTP/JSON response with paginated user results
+ */
+const searchUsers = asyncHandler(async (req, res) => {
+  const username = req.query.username ?? '';
+  const page     = parseInt(req.query.page) || 1;
+
+  // Get total user count for pagination metadata
+  const [[{ totalUsers }]] = await req.db.query(
+    'SELECT COUNT(*) AS totalUsers FROM User WHERE USERNAME LIKE ?',
+    [`%${username}%`]
+  );
+
+  // Pagination
+  const totalPages = Math.ceil(totalUsers / PAGE_SIZES.USER_SEARCH);
+  const safePage   = Math.min(Math.max(1, page), totalPages || 1);
+  const offset     = (safePage - 1) * PAGE_SIZES.USER_SEARCH;
+
+  // Use LIKE with % for partial, case-insensitive match
+  const [users] = await req.db.query(
+    `SELECT ID, USERNAME, FIRSTNAME, LASTNAME
+     FROM User
+     WHERE USERNAME LIKE ?
+     ORDER BY USERNAME ASC
+     LIMIT ? OFFSET ?`,
+    [`%${username}%`, PAGE_SIZES.USER_SEARCH, offset]
+  );
+
+  return res.status(200).json({
+    users,
+    pagination: {
+      page: safePage,
+      pageSize: PAGE_SIZES.USER_SEARCH,
+      totalUsers,
+      totalPages,
+    }
+  });
+});
+
+/**
+ * @route   PUT /api/users/:id/stats-opt-in
+ * @desc    Toggle IS_SHARING_STATS for the user
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @throws  {AppError} 400                  - Throwable by parseUserId
+ * @throws  {AppError} 403                  - Throwable by assertUserOwnership
+ * @throws  {AppError} 404                  - If user not found
+ * @returns {Promise<void>}                 - Sends HTTP/JSON with new opt-in state
+ */
+const updateStatsOptIn = asyncHandler(async (req, res) => {
+  const context = 'updateStatsOptIn';
+  const userId  = parseUserId(req.params.id, context);
+
+  // Ensure user is toggling for themselves
+  assertUserOwnership(req.user, userId, context);
+
+  const { optIn } = req.body;
+  if (typeof optIn !== 'boolean')
+  {
+    throw new AppError(`[${context}] Invalid optIn value: ${optIn}`, 400, 'optIn must be a boolean');
+  }
+
+  // Get user
+  const [users] = await req.db.query(
+    'SELECT ID FROM User WHERE ID = ?',
+    [userId]
+  );
+  if (users.length === 0)
+  {
+    throw new AppError(`[${context}] User not found: ${userId}`, 404, 'User not found');
+  }
+
+  // Set opt-in status
+  await req.db.query(
+    'UPDATE User SET IS_SHARING_STATS = ? WHERE ID = ?',
+    [optIn ? 1 : 0, userId]
+  );
+
+  return res.status(200).json({
+    message: `Stats sharing ${optIn ? 'enabled' : 'disabled'}`,
+    optIn,
+  });
+});
+
 module.exports = {
   deleteAccount,
   getUserInfo,
@@ -366,4 +568,8 @@ module.exports = {
   getPurchases,
   equipItem,
   unequipItem,
+  followUser,
+  unfollowUser,
+  searchUsers,
+  updateStatsOptIn,
 };

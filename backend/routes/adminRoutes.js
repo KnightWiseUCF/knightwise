@@ -30,6 +30,7 @@ const router = express.Router();
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const adminMiddleware = require("../middleware/adminMiddleware");
 const authMiddleware = require('../middleware/authMiddleware');
+const adminOrProf = require('../middleware/adminOrProf');
 const requireRole = require('../middleware/requireRole');
 const { notifyUserEvent } = require("../services/discordWebhook");
 const { ITEM_TYPES } = require('../../shared/itemConfig');
@@ -40,23 +41,6 @@ const mailjet = Mailjet.apiConnect(
   process.env.MJ_APIKEY_PUBLIC,
   process.env.MJ_APIKEY_PRIVATE
 );
-
-/**
- * Helper middleware for endpoints shared between admins and professors
- * Routes admin requests (requests with ADMIN_KEY) through adminMiddleware
- * Routes professor requests (requests without ADMIN_KEY) through authMiddleware
- * Enforces role to ensure only admins and professors get intended access
- * @type {import('express').RequestHandler[]}
- */
-const adminOrProf = [
-  (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1]?.trim();
-    token === process.env.ADMIN_KEY
-      ? adminMiddleware(req, res, next)
-      : authMiddleware(req, res, next);
-  },
-  requireRole('admin', 'professor')
-];
 
 /**
  * Helper function, gets questions for a given draft/published state
@@ -705,7 +689,7 @@ router.post('/problems/:id/publish', adminOrProf, asyncHandler(async (req, res) 
  * @returns {Promise<void>} - JSON response confirming store item created
  */
 router.post('/store/createitem', adminMiddleware, asyncHandler(async (req, res) => {
-  const { itemType, itemCost, itemName } = req.body;
+  const { itemType, itemCost, itemName, isGuildItem } = req.body;
 
   if (itemType == null || itemCost == null || itemName == null)
   {
@@ -726,15 +710,50 @@ router.post('/store/createitem', adminMiddleware, asyncHandler(async (req, res) 
 
   // Insert new item into db
   const [result] = await req.db.query(
-    'INSERT INTO StoreItem (TYPE, COST, NAME) VALUES (?, ?, ?)',
-    [itemType, itemCost, itemName]
+    'INSERT INTO StoreItem (TYPE, COST, NAME, IS_GUILD_ITEM) VALUES (?, ?, ?, ?)',
+    [itemType, itemCost, itemName, isGuildItem ? 1 : 0]
   );
   const itemId = result.insertId;
 
   // Send Discord notification
-  notifyUserEvent(`Item ${itemId} created: ${itemName} (${itemType}), costs ${itemCost} coins`);
+  notifyUserEvent(`Item ${itemId} created: ${itemName} (${itemType}), costs ${itemCost} coins, guild item: ${isGuildItem ? 'yes' : 'no'}`);
 
   res.status(201).json({ message: "Store item successfully created", itemId});
+}));
+
+/**
+ * @route   DELETE /api/admin/store/items/:id
+ * @desc    Delete a store item by ID
+ * @access  Admin
+ *
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @throws  {AppError} 400                 - If item ID is invalid
+ * @throws  {AppError} 404                 - If item not found
+ * @returns {Promise<void>}                - Sends HTTP/JSON confirming deletion
+ */
+router.delete('/store/items/:id', adminMiddleware, asyncHandler(async (req, res) => {
+  const itemId = parseInt(req.params.id);
+
+  if (isNaN(itemId) || itemId <= 0)
+  {
+    throw new AppError(`Invalid item ID: ${req.params.id}`, 400, 'Invalid item ID');
+  }
+
+  const [[item]] = await req.db.query(
+    'SELECT ID, NAME FROM StoreItem WHERE ID = ?',
+    [itemId]
+  );
+  if (!item)
+  {
+    throw new AppError(`Item not found: ${itemId}`, 404, 'Item not found');
+  }
+
+  await req.db.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+
+  notifyUserEvent(`Store item deleted: ${item.NAME} (ID ${itemId})`);
+
+  return res.status(200).json({ message: 'Store item deleted successfully' });
 }));
 
 module.exports = router;

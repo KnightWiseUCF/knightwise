@@ -34,7 +34,11 @@ const { AppError } = require('../middleware/errorHandler');
  * @returns {string} Normalized string
  */
 const normalizeDBString = (str) => {
-  return str.replace(/\r\n|\r|\n/g, ' ').trim().replace('Input/Output', 'InputOutput');
+  return str
+    .replace(/\r\n|\r|\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace('Input/Output', 'InputOutput');
 }
 
 /**

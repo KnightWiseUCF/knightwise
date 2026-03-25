@@ -21,7 +21,7 @@ const {
         MAX_TEST_RUNS_PER_PROBLEM,
         getProgrammingSubmissionsRemaining,
       } = require('../config/codeLimits'); 
-const { awardCurrency } = require('../utils/currencyUtils');
+const { awardCurrency, awardGuildExp } = require('../utils/currencyUtils');
 
 /**
  * Grade test case results, calculate score
@@ -136,7 +136,7 @@ const submitCode = asyncHandler(async (req, res) => {
   // Code can only be submitted by account owner
   const userId = req.user.id; // Set by authMiddleware.js
 
-  const { problemId, code, languageId, isTestRun } = req.body;
+  const { problemId, code, languageId, isTestRun, elapsedTime } = req.body;
 
   if (!problemId || !code || !languageId || code.trim().length === 0 || isTestRun === undefined)
   {
@@ -270,9 +270,10 @@ const submitCode = asyncHandler(async (req, res) => {
           POINTS_POSSIBLE,
           CATEGORY,
           TOPIC,
+          ELAPSED_TIME,
           DATETIME
         ) 
-        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, FALSE, 0, ?, ?, ?, ?, ?)`,
         [
           userId, 
           problemId, 
@@ -280,6 +281,7 @@ const submitCode = asyncHandler(async (req, res) => {
           question.POINTS_POSSIBLE, 
           question.CATEGORY, 
           question.SUBCATEGORY,
+          elapsedTime ?? null,
           new Date()
         ]
       );
@@ -336,9 +338,10 @@ const submitCode = asyncHandler(async (req, res) => {
       POINTS_POSSIBLE,
       CATEGORY,
       TOPIC,
+      ELAPSED_TIME,
       DATETIME
     ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId, 
       problemId, 
@@ -348,12 +351,15 @@ const submitCode = asyncHandler(async (req, res) => {
       question.POINTS_POSSIBLE, 
       question.CATEGORY, 
       question.SUBCATEGORY,
+      elapsedTime ?? null,
       new Date()
     ]
   );
 
   // Award currency to user (respects daily exp cap)
+  // Also award exp to user's guild if they're in one
   await awardCurrency(req.db, userId, gradingResults.pointsEarned);
+  await awardGuildExp(req.db, userId, gradingResults.pointsEarned);
 
   // Return results
   return res.status(200).json({

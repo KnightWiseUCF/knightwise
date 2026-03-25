@@ -22,7 +22,7 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { asyncHandler, AppError } = require("../middleware/errorHandler");
 const { gradeQuestion } = require("../controllers/gradingController");
-const { awardCurrency } = require("../utils/currencyUtils");
+const { awardCurrency, awardGuildExp } = require("../utils/currencyUtils");
 const { getProgrammingSubmissionsRemaining } = require("../config/codeLimits");
 
 /**
@@ -206,7 +206,7 @@ router.get("/mocktest", authMiddleware, asyncHandler(async (req, res) => {
  * @returns {Promise<void>} - JSON response to confirm successful submission
  */
 router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
-  const { problem_id, userAnswer, category, topic } = req.body;
+  const { problem_id, userAnswer, category, topic, elapsedTime } = req.body;
   const user_id = req.user.id;
 
   // Get question by ID, we care about question type and points
@@ -246,9 +246,10 @@ router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
       POINTS_POSSIBLE,
       CATEGORY,
       TOPIC,
+      ELAPSED_TIME,
       DATETIME
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       user_id,
       problem_id,
@@ -258,12 +259,15 @@ router.post("/submit", authMiddleware, asyncHandler(async (req, res) => {
       result.pointsPossible,
       category,
       topic,
+      elapsedTime ?? null,
       new Date()
     ]
   );
 
   // Award currency to user (respects daily exp cap)
+  // Also award exp to user's guild if they're in one
   await awardCurrency(req.db, user_id, result.pointsEarned);
+  await awardGuildExp(req.db, user_id, result.pointsEarned);
 
   res.status(201).json(
   { 
