@@ -11,7 +11,7 @@ import {
   UserCircle,
   UserRoundCog,
   FileCode,
-  Trophy,
+  Shield,
 } from "lucide-react"; // for icons
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { getFlairPresentation } from "../utils/flairPresentation";
@@ -98,9 +98,9 @@ const Sidebar = () => {
           },
         ]),
     {
-      name: "Leaderboard",
-      icon: <Trophy size={24} />,
-      path: "/leaderboard"
+      name: "Guilds",
+      icon: <Shield size={24} />,
+      path: "/guilds"
     },
     {
       name: "Profile",
