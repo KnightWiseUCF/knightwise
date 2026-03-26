@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/DeleteAccount";
 import Layout from "../components/Layout";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+import { Check } from "lucide-react";
 
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
@@ -94,7 +95,7 @@ const AccountPage: React.FC = () => {
           )}
 
           {/* User Information Section */}
-          <section className="mb-10">
+          <section className="mb-2">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               Profile Information
             </h2>
@@ -158,6 +159,19 @@ const AccountPage: React.FC = () => {
               )}
             </div>
           </section>
+          
+          <div className="p-6 justify-between">
+            <span className="font-semibold text-gray-600">Opt-in or Opt-out of Statistics Sharing:</span>
+            <switch>
+
+            </switch>
+            {/*
+            <input className="mr-3 w-5 h-5"
+              type="checkbox"
+              
+            />
+            */}
+          </div>
 
           {/* Delete Account */}
           <DeleteAccount onDeleteSuccess={handleDeleteSuccess} />

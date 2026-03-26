@@ -8,6 +8,7 @@ import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { Trophy, ChevronLeft, ChevronRight, Swords, Users } from "lucide-react";
+import StatsViewer from "../components/StatsViewer";
 
 const MyProgressPage: React.FC = () => {
   const [history, setHistory] = useState<{ datetime: string; topic: string }[]>([]);
@@ -87,10 +88,11 @@ const MyProgressPage: React.FC = () => {
           {/* Progress Message */}
           <ProgressMessage history={history} mastery={mastery} streakCount={streakCount} />
 
+          {/* Stats Viewer */}
+          <StatsViewer />
+
           {/* History Table Section */}
-          <div className="w-full border-3 border-gray-300 p-4 rounded-lg shadow">
-            <HistoryTable />
-          </div>
+          <HistoryTable />
         </div>
       </div>
     </Layout>

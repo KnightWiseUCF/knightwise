@@ -162,13 +162,13 @@ const Leaderboard: React.FC = () =>
     setError(null);
     try
     {
-      /*
+
       const response = await api.get<GuildLeaderboardResponse>(
         `/api/leaderboard/guild/${tab}?page=${pageNum}`
       );
       setguildData(response.data);
-      */
-      setguildData(generateGuildLeaderboardResponse(52));
+
+      //setguildData(generateGuildLeaderboardResponse(52));
     }
     catch
     {
@@ -364,36 +364,40 @@ const Leaderboard: React.FC = () =>
             </div>
             
             {/*Find Yourself Button next to Weekly/Lifetime*/}
-            <div className="flex items-center justify-between gap-10">
-              <button 
-                onClick={async () => {scrollToUser()}}
-                className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow hover:bg-blue-800"
-              >
-                {mode === "guild" ? "Find Your Guild" : "Find Yourself"}
-              </button>
-
-              {/* Right: Weekly / Lifetime */}
-              <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
-                {(["weekly", "lifetime"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => handleTabChange(tab)}
-                    className={`px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize ${
-                      activeTab === tab
-                        ? "bg-blue-600 text-white shadow"
-                        : "bg-white text-gray-600 hover:bg-gray-200"
-                    }`}
+            
+              <div className="flex items-center justify-between gap-10">
+                {mode === "individual" || mode === "guild" ? (
+                  <button 
+                    onClick={async () => {scrollToUser()}}
+                    className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow hover:bg-blue-800"
                   >
-                    {tab}
+                    {mode === "guild" ? "Find Your Guild" : "Find Yourself"}
                   </button>
-                ))}
-              </div>
-              
-            </div>
+                ) : null }
+
+                {/* Right: Weekly / Lifetime */}
+                <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
+                  {(["weekly", "lifetime"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => handleTabChange(tab)}
+                      className={`px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize ${
+                        activeTab === tab
+                          ? "bg-blue-600 text-white shadow"
+                          : "bg-white text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>              
+
           </div>
 
-          {/* Your rank banner */}
-          {((mode === "individual" || mode === "followed") && data) ? (
+
+          {/* Your rank banner; Unsure if User will be added to followed */}
+          {((mode === "individual" /*|| mode === "followed"*/) && data) ? (
             <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
               <Trophy className="text-blue-400 shrink-0" size={32} />
               <div>
@@ -441,7 +445,9 @@ const Leaderboard: React.FC = () =>
 
           
           {/* Table for Individual/Follower Leaderboards */}
-          {(mode === "individual" || mode === "followed") && !loading && data && (
+          
+
+          {(mode === "individual" || mode === "followed") && !loading && data && data.leaderboard.length > 0 ? (
             <>
               <div className="w-full flex justify-center items-center">
                 <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
@@ -611,7 +617,10 @@ const Leaderboard: React.FC = () =>
                 </div>
               )}
             </>
-          )}
+          ):<div className="text-center pt-16 text-gray-900 font-bold text-xl">
+                {data ? "Nobody's Here!" : null}
+            </div> 
+          };
 
           {/* Guild Leaderboard Table */}
           {mode === "guild" && !loading && guildData && (

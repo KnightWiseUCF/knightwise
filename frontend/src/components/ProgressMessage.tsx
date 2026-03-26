@@ -42,14 +42,14 @@ const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, str
   const unattemptedTopic = unattemptedTopics.length > 0 ? unattemptedTopics[0] : null;
 
   return (
-    <div className="mt-1 mb-5 mx-auto w-full max-w-3xl bg-[#ffc904] text-gray-800 p-4 rounded-lg shadow-md text-left">
+    <div className="mt-1 mb-5 mx-auto w-full max-w-3xl bg-yellow-200 border border-yellow-500 text-gray-800 p-4 rounded-lg shadow-md text-left">
       {todayProblemCount > 0 ? (
         <span>
           Great work! You solved <strong>{todayProblemCount}</strong> problem
           {todayProblemCount > 1 ? "s" : ""} today! 🎉&nbsp;
         </span>
       ) : (
-        <span>Ready to start practicing? Solve your first problem today!&nbsp;</span>
+        <span>Ready to start practicing? Go to the topic practice page or build an exam to begin!&nbsp;</span>
       )}
 
       {weakestTopic && (
