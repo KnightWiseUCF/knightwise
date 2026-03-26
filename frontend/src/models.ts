@@ -146,6 +146,7 @@ export interface HistoryEntry
   userAnswer:     string | null; // JSON with answer data
   pointsEarned:   number | null;
   pointsPossible: number | null;
+  elapsedTime:    number | null;
 }
 
 export interface HistoryResponse
