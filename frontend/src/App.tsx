@@ -29,6 +29,7 @@ import ProfessorDraftsPage from "./pages/ProfessorDraftsPage";
 import ProfilePage from "./pages/ProfilePage";
 import StorePage from "./pages/StorePage.tsx";
 import GuildsPage from "./pages/GuildsPage";
+import LeaderboardPage from "./pages/LeaderboardPage.tsx";
 
 
 function App() 
@@ -53,6 +54,7 @@ function App()
         <Route path="/guilds"                     element={<GuildsPage />} />
         <Route path="/professor-apply"            element={<ProfessorApplyPage />} />
         <Route path="/professor-drafts"           element={<ProfessorDraftsPage />} />
+        <Route path="/leaderboard"                element={<LeaderboardPage />} />
       </Routes>
     </Router>
   );

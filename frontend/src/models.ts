@@ -50,6 +50,25 @@ export interface ApiMessageResponse
   message: string;
 }
 
+//Leaderboard Types
+export interface LeaderboardT
+{
+  rank:           number;
+  username:       string;
+  firstName:      string;
+  exp:            number;
+  profilePicture: string;
+}
+
+export interface LeaderboardResponse
+{
+  userRank: number;
+  userExp: number;
+  page: number;
+  totalPages: number;
+  leaderboard: LeaderboardT[];
+}
+
 // User types
 export interface UserInfo
 {
