@@ -13,17 +13,35 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import api from "../api";
 import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/DeleteAccount";
 import Layout from "../components/Layout";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { Check } from "lucide-react";
+import { Switch } from "@material-tailwind/react";
+import { UserInfo, UserInfoResponse } from "../models";
+
+interface StatsOptIn {
+  optIn:    boolean;
+}
+
+interface StatsOptInResponse {
+  message:  string;
+  optIn:    boolean;
+}
+
+
 
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteSuccess, setDeleteSuccess] = useState(false);
-  const { user, isLoading, error } = useUserCustomizationStore();
+  const { user, isLoading, error, } = useUserCustomizationStore();
+  const [loading, setLoading]       = useState(true);
+
+  const [isSharingStats, setIsSharingStats] = useState(false);
+  const [statusRetrieved, setStatusRetrieved] = useState(false);
 
   useEffect(() => {
     void userCustomizationStore.refresh();
@@ -45,11 +63,38 @@ const AccountPage: React.FC = () => {
     parseError = true;
   }
 
+  const getUserOptInStatus = useCallback(async (id: number) => {
+    setLoading(true);
+    setStatusRetrieved(false);
+
+    try
+    { 
+      const response = await api.get<UserInfoResponse>(`/api/users/${id}`);
+      //console.log(response.data.user.IS_SHARING_STATS)
+      setIsSharingStats(response.data.user.IS_SHARING_STATS)
+      setStatusRetrieved(true);
+    }
+    catch
+    {
+      console.error("Failed to update opt-in status");
+      parseError = true;
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
+  const userId = user?.ID || userData?.id;
+  //console.log(userId);
   const userEmail = userData?.email;
   const userName = (user?.USERNAME || userData?.name || "").trim();
   const firstName = (user?.FIRSTNAME || userData?.firstName || "").trim();
   const lastName = (user?.LASTNAME || userData?.lastName || "").trim();
   const fullName = `${firstName} ${lastName}`.trim();
+  
+  //console.log(isSharingStats)
+
 
   // Delete success, remove items from localStorage, redirect to login
   const handleDeleteSuccess = () => {
@@ -62,6 +107,40 @@ const AccountPage: React.FC = () => {
       navigate("/");
     }, 1500);
   };
+
+  const updateOptInStatus = useCallback(async (optIn: boolean) => {
+    setLoading(true);
+
+    try
+    { 
+      const response = await api.put<StatsOptInResponse>(`/api/users/${userId}/stats-opt-in`,
+        {
+          "id": userId,
+          "optIn": optIn
+        }
+      );
+    }
+    catch
+    {
+      console.error("Failed to update opt-in status");
+      parseError = true;
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    getUserOptInStatus(userId);
+  }, []);
+
+  useEffect(() => {
+    statusRetrieved ? updateOptInStatus(isSharingStats == undefined ? false : isSharingStats) : null;
+    //console.log(isSharingStats == undefined, " that isSharingStats is undefined")
+  }, [isSharingStats]);
+
+  
 
   // Show error if user data couldn't be parsed
   if (parseError) {
@@ -79,7 +158,7 @@ const AccountPage: React.FC = () => {
     );
   }
 
-  return (
+  return ( 
     <Layout>
       <div className="bg-gray-100 py-8 px-4 min-h-full">
         <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
@@ -87,14 +166,20 @@ const AccountPage: React.FC = () => {
             Account Settings
           </h1>
 
+          {/* Loading state */}
+          {loading && (
+            <div className="text-center py-16 text-gray-400 text-sm">Loading...</div>
+          )}
+
           {/* Success Message */}
-          {deleteSuccess && (
+          {deleteSuccess && !loading && (
             <div className="bg-green-50 border border-green-500 text-green-700 px-4 py-3 rounded-lg mb-6 animate-fade-in">
               Account deleted successfully! Redirecting to login...
             </div>
           )}
 
           {/* User Information Section */}
+          {!loading && (
           <section className="mb-2">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               Profile Information
@@ -159,22 +244,26 @@ const AccountPage: React.FC = () => {
               )}
             </div>
           </section>
+          )}
           
-          <div className="p-6 justify-between">
-            <span className="font-semibold text-gray-600">Opt-in or Opt-out of Statistics Sharing:</span>
-            <switch>
-
-            </switch>
-            {/*
-            <input className="mr-3 w-5 h-5"
+          {/* Statistics Sharing Toggle */}
+          {!loading && (
+          <div className="p-6 flex justify-start items-center">
+            <input className="mr-4 w-5 h-5" 
               type="checkbox"
-              
-            />
-            */}
+              defaultChecked={isSharingStats}
+              onChange={() => {setIsSharingStats(!isSharingStats)
+                console.log(isSharingStats, "=>", !isSharingStats)}
+              }>
+            </input>            
+            <span className="font-semibold text-gray-600">Opt-in to Statistics Sharing:</span>
           </div>
+          )}
 
           {/* Delete Account */}
+          {!loading && (
           <DeleteAccount onDeleteSuccess={handleDeleteSuccess} />
+          )}
         </div>
       </div>
     </Layout>

@@ -5,9 +5,9 @@ import Leaderboard from "../components/Leaderboard";
 
 const LeaderboardPage: React.FC = () => (
   <div className="overscroll-contain">
-  <Layout>
-    <Leaderboard/>
-  </Layout>
+    <Layout>
+      <Leaderboard/>
+    </Layout>
   </div>
 );
 
