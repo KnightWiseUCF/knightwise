@@ -14,6 +14,8 @@
 //                 SelectAllThatApply component
 //                 MockTestResult component
 //                 models (Question, MockTestResponse)
+//                 axios (isAxiosError)
+//                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
 
@@ -29,29 +31,10 @@ import DragAndDrop from "../components/DragAndDrop";
 import Programming from "../components/Programming";
 import api from "../api";
 import { Question, RawQuestion } from "../models";
+import { isAxiosError } from "axios";
+import { ALL_TOPICS } from "../utils/topicLabels";
 
-const AVAILABLE_TOPICS = [
-  "Input/Output",
-  "Branching",
-  "Loops",
-  "Variables",
-  "Arrays",
-  "Linked Lists",
-  "Strings",
-  "Classes",
-  "Methods",
-  "Trees",
-  "Stacks",
-  "Heaps",
-  "Tries",
-  "Bitwise Operators",
-  "Dynamic Memory",
-  "Algorithm Analysis",
-  "Recursion",
-  "Sorting",
-];
-
-const DEFAULT_SELECTED_TOPICS = ["Input/Output", "Branching", "Loops", "Variables"];
+const DEFAULT_SELECTED_TOPICS = ["InputOutput", "Branching", "Loops", "Variables"];
 const DEFAULT_QUESTION_COUNT = 12;
 const MIN_QUESTION_COUNT = 1;
 const MAX_QUESTION_COUNT = 50;
@@ -148,7 +131,7 @@ const toQuestion = (question: RawQuestion): Question | null => {
     problem: normalizedType === "programming"
       ? {
           description: question.QUESTION_TEXT,
-          languages: ["C", "Java", "Python"],
+          languages: ["C", "C++", "Java", "Python"],
         }
       : undefined,
     problemCode: normalizedType === "programming"
@@ -191,6 +174,9 @@ const MockTestPage: React.FC = () => {
   const [normalizedScore, setNormalizedScore] = useState<number | null>(null);
   const [programmingAnswer, setProgrammingAnswer] = useState("");
   const [programmingLanguage, setProgrammingLanguage] = useState("C");
+  const [passedTests, setPassedTests] = useState<number | null>(null);
+  const [totalTests, setTotalTests] = useState<number | null>(null);
+  const [progSubmitsRemaining, setProgSubmitsRemaining] = useState<number | null>(null);
   const programmingLanguageIds: Record<string, number> = {
     C: 50,
     "C++": 54,
@@ -371,12 +357,41 @@ const MockTestPage: React.FC = () => {
         .map(toQuestion)
         .filter((question): question is Question => question !== null);
 
-      if (preparedQuestions.length === 0) {
+      // Ensure that a user is served a maximum of 
+      // one programming question in the entire mock test.
+      let programmingQuestionUsed = false;
+      const filteredQuestions = preparedQuestions.filter(q => {
+        if (q.QUESTION_TYPE !== "programming") return true;
+        if (programmingQuestionUsed) return false;
+        programmingQuestionUsed = true;
+        return true;
+      });
+
+      if (filteredQuestions.length === 0) {
         setSetupError("No published questions were available for the selected topics.");
         return;
       }
 
-      setQuestions(preparedQuestions);
+      // Check and set how many programming submissions
+      // the user has left for the day.
+      // The filtering for one programming question
+      // is already done at this point, so this
+      // is just done for the "come back tomorrow" message.
+      const token = localStorage.getItem("token");
+      try 
+      {
+        const limitRes = await api.get(
+          "/api/code/canSubmit",
+          token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        );
+        setProgSubmitsRemaining(limitRes.data.remaining);
+      } 
+      catch 
+      {
+        // Just set the questions normally
+      }
+
+      setQuestions(filteredQuestions);
       resetInteractionState();
       setTimeRemainingSeconds(clampTimeLimit(timeLimitMinutes) * 60);
       setCompletionReason("completed");
@@ -434,8 +449,35 @@ const MockTestPage: React.FC = () => {
         );
 
         const data = result.data;
-        const isCorrect = data.success ? data.correct : false;
+
+        // Decrement remaining submits
+        // Backend counts all submits toward daily limit,
+        // regardless of correct/incorrect/error,
+        // as long as the response is a 200.
+        setProgSubmitsRemaining(prev => prev !== null ? prev - 1 : null);
+
+        const isCorrect = data.success ? data.allPassed : false;
         setIsCorrectAnswer(isCorrect);
+
+        // Set these outside if/else since backend always returns them
+        setTotalTests(data.totalTests ?? 0);
+        setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
+
+        if (data.success) 
+        {
+          const passed = data.passedTests ?? 0;
+          const label = data.allPassed ? "Correct!" : passed > 0 ? "Not quite!" : "Incorrect.";
+          setGradingFeedback(label);
+          setPassedTests(passed);
+          setPointsEarned(typeof data.pointsEarned === "number" ? data.pointsEarned : null);
+        } 
+        else 
+        {
+          const errorDetails = data.compile_output || data.stderr || data.error || "";
+          setPointsEarned(0);
+          setPassedTests(0);
+          setGradingFeedback(`${data.status || "Source code error"}${errorDetails ? `: ${errorDetails}` : "."}`);
+        }
 
         const subcategory = current.SUBCATEGORY;
         setSubcategoryScores((prev) => ({
@@ -445,10 +487,30 @@ const MockTestPage: React.FC = () => {
             total: (prev[subcategory]?.total || 0) + 1,
           },
         }));
-      } catch {
-        console.error("Failed to submit programming response");
+      } 
+      catch (error: unknown)
+      {
+        if (isAxiosError(error))
+        {
+          // Daily submission limit reached.
+          // This should never actually be reachable since
+          // the backend should stop serving programming questions to users
+          // once they hit the limit. But just in case.
+          if (error.response?.status === 429)
+          {
+            setGradingFeedback("Daily programming question submission limit exceeded. Come back tomorrow!");
+          } 
+          else
+          {
+            setGradingFeedback("Submission failed. Please try again later.");
+          }
+        }
+        else
+        {
+          setGradingFeedback("Submission failed. Please try again later.");
+        }
+        setIsCorrectAnswer(false);
       }
-
       setShowFeedback(true);
       setIsSubmitting(false);
       return;
@@ -523,6 +585,8 @@ const MockTestPage: React.FC = () => {
       setNormalizedScore(null);
       setProgrammingAnswer("");
       setProgrammingLanguage("C");
+      setPassedTests(null);
+      setTotalTests(null);
       setCurrentIndex((prev) => prev + 1);
     }
   };
@@ -538,7 +602,7 @@ const MockTestPage: React.FC = () => {
     <Layout>
       {step === "info" && (
         <MockTestInfo
-          availableTopics={AVAILABLE_TOPICS}
+          availableTopics={[...ALL_TOPICS]}
           selectedTopics={selectedTopics}
           questionCount={questionCount}
           timeLimitMinutes={timeLimitMinutes}
@@ -547,7 +611,7 @@ const MockTestPage: React.FC = () => {
           onToggleTopic={handleToggleTopic}
           onSelectAll={() => {
             setSetupError("");
-            setSelectedTopics(AVAILABLE_TOPICS);
+            setSelectedTopics([...ALL_TOPICS]);
           }}
           onClearAll={() => {
             setSetupError("");
@@ -637,6 +701,16 @@ const MockTestPage: React.FC = () => {
                 setSelectedLanguage={setProgrammingLanguage}
                 handleSubmit={handleSubmit}
                 handleNext={handleNext}
+                answered={showFeedback}
+                isSubmitting={isSubmitting}
+                isCorrect={isCorrectAnswer}
+                feedbackText={gradingFeedback}
+                pointsEarned={pointsEarned}
+                pointsPossible={pointsPossible}
+                normalizedScore={normalizedScore}
+                passedTests={passedTests}
+                totalTests={totalTests}
+                submissionsRemaining={progSubmitsRemaining}
               />
             ) : questionType === 'select_all_that_apply' ? (
               <SelectAllThatApply

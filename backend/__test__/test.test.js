@@ -9,7 +9,6 @@
 //  Dependencies:  supertest
 //                 mysql2 connection pool (server.js)
 //                 testHelpers
-//                 discordWebhook (mocked)
 //                 currencyConfig
 //
 ////////////////////////////////////////////////////////////////
@@ -23,13 +22,6 @@ const { TEST_USER,
         submitAndFetch,
       } = require("./testHelpers");
 const { DAILY_EXP_CAP, EXP_PER_POINT, COINS_PER_POINT } = require('../../shared/currencyConfig');
-
-// Mock Discord webhook
-jest.mock('../services/discordWebhook', () => ({
-  sendNotification: jest.fn().mockResolvedValue(true),
-  notifyUserEvent: jest.fn().mockResolvedValue(true),
-  notifyError: jest.fn().mockResolvedValue(true),
-}));
 
 let token;
 
@@ -466,7 +458,8 @@ describe("POST /api/test/submit", () => {
       [
         { text: 'Right', isCorrect: true  },
         { text: 'Wrong', isCorrect: false },
-      ], pointValue);
+      ], 
+      { points: pointValue });
 
       // First submit should only award 50 exp, not 20 points' worth (higher than 50 exp)
       await submitAndFetch(questionId, 'Right', token);

@@ -1,4 +1,18 @@
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2026
+//  Author(s):     KnightWise Team
+//  File:          MockTestInfo.tsx
+//  Description:   "Build an Exam" setup page component
+//
+//  Dependencies:  react
+//                 topicLabels
+//
+////////////////////////////////////////////////////////////////
+
 import React from "react";
+import { formatSubcategoryLabel } from "../utils/topicLabels";
 
 interface MockTestInfoProps {
   availableTopics: string[];
@@ -87,7 +101,7 @@ const MockTestInfo: React.FC<MockTestInfoProps> = ({
                     aria-pressed={isSelected}
                   >
                     <div className="flex items-center justify-between gap-4">
-                      <span className="text-sm font-semibold sm:text-base">{topic}</span>
+                      <span className="text-sm font-semibold sm:text-base">{formatSubcategoryLabel(topic)}</span>
                       <span
                         className={[
                           "inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold",

@@ -29,6 +29,132 @@ const TEST_USER = {
   lastName: "User"
 };
 
+// Default test professor template, can be overridden for individual tests
+const TEST_PROF = {
+  email:     "testprof@ucf.edu",
+  username:  "testprofessor",
+  password:  "Testpass123!",
+  firstName: "Test",
+  lastName:  "Professor"
+};
+
+/**
+ * Inserts a Response row with the specified parameters
+ * Use this for adding deterministic test data for analytics/stats tests
+ * Does NOT trigger grading, currency awarding, or any other side effects
+ *
+ * @param {number}      userId         - User ID
+ * @param {number}      questionId     - Question ID
+ * @param {number}      pointsEarned   - Points earned. Default 0
+ * @param {number}      pointsPossible - Points possible. Default 1
+ * @param {boolean}     isCorrect      - Whether correct. Default false
+ * @param {number|null} elapsedTime    - Elapsed time in seconds. Default null
+ * @param {string}      topic          - Topic/subcategory. Default 'Arrays'
+ * @param {string}      category       - Category. Default 'Introductory Programming'
+ * @returns {Promise<number>} Inserted response ID
+ */
+const insertResponse = async (userId, questionId, { pointsEarned = 0, pointsPossible = 1, isCorrect = false, elapsedTime = null, topic = 'Arrays', category = 'Introductory Programming' } = {}) => {
+  const [result] = await pool.query(
+    `INSERT INTO Response
+     (USERID, PROBLEM_ID, POINTS_EARNED, POINTS_POSSIBLE, ISCORRECT, ELAPSED_TIME, TOPIC, CATEGORY, DATETIME)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [userId, questionId, pointsEarned, pointsPossible, isCorrect ? 1 : 0, elapsedTime, topic, category]
+  );
+  return result.insertId;
+};
+
+/**
+ * Inserts a generic user with the specified parameters
+ * NOTE: Avoid inserting multiple users with duplicate info
+ *       that should be unique (email, username)
+ * @param {string}  firstName       - First name of the user to insert. Default 'Generic'
+ * @param {string}  lastName        - First name of the user to insert. Default 'User'
+ * @param {string}  username        - Username of the user to insert. Default 'genericuser'
+ * @param {string}  password        - Password of the user to insert. Default 'genericpassword'
+ * @param {string}  email           - Email of the user to insert. Default 'generic@gmail.com'
+ * @param {boolean} isProf          - Whether the inserted user is a professor. Default false
+ * @param {boolean} verified        - If isProf = true, whether the inserted professor is verified. Default false
+ * @param {number}  lifetimeExp     - Lifetime exp of the user to insert. Default 0
+ * @param {number}  weeklyExp       - Weekly exp of the user to insert. Default 0
+ * @param {number}  dailyExp        - Daily exp of the user to insert. Default 0
+ * @param {number}  coins           - Coin balance of the user to insert. Default 0
+ * @param {boolean} isSharingStats  - Whether user is opted in to share stats to the aggregate pool. Default false
+ * @returns {Promise<number>} Inserted user ID
+ */
+const insertUser = async ({ firstName = 'Generic', lastName = 'User', username = 'genericuser', password = 'genericpassword', email = 'generic@gmail.com', isProf = false, verified = false, lifetimeExp = 0, weeklyExp = 0, dailyExp = 0, coins = 0, isSharingStats = false } = {}) => {
+
+  // Insert generic user from provided or overridden arguments
+  const [result] = await pool.query(
+    `INSERT INTO User (FIRSTNAME, LASTNAME, USERNAME, PASSWORD, EMAIL, IS_PROF, VERIFIED, LIFETIME_EXP, WEEKLY_EXP, DAILY_EXP, COINS, IS_SHARING_STATS)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [firstName, lastName, username, password, email, isProf ? 1 : 0, verified ? 1 : 0, lifetimeExp, weeklyExp, dailyExp, coins, isSharingStats ? 1 : 0]
+  );
+
+  return result.insertId;
+};
+
+/**
+ * Inserts a guild with the specified parameters
+ * @param {string}  name        - Name of the guild to insert. Default 'Ancient Wolves'
+ * @param {number}  ownerId     - ID of user to make owner of the guild. Default null
+ * @param {number}  lifetimeExp - Lifetime exp of the guild. Default 0
+ * @param {number}  weeklyExp   - Weekly exp of the guild. Default 0
+ * @param {number}  coins       - Total coin bank of the guild. Default 0
+ * @param {number}  dailyExp    - Daily exp of the guild. Default 0
+ * @param {boolean} isOpen      - Whether guild is accepting requests to join. Default false
+ * @returns {Promise<number>} Inserted guild ID
+ */
+const insertGuild = async ({ name = 'Ancient Wolves', ownerId = null, lifetimeExp = 0, weeklyExp = 0, coins = 0, dailyExp = 0, isOpen = false } = {}) => {
+
+  // OWNER_ID can't be null, you actually have to give that
+  if (ownerId === null)
+  {
+    throw new Error('insertGuild() requires an ownerId');
+  }
+
+  const [result] = await pool.query(
+    `INSERT INTO Guild (NAME, OWNER_ID, LIFETIME_EXP, WEEKLY_EXP, COINS, DAILY_EXP, IS_OPEN)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [name, ownerId, lifetimeExp, weeklyExp, coins, dailyExp, isOpen]
+  );
+
+  return result.insertId;
+};
+
+/**
+ * Inserts a guild AND its owner's GuildMember row atomically
+ * Use this instead of insertGuild when you need the owner to
+ * pass assertGuildRole checks.
+ *
+ * @param {number} ownerId  - User ID of the guild owner
+ * @param {Object} options  - Same options as insertGuild
+ * @returns {Promise<number>} Inserted guild ID
+ */
+const insertGuildWithOwner = async (ownerId, options = {}) => {
+  const guildId = await insertGuild({ ...options, ownerId });
+  await pool.query(
+    'INSERT INTO GuildMember (USER_ID, GUILD_ID, ROLE) VALUES (?, ?, ?)',
+    [ownerId, guildId, 'Owner']
+  );
+  return guildId;
+};
+
+/**
+ * Inserts a GuildMember row directly.
+ * Use for adding membership state in guild tests.
+ *
+ * @param {number} userId  - User ID
+ * @param {number} guildId - Guild ID
+ * @param {string} role    - 'Member' | 'Officer' | 'Owner'
+ * @returns {Promise<void>}
+ */
+const insertGuildMember = async (userId, guildId, role = 'Member') => {
+  await pool.query(
+    'INSERT INTO GuildMember (USER_ID, GUILD_ID, ROLE) VALUES (?, ?, ?)',
+    [userId, guildId, role]
+  );
+};
+
 /**
  * Inserts a store item and purchase for it, optionally equips
  * @param {number} userId      - User to purchase for
@@ -53,15 +179,17 @@ const insertPurchase = async (userId, itemInfo = {}, isEquipped = false) => {
 
 /**
  * Inserts a question and its answers, returns question ID.
- * @param {string}         type     - Question.TYPE (e.g. 'Multiple Choice')
- * @param {Array<Object>}  answers  - Array of { text, isCorrect, rank, placement }
- * @param {number}         points   - Number of points question is worth, default 2.00
- * @returns {Promise<number>} Inserted question ID
+ * @param {string}        type        - Question.TYPE (e.g. 'Multiple Choice')
+ * @param {Array<Object>} answers     - Array of { text, isCorrect, rank, placement }
+ * @param {number}        points      - Number of points question is worth, default 2.00
+ * @param {boolean=true}  isPublished - True inserts as published, false inserts as draft. True by default.
+ * @param {number=null}   ownerId     - Question.OWNER_ID to insert. Null by default.
+ * @returns {Promise<number>}           Inserted question ID
  */
-const insertQuestion = async (type, answers = [], points = 2.00) => {
+const insertQuestion = async (type, answers = [], { points = 2.00, isPublished = true, ownerId = null } = {}) => {
   const [result] = await pool.query(
-    'INSERT INTO Question (QUESTION_TEXT, TYPE, SUBCATEGORY, SECTION, CATEGORY, POINTS_POSSIBLE) VALUES (?, ?, ?, ?, ?, ?)',
-    ['Test question', type, 'Test Topic', 'A', 'Test Category', points]
+    'INSERT INTO Question (QUESTION_TEXT, TYPE, SUBCATEGORY, SECTION, CATEGORY, POINTS_POSSIBLE, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ['Test question', type, 'Arrays', 'A', 'Introductory Programming', points, isPublished ? 1 : 0, ownerId]
   );
   const questionId = result.insertId;
 
@@ -86,8 +214,8 @@ const submitAndFetch = async (questionId, userAnswer, token) => {
     .send({
       problem_id: questionId,
       userAnswer,
-      category:   'Test Category',
-      topic:      'Test Topic',
+      category:   'Introductory Programming',
+      topic:      'Arrays',
     });
 
   const [rows] = await pool.query(
@@ -133,6 +261,39 @@ async function getAuthToken()
 }
 
 /**
+ * Get a JWT auth token for the test professor
+ * Creates the professor if it doesn't exist, then logs in.
+ * Professor is inserted as verified so login is permitted.
+ *
+ * @returns {Promise<string>} - JWT token
+ */
+async function getProfAuthToken()
+{
+  const hashedPass = await bcrypt.hash(TEST_PROF.password, 10);
+
+  await pool.query(
+    `INSERT INTO User (USERNAME, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, IS_PROF, VERIFIED)
+     VALUES (?, ?, ?, ?, ?, 1, 1)
+     ON DUPLICATE KEY UPDATE PASSWORD = VALUES(PASSWORD)`,
+    [TEST_PROF.username, TEST_PROF.email, hashedPass, TEST_PROF.firstName, TEST_PROF.lastName]
+  );
+
+  const res = await request(app)
+    .post("/api/auth/login")
+    .send({
+      username: TEST_PROF.username,
+      password: TEST_PROF.password
+    });
+
+  if (!res.body.token)
+  {
+    throw new Error("Failed to get prof auth token: " + JSON.stringify(res.body));
+  }
+
+  return res.body.token;
+}
+
+/**
  * Verifies connection to test database, exits if wrong database
  * !!! CALL THIS IN beforeAll() OF EVERY TEST FILE !!!
  * 
@@ -163,9 +324,16 @@ async function verifyTestDatabase(pool)
 
 module.exports = {
   TEST_USER,
+  TEST_PROF,
+  insertResponse,
+  insertUser,
+  insertGuild,
+  insertGuildWithOwner,
+  insertGuildMember,
   insertPurchase,
   insertQuestion,
   submitAndFetch,
   getAuthToken,
+  getProfAuthToken,
   verifyTestDatabase
 };

@@ -7,37 +7,18 @@
 //  Description:   Progress tab message component.
 //
 //  Dependencies:  react
+//                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
 
 import React from "react";
+import { ALL_TOPICS, formatSubcategoryLabel } from "../utils/topicLabels";
 
 interface ProgressMessageProps {
   history: { datetime: string; topic: string }[];
   mastery: { [topic: string]: number };
   streakCount: number;
 }
-
-const allTopics = [
-  "Input/Output",
-  "Branching",
-  "Loops",
-  "Variables",
-  "Arrays",
-  "Linked Lists",
-  "Strings",
-  "Classes",
-  "Methods",
-  "Trees",
-  "Stacks",
-  "Heaps",
-  "Tries",
-  "Bitwise Operators",
-  "Dynamic Memory",
-  "Algorithm Analysis",
-  "Recursion",
-  "Sorting"
-];
 
 const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, streakCount }) => {
   const today = new Date().toDateString();
@@ -52,12 +33,12 @@ const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, str
     .filter(([, level]) => typeof level === "number")
     .sort((a, b) => (a[1] as number) - (b[1] as number));
 
-  const weakestTopic = (attemptedTopics.length > 0 && attemptedTopics[0][1] < 100)
+  const weakestTopic = (attemptedTopics.length > 0 && attemptedTopics[0][1] < 1.0)
     ? attemptedTopics[0][0]
     : null;
 
   // Find an unattempted topic
-  const unattemptedTopics = allTopics.filter((topic) => !(topic in mastery));
+  const unattemptedTopics = ALL_TOPICS.filter((topic) => !(topic in mastery));
   const unattemptedTopic = unattemptedTopics.length > 0 ? unattemptedTopics[0] : null;
 
   return (
@@ -73,14 +54,14 @@ const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, str
 
       {weakestTopic && (
         <span>
-          A little extra practice on <strong>{weakestTopic}</strong> will help
+          A little extra practice on <strong>{formatSubcategoryLabel(weakestTopic)}</strong> will help
           solidify your skills!&nbsp;
         </span>
       )}
 
       {unattemptedTopic && (
         <span>
-          Want to branch out? Try <strong>{unattemptedTopic}</strong> next!&nbsp;
+          Want to branch out? Try <strong>{formatSubcategoryLabel(unattemptedTopic)}</strong> next!&nbsp;
         </span>
       )}
 

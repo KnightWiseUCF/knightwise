@@ -16,6 +16,7 @@
 //                 FillInTheBlank component
 //                 SelectAllThatApply component
 //                 models (RawQuestion, Question)
+//                 axios (isAxiosError)
 //
 ////////////////////////////////////////////////////////////////
 
@@ -31,6 +32,7 @@ import DragAndDrop from "../components/DragAndDrop";
 import Programming from "../components/Programming";
 import api from "../api";
 import { RawQuestion, Question } from "../models";
+import { isAxiosError } from "axios";
 
 const TopicTestPage: React.FC = () => {
   const { topicName } = useParams<{ topicName: string }>();
@@ -44,6 +46,7 @@ const TopicTestPage: React.FC = () => {
   const [programmingAnswer, setProgrammingAnswer] = useState("");
   const [programmingLanguage, setProgrammingLanguage] = useState("C");
   const [answered, setAnswered] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [feedback, setFeedback] = useState<string>("");
@@ -51,6 +54,10 @@ const TopicTestPage: React.FC = () => {
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
   const [pointsPossible, setPointsPossible] = useState<number | null>(null);
   const [normalizedScore, setNormalizedScore] = useState<number | null>(null);
+  // These next three are for programming questions only
+  const [passedTests, setPassedTests] = useState<number | null>(null);
+  const [totalTests, setTotalTests] = useState<number | null>(null);
+  const [progSubmitsRemaining, setProgSubmitsRemaining] = useState<number | null>(null);
   const navigate = useNavigate();
   const programmingLanguageIds: Record<string, number> = {
     C: 50,
@@ -212,6 +219,22 @@ const TopicTestPage: React.FC = () => {
               question.QUESTION_TYPE !== undefined
           );
 
+        // Check and set how many programming submissions
+        // the user has left for the day.
+        const token = localStorage.getItem("token");
+        try 
+        {
+          const limitRes = await api.get(
+            "/api/code/canSubmit",
+            token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          );
+          setProgSubmitsRemaining(limitRes.data.remaining);
+        } 
+        catch 
+        {
+          // Just set the questions normally
+        }
+        
         setProblems(withOptions);
       } 
       catch (error: unknown)
@@ -276,7 +299,8 @@ const TopicTestPage: React.FC = () => {
             ? programmingAnswer.trim().length > 0
             : selectedAnswers.length > 0;
 
-    if (!current || !hasAnswer) return;
+    if (!current || !hasAnswer || isSubmitting) return;
+    setIsSubmitting(true);
 
     if (questionType === "programming") {
       setPointsEarned(null);
@@ -289,6 +313,7 @@ const TopicTestPage: React.FC = () => {
         setFeedback("Unsupported language.");
         setIsCorrectAnswer(false);
         setAnswered(true);
+        setIsSubmitting(false);
         return;
       }
 
@@ -305,48 +330,58 @@ const TopicTestPage: React.FC = () => {
         );
 
         const data = result.data;
+
+        // Decrement remaining submits
+        // Backend counts all submits toward daily limit,
+        // regardless of correct/incorrect/error,
+        // as long as the response is a 200.
+        setProgSubmitsRemaining(prev => prev !== null ? prev - 1 : null);
+
+        setTotalTests(data.totalTests ?? 0);
+        setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
+
         if (data.success) {
           // Show accepted vs incorrect based on judge response.
-          const statusText = data.correct ? "Accepted" : "Incorrect";
-          // Build optional output lines only when provided.
-          const outputText = data.stdout ? `Output: ${data.stdout}` : "Output: (none)";
-          const expectedText = data.expectedOutput ? `Expected: ${data.expectedOutput}` : "";
-          setFeedback([statusText, outputText, expectedText].filter(Boolean).join(" | "));
-          setIsCorrectAnswer(Boolean(data.correct));
+          const passed = data.passedTests ?? 0;
+          const label = data.allPassed ? "Correct!" : passed > 0 ? "Not quite!" : "Incorrect.";
+          setFeedback(label);
+          setIsCorrectAnswer(Boolean(data.allPassed));
+          setPointsEarned(typeof data.pointsEarned === "number" ? data.pointsEarned : null);
+          setPointsPossible(typeof data.pointsPossible === "number" ? data.pointsPossible : null);
+          setPassedTests(passed);
         } else {
-          const statusText = `Status: ${data.status || "Execution failed"}`;
           // Include compiler/runtime errors when present.
-          const stderrText = data.stderr ? `Error: ${data.stderr}` : "";
-          const compileText = data.compile_output ? `Compile: ${data.compile_output}` : "";
-          setFeedback([statusText, compileText, stderrText].filter(Boolean).join(" | "));
+          const errorDetails = data.compile_output || data.stderr || data.error || "";
+          setPointsEarned(0);
+          setPassedTests(0);
+          setFeedback(`${data.status || "Source code error"}${errorDetails ? `: ${errorDetails}` : "."}`);
           setIsCorrectAnswer(false);
         }
       } catch (error: unknown) {
-        console.error("Failed to submit programming response:", error);
-        
-        // Log the full error details for debugging
-        if (error && typeof error === 'object' && 'response' in error) {
-          // Type-cast the error to axios error shape for safe access to response properties
-          const axiosError = error as { response?: { status?: number; data?: { error?: string; message?: string }; statusText?: string } };
-          console.error("Backend response:", {
-            status: axiosError.response?.status,
-            statusText: axiosError.response?.statusText,
-            data: axiosError.response?.data,
-          });
-          
-          const errorMsg = axiosError.response?.data?.error 
-            || axiosError.response?.data?.message
-            || axiosError.response?.statusText
-            || "Unknown error";
-          setFeedback(`Failed to submit programming response (${axiosError.response?.status || 'unknown'}): ${errorMsg}`);
-        } else {
-          const errorMessage = error instanceof Error ? error.message : "Unknown error";
-          setFeedback(`Failed to submit programming response: ${errorMessage}`);
+        if (isAxiosError(error))
+        {
+          // Daily submission limit reached.
+          // This should never actually be reachable since
+          // the backend should stop serving programming questions to users
+          // once they hit the limit. But just in case.
+          if (error.response?.status === 429)
+          {
+            setFeedback("Daily programming question submission limit exceeded. Come back tomorrow!");
+          }
+          else
+          {
+            setFeedback("Submission failed. Please try again later.");
+          }
+        }
+        else
+        {
+          setFeedback("Submission failed. Please try again later.");
         }
         setIsCorrectAnswer(false);
       }
 
       setAnswered(true);
+      setIsSubmitting(false);
       return;
     }
 
@@ -361,6 +396,7 @@ const TopicTestPage: React.FC = () => {
           setFeedback("Error: Invalid answer format for drag and drop question");
           setIsCorrectAnswer(false);
           setAnswered(true);
+          setIsSubmitting(false);
           return;
         }
         
@@ -375,6 +411,7 @@ const TopicTestPage: React.FC = () => {
           setFeedback("Error: Some answer placements are invalid");
           setIsCorrectAnswer(false);
           setAnswered(true);
+          setIsSubmitting(false);
           return;
         }
       }
@@ -386,6 +423,7 @@ const TopicTestPage: React.FC = () => {
         setPointsPossible(null);
         setNormalizedScore(null);
         setAnswered(true);
+        setIsSubmitting(false);
         return;
       }
 
@@ -405,6 +443,7 @@ const TopicTestPage: React.FC = () => {
         setFeedback("Error: Unable to serialize answer data");
         setIsCorrectAnswer(false);
         setAnswered(true);
+        setIsSubmitting(false);
         return;
       }
 
@@ -430,6 +469,7 @@ const TopicTestPage: React.FC = () => {
       );
       if (isCorrect) setCorrectCount((prev) => prev + 1);
       setAnswered(true);
+      setIsSubmitting(false);
     } 
     catch (error: unknown)
     {
@@ -456,6 +496,7 @@ const TopicTestPage: React.FC = () => {
       }
       setIsCorrectAnswer(false);
       setAnswered(true);
+      setIsSubmitting(false);
     }
   };
 
@@ -472,6 +513,8 @@ const TopicTestPage: React.FC = () => {
     setPointsEarned(null);
     setPointsPossible(null);
     setNormalizedScore(null);
+    setPassedTests(null);
+    setTotalTests(null);
     if (currentIndex + 1 < problems.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -655,6 +698,16 @@ const TopicTestPage: React.FC = () => {
           setSelectedLanguage={setProgrammingLanguage}
           handleSubmit={handleSubmit}
           handleNext={handleNext}
+          answered={answered}
+          isSubmitting={isSubmitting}
+          isCorrect={isCorrectAnswer}
+          feedbackText={feedback}
+          pointsEarned={pointsEarned}
+          pointsPossible={pointsPossible}
+          normalizedScore={normalizedScore}
+          passedTests={passedTests}
+          totalTests={totalTests}
+          submissionsRemaining={progSubmitsRemaining}
         />
       ) : questionType === "select_all_that_apply" ? (
         <SelectAllThatApply

@@ -11,6 +11,7 @@
 //                 chart.js
 //                 api instance
 //                 models (ProgressData)
+//                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
 
@@ -29,33 +30,13 @@ import {
 } from "chart.js";
 import api from "../api";
 import { ProgressData } from '../models';
+import { ALL_TOPICS, formatSubcategoryLabel } from '../utils/topicLabels';
 
 // Register required chart elements
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 const Graph: React.FC = () => {
   const [progressData, setProgressData] = useState<ProgressData>({});
-  
-  const allTopics = [
-    "Input/Output",
-    "Branching",
-    "Loops",
-    "Variables",
-    "Arrays",
-    "Linked Lists",
-    "Strings",
-    "Classes",
-    "Methods",
-    "Trees",
-    "Stacks",
-    "Heaps",
-    "Tries",
-    "Bitwise Operators",
-    "Dynamic Memory",
-    "Algorithm Analysis",
-    "Recursion",
-    "Sorting"
-  ];
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -84,15 +65,15 @@ const Graph: React.FC = () => {
 
   // Prepare radar chart data
   const chartData = {
-    labels: allTopics,
+    labels: ALL_TOPICS.map(topic => formatSubcategoryLabel(topic)),
     datasets: [
       {
         label: "Mastery Level",
-        data: allTopics.map(topic => {
+        data: ALL_TOPICS.map(topic => {
           // Set the mastery level (percentage) for each topic
           const topicData = progressData[topic];
-          if (topicData !== undefined && topicData.percentage !== undefined) {
-            return parseFloat(topicData.percentage.toString());
+          if (topicData !== undefined && topicData.metric !== undefined) {
+            return parseFloat((topicData.metric * 100).toFixed(1));
           }
           return 0;  // Set to 0 if no data is available for this topic
         }),

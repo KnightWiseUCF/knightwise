@@ -19,7 +19,7 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { app, pool } = require('../server');
-const { verifyTestDatabase } = require('./testHelpers');
+const { verifyTestDatabase, insertQuestion } = require('./testHelpers');
 
 // Mock Discord webhook
 const { notifyUserEvent } = require('../services/discordWebhook');
@@ -68,7 +68,6 @@ beforeAll(async () => {
 
   // Cleanup
   await pool.query("DELETE FROM User");
-  await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query("DELETE FROM Question");
   await pool.query("DELETE FROM AnswerText");
@@ -79,7 +78,6 @@ afterEach(async () => {
   // More cleanup
   jest.clearAllMocks();
   await pool.query("DELETE FROM User");
-  await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query("DELETE FROM Question");
   await pool.query("DELETE FROM AnswerText");
@@ -221,14 +219,14 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "loginprof", "loginprof@ucf.edu", 1);
 
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "loginprof",
       password: "testpass123",
     });
 
     // then: token with professor role
     expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe("Professor Logged In");
+    expect(res.body.message).toBe("User Logged In");
     expect(res.body.token).toBeDefined();
 
     const decoded = jwt.verify(res.body.token, process.env.JWT_SECRET);
@@ -241,7 +239,7 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "unverifiedprof", "unverified@ucf.edu", 0);
 
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "unverifiedprof",
       password: "testpass123",
     });
@@ -256,19 +254,19 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "wrongpassprof", "wrongpass@ucf.edu", 1);
 
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "wrongpassprof",
       password: "wrongpassword",
     });
 
     // then
     expect(res.statusCode).toBe(400);
-    expect(res.body.message).toBe("Invalid credentials.");
+    expect(res.body.message).toBe("Invalid credentials");
   });
 
   test("login - fail if professor does not exist", async () => {
     // when
-    const res = await request(app).post("/api/profauth/login").send({
+    const res = await request(app).post("/api/auth/login").send({
       username: "ghostprof",
       password: "testpass123",
     });
@@ -289,7 +287,7 @@ describe("Prof Auth Routes", () => {
     );
 
     // when
-    const res = await request(app).post("/api/profauth/resetPassword").send({
+    const res = await request(app).post("/api/auth/resetPassword").send({
       email,
       password: "newpass456",
     });
@@ -308,14 +306,14 @@ describe("Prof Auth Routes", () => {
     await insertProf(pool, "noverifyprof", "noverify@ucf.edu", 1);
 
     // when
-    const res = await request(app).post("/api/profauth/resetPassword").send({
+    const res = await request(app).post("/api/auth/resetPassword").send({
       email: "noverify@ucf.edu",
       password: "newpass456",
     });
 
     // then
     expect(res.statusCode).toBe(403);
-    expect(res.body.message).toBe("Email verification required.");
+    expect(res.body.message).toBe("Email verification required");
   });
 
   test("resetPassword - fail if new password same as current", async () => {
@@ -328,7 +326,7 @@ describe("Prof Auth Routes", () => {
     );
 
     // when: same password as what insertProf set
-    const res = await request(app).post("/api/profauth/resetPassword").send({
+    const res = await request(app).post("/api/auth/resetPassword").send({
       email,
       password: "testpass123",
     });
@@ -822,5 +820,56 @@ describe("Admin Routes - Draft/Publish", () => {
       .set("Authorization", `Bearer ${attackerToken}`);
 
     expect(res.statusCode).toBe(403);
+  });
+
+  test("published - professor sees only their own published questions", async () => {
+    // Create two professors
+    const { profId, token } = await insertProf(pool, "pubviewprof", "pubview@ucf.edu", 1);
+    const { profId: otherId } = await insertProf(pool, "otherpubprof", "otherpub@ucf.edu", 1);
+
+    // Insert published questions for both professors
+    await insertQuestion("MCQ", [], { isPublished: true, ownerId: profId });
+    await insertQuestion("MCQ", [], { isPublished: true, ownerId: otherId });
+
+    // First professor calls endpoint
+    const res = await request(app)
+      .get("/api/admin/published")
+      .set("Authorization", `Bearer ${token}`);
+
+    // Should only see first prof's question
+    expect(res.statusCode).toBe(200);
+    expect(res.body.published.length).toBe(1);
+    expect(res.body.published[0].OWNER_ID).toBe(profId);
+  });
+
+  test("published - draft questions do not appear in published", async () => {
+    const { profId, token } = await insertProf(pool, "draftcheckprof", "draftcheck@ucf.edu", 1);
+
+    // Insert draft queston for the professor
+    await insertQuestion("MCQ", [], { isPublished: false, ownerId: profId });
+
+    const res = await request(app)
+      .get("/api/admin/published")
+      .set("Authorization", `Bearer ${token}`);
+
+    // Shouldn't see it
+    expect(res.statusCode).toBe(200);
+    expect(res.body.published.length).toBe(0);
+  });
+
+  test("published - returns empty array when professor has no published questions", async () => {
+    const { token } = await insertProf(pool, "emptypubprof", "emptypub@ucf.edu", 1);
+
+    const res = await request(app)
+      .get("/api/admin/published")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.published).toEqual([]);
+  });
+
+  test("published - requires auth token", async () => {
+    const res = await request(app).get("/api/admin/published");
+    expect(res.statusCode).toBe(401);
   });
 });

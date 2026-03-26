@@ -19,12 +19,14 @@ const startExpResetJobs = () =>
   // Every day at midnight UTC
   cron.schedule('0 0 * * *', async () => {
   await pool.query('UPDATE User SET DAILY_EXP = 0');
+  await pool.query('UPDATE Guild SET DAILY_EXP = 0');
   console.log('Daily EXP reset');
   });
 
   // Every Monday at midnight UTC
   cron.schedule('0 0 * * 1', async () => {
   await pool.query('UPDATE User SET WEEKLY_EXP = 0');
+  await pool.query('UPDATE Guild SET WEEKLY_EXP = 0');
   console.log('Weekly EXP reset');
   });
 };

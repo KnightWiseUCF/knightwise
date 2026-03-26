@@ -22,7 +22,7 @@ CREATE TABLE `AnswerText` (
   PRIMARY KEY (`ID`),
   KEY `QUESTION_ID` (`QUESTION_ID`),
   CONSTRAINT `AnswerText_ibfk_1` FOREIGN KEY (`QUESTION_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=782 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=789 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `EmailCode`;
@@ -37,22 +37,85 @@ CREATE TABLE `EmailCode` (
   `CREATED_AT` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`ID`),
   UNIQUE KEY `EMAIL` (`EMAIL`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-DROP TABLE IF EXISTS `Professor`;
+DROP TABLE IF EXISTS `Follower`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `Professor` (
+CREATE TABLE `Follower` (
+  `FOLLOWER_ID` int NOT NULL,
+  `FOLLOWING_ID` int NOT NULL,
+  PRIMARY KEY (`FOLLOWER_ID`,`FOLLOWING_ID`),
+  KEY `FOLLOWING_ID` (`FOLLOWING_ID`),
+  CONSTRAINT `Follower_ibfk_1` FOREIGN KEY (`FOLLOWER_ID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
+  CONSTRAINT `Follower_ibfk_2` FOREIGN KEY (`FOLLOWING_ID`) REFERENCES `User` (`ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `Guild`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `Guild` (
   `ID` int NOT NULL AUTO_INCREMENT,
-  `PASSWORD` varchar(255) NOT NULL,
-  `EMAIL` varchar(255) NOT NULL,
-  `FIRSTNAME` varchar(100) DEFAULT NULL,
-  `LASTNAME` varchar(100) DEFAULT NULL,
-  `USERNAME` varchar(255) DEFAULT NULL,
-  `VERIFIED` smallint NOT NULL DEFAULT '0',
-  PRIMARY KEY (`ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `NAME` varchar(50) NOT NULL,
+  `OWNER_ID` int NOT NULL,
+  `LIFETIME_EXP` double NOT NULL DEFAULT '0',
+  `WEEKLY_EXP` double NOT NULL DEFAULT '0',
+  `COINS` double NOT NULL DEFAULT '0',
+  `DAILY_EXP` double NOT NULL DEFAULT '0',
+  `ESTABLISHED` datetime DEFAULT CURRENT_TIMESTAMP,
+  `IS_OPEN` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `NAME` (`NAME`),
+  UNIQUE KEY `OWNER_ID` (`OWNER_ID`),
+  CONSTRAINT `Guild_ibfk_1` FOREIGN KEY (`OWNER_ID`) REFERENCES `User` (`ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `GuildEntry`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `GuildEntry` (
+  `USER_ID` int NOT NULL,
+  `GUILD_ID` int NOT NULL,
+  `TYPE` enum('Invite','Request') NOT NULL,
+  PRIMARY KEY (`USER_ID`,`GUILD_ID`),
+  KEY `GUILD_ID` (`GUILD_ID`),
+  CONSTRAINT `GuildEntry_ibfk_1` FOREIGN KEY (`USER_ID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
+  CONSTRAINT `GuildEntry_ibfk_2` FOREIGN KEY (`GUILD_ID`) REFERENCES `Guild` (`ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `GuildMember`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `GuildMember` (
+  `USER_ID` int NOT NULL,
+  `GUILD_ID` int NOT NULL,
+  `ROLE` enum('Member','Officer','Owner') NOT NULL,
+  `COINS_CONTRIBUTED` double NOT NULL DEFAULT '0',
+  `JOINED` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`USER_ID`,`GUILD_ID`),
+  UNIQUE KEY `USER_ID` (`USER_ID`),
+  KEY `GUILD_ID` (`GUILD_ID`),
+  CONSTRAINT `GuildMember_ibfk_1` FOREIGN KEY (`USER_ID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
+  CONSTRAINT `GuildMember_ibfk_2` FOREIGN KEY (`GUILD_ID`) REFERENCES `Guild` (`ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `GuildUnlock`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `GuildUnlock` (
+  `GUILD_ID` int NOT NULL,
+  `ITEM_ID` int NOT NULL,
+  `IS_EQUIPPED` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`GUILD_ID`,`ITEM_ID`),
+  KEY `ITEM_ID` (`ITEM_ID`),
+  CONSTRAINT `GuildUnlock_ibfk_1` FOREIGN KEY (`ITEM_ID`) REFERENCES `StoreItem` (`ID`) ON DELETE CASCADE,
+  CONSTRAINT `GuildUnlock_ibfk_2` FOREIGN KEY (`GUILD_ID`) REFERENCES `Guild` (`ID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `Purchase`;
@@ -84,10 +147,10 @@ CREATE TABLE `Question` (
   `QUESTION_TEXT` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
   `OWNER_ID` int DEFAULT NULL,
   `IS_PUBLISHED` smallint NOT NULL DEFAULT '1',
-  PRIMARY KEY (`ID`),
-  KEY `FK_Question_Owner` (`OWNER_ID`),
-  CONSTRAINT `FK_Question_Owner` FOREIGN KEY (`OWNER_ID`) REFERENCES `User` (`ID`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=202 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  PRIMARY KEY (`ID`) USING BTREE,
+  KEY `FK_Question_Owner` (`OWNER_ID`) USING BTREE,
+  CONSTRAINT `Question_ibfk_1` FOREIGN KEY (`OWNER_ID`) REFERENCES `User` (`ID`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=213 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `Response`;
@@ -104,12 +167,13 @@ CREATE TABLE `Response` (
   `TOPIC` varchar(100) DEFAULT NULL,
   `POINTS_EARNED` decimal(5,2) DEFAULT NULL,
   `POINTS_POSSIBLE` decimal(5,2) DEFAULT NULL,
+  `ELAPSED_TIME` int DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `USERID` (`USERID`),
   KEY `PROBLEM_ID` (`PROBLEM_ID`),
   CONSTRAINT `Response_ibfk_1` FOREIGN KEY (`USERID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
   CONSTRAINT `Response_ibfk_2` FOREIGN KEY (`PROBLEM_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=487 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=856 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `StoreItem`;
@@ -117,11 +181,12 @@ DROP TABLE IF EXISTS `StoreItem`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `StoreItem` (
   `ID` int NOT NULL AUTO_INCREMENT,
-  `TYPE` varchar(50) NOT NULL,
+  `TYPE` enum('flair','profile_picture','background') NOT NULL,
   `COST` decimal(10,2) NOT NULL,
   `NAME` varchar(50) NOT NULL,
+  `IS_GUILD_ITEM` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `TestCase`;
@@ -151,7 +216,7 @@ CREATE TABLE `TestRun` (
   KEY `PROBLEM_ID` (`QUESTION_ID`),
   CONSTRAINT `TestRun_ibfk_1` FOREIGN KEY (`USERID`) REFERENCES `User` (`ID`) ON DELETE CASCADE,
   CONSTRAINT `TestRun_ibfk_2` FOREIGN KEY (`QUESTION_ID`) REFERENCES `Question` (`ID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `User`;
@@ -164,16 +229,16 @@ CREATE TABLE `User` (
   `FIRSTNAME` varchar(100) DEFAULT NULL,
   `LASTNAME` varchar(100) DEFAULT NULL,
   `USERNAME` varchar(255) DEFAULT NULL,
-  `VERIFIED` tinyint(1) NOT NULL DEFAULT 0,
-  `IS_PROF` tinyint(1) NOT NULL DEFAULT 0,
+  `VERIFIED` tinyint(1) NOT NULL DEFAULT '0',
+  `IS_PROF` tinyint(1) NOT NULL DEFAULT '0',
   `LIFETIME_EXP` double NOT NULL DEFAULT '0',
   `WEEKLY_EXP` double NOT NULL DEFAULT '0',
-  `DAILY_EXP` double NOT NULL DEFAULT '0',
   `COINS` double NOT NULL DEFAULT '0',
+  `DAILY_EXP` double NOT NULL DEFAULT '0',
+  `IS_SHARING_STATS` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `EMAIL` (`EMAIL`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

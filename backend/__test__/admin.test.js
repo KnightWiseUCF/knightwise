@@ -19,7 +19,7 @@
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const { app, pool } = require("../server");
-const { TEST_USER, verifyTestDatabase } = require("./testHelpers");
+const { TEST_USER, verifyTestDatabase, insertQuestion } = require("./testHelpers");
 const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Mock Mailjet
@@ -56,7 +56,6 @@ beforeAll(async () => {
   await verifyTestDatabase(pool);
 
   await pool.query("DELETE FROM User");
-  await pool.query("DELETE FROM Professor");
   await pool.query("DELETE FROM EmailCode");
   await pool.query('DELETE FROM AnswerText');
   await pool.query('DELETE FROM Question');
@@ -64,7 +63,6 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await pool.query('DELETE FROM Response');
-  await pool.query("DELETE FROM Professor");
   await pool.query('DELETE FROM AnswerText');
   await pool.query('DELETE FROM Question');
   await pool.query("DELETE FROM User");
@@ -313,6 +311,22 @@ describe("Admin Routes", () => {
       expect(res.statusCode).toBe(401);
     });
 
+    test("GET /api/admin/published returns all published questions for admin", async () => { 
+      // Insert 3 questions, two published and one draft
+      await insertQuestion("MCQ", [], { isPublished: true });
+      await insertQuestion("MCQ", [], { isPublished: false });
+      await insertQuestion("MCQ", [], { isPublished: true });
+
+      // Call endpoint as admin
+      const res = await request(app)
+        .get("/api/admin/published")
+        .set("Authorization", `Bearer ${process.env.ADMIN_KEY}`);
+
+      // Admin should be able to see both published questions
+      expect(res.statusCode).toBe(200);
+      expect(res.body.published.length).toBeGreaterThanOrEqual(2);
+    });
+    
     // store item tests
     test('POST /api/admin/store/createitem creates a store item', async () => {
       const res = await request(app)
