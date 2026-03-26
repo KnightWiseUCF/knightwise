@@ -13,7 +13,7 @@ import api from "../api";
 import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { Trophy, ChevronLeft, ChevronRight, Swords, Users } from "lucide-react";
+import { Trophy, ChevronLeft, ChevronRight, Swords, Users, UserCheck } from "lucide-react";
 
 interface LeaderboardEntry
 {
@@ -36,20 +36,59 @@ interface LeaderboardResponse
   leaderboard: LeaderboardEntry[];
 }
 
+interface GuildLeaderboardEntry
+{
+  id?:            number | string | null;
+  rank:           number;
+  name:           string;
+  exp:            number;
+  guildPicture:   string | null;
+}
+
+interface GuildLeaderboardResponse
+{
+  guildRank:    number | null;
+  guildExp:     number | null;
+  guildID:      number | null;
+  page:         number;
+  totalPages:   number;
+  leaderboard:  GuildLeaderboardEntry[];
+}
+
+
+
 type Tab  = "weekly" | "lifetime";
-type Mode = "individual" | "guild";
+type Mode = "individual" | "guild" | "followed";
 
 const Leaderboard: React.FC = () =>
 {
   const [mode, setMode]             = useState<Mode>("individual");
   const [activeTab, setActiveTab]   = useState<Tab>("weekly");
   const [data, setData]             = useState<LeaderboardResponse | null>(null);
+  const [guildData, setguildData]   = useState<GuildLeaderboardResponse | null>(null);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [page, setPage]             = useState(1);
   const { equippedItems } = useUserCustomizationStore();
-
   const { user } = useUserCustomizationStore();
+
+  const generateGuildLeaderboard = (n: number) => {
+    let i = 0;
+    let output: GuildLeaderboardEntry[] = [];
+    for (i = 0; i < n; i++)
+    {
+      if(i === 7) output[i] = {id: i, rank: n-i, name: 'MyGuild' + i, exp: (n%(i+1))*(2/(i+1)), guildPicture: null};
+      else output[i] = {id: i, rank: n-i, name: 'Guild' + i, exp: (n%(i+1))*(2/(i+1)), guildPicture: null};
+      
+    }
+    output.sort((a: GuildLeaderboardEntry, b: GuildLeaderboardEntry) => {return a.rank - b.rank})
+    return output;
+  }
+
+  const generateGuildLeaderboardResponse = (n: number) => {
+    let output: GuildLeaderboardResponse = {guildRank: n-7, guildExp: (n%(7+1))*(2/(7+1)), guildID: 7, page: 1, totalPages: n%25, leaderboard: generateGuildLeaderboard(n)}
+    return output
+  }
 
   useEffect(() =>
   {
@@ -95,15 +134,71 @@ const Leaderboard: React.FC = () =>
     }
   }, []);
 
+  const fetchFollowedLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
+  {
+    setLoading(true);
+    setError(null);
+    try
+    {
+      
+      const response = await api.get<LeaderboardResponse>(
+        `/api/leaderboard/followed/${tab}?page=${pageNum}`
+      );
+      setData(response.data);
+    }
+    catch
+    {
+      setError("Failed to load leaderboard. Please try again.");
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchGuildLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
+  {
+    setLoading(true);
+    setError(null);
+    try
+    {
+      /*
+      const response = await api.get<GuildLeaderboardResponse>(
+        `/api/leaderboard/guild/${tab}?page=${pageNum}`
+      );
+      setguildData(response.data);
+      */
+      setguildData(generateGuildLeaderboardResponse(52));
+    }
+    catch
+    {
+      setError("Failed to load leaderboard. Please try again.");
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() =>
   {
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
-  }, [mode, activeTab, page, fetchLeaderboard]);
+    else if (mode === "followed") void fetchFollowedLeaderboard(activeTab, page);
+    else if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
+  }, [mode, activeTab, page, fetchLeaderboard, fetchFollowedLeaderboard, fetchGuildLeaderboard]);
 
   const handleTabChange = (tab: Tab) =>
   {
     if (tab === activeTab) return;
     setActiveTab(tab);
+    setPage(1);
+    setData(null);
+  };
+
+  const handleModeChange = (newMode: Mode) =>
+  {
+    if (mode === newMode) return;
+    setMode(newMode);
     setPage(1);
     setData(null);
   };
@@ -127,10 +222,11 @@ const Leaderboard: React.FC = () =>
   };
 
   const userRef = useRef<HTMLTableRowElement | null>(null);
+  const guildRef = useRef<HTMLTableRowElement | null>(null);
 
   const scrollToUser = async () => 
   {
-    if(loading == false){
+    if(loading == false && mode !== "guild"){
       userRef.current?.scrollIntoView({ behavior: 'smooth', block: "center"})
 
       if (userRef.current == null) 
@@ -153,6 +249,46 @@ const Leaderboard: React.FC = () =>
               for(let k = 0; k < response.data.leaderboard.length && !userFound; k++) 
               {
                 if (response.data?.leaderboard[k].username.toLowerCase() === currentUsername?.toLowerCase()) 
+                {
+                  //set page to user's page and scroll to them
+                  setPage(i);
+                  scrollToUser();
+                  //stops searching in both loops
+                  userFound = true;
+                }
+              }
+            }
+            catch
+            {
+              setError("Failed to load leaderboard. Please try again.");
+            }
+          }
+        }
+      }
+    }
+    else if(loading == false && mode === "guild"){
+      guildRef.current?.scrollIntoView({ behavior: 'smooth', block: "center"})
+
+      if (guildRef.current == null) 
+      {
+        let userFound = false; 
+
+        if(guildData?.totalPages != undefined)
+        {
+          //go thru all leaderboard pages and find user
+          for(let i = 1; i <= guildData?.totalPages && !userFound; i++) 
+          {
+            setError(null);
+            try
+            {
+              
+              const response = await api.get<GuildLeaderboardResponse>(
+                `/api/leaderboard/guilds/${activeTab}?page=${i}`
+              );
+
+              for(let k = 0; k < response.data.leaderboard.length && !userFound; k++) 
+              {
+                if (response.data?.leaderboard[k].id === response.data?.guildID) 
                 {
                   //set page to user's page and scroll to them
                   setPage(i);
@@ -193,26 +329,37 @@ const Leaderboard: React.FC = () =>
             {/* Left: Individual / Guild */}
             <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
               <button
-                onClick={() => setMode("individual")}
+                onClick={() => handleModeChange("individual")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "individual"
                     ? "bg-gray-800 text-white shadow"
                     : "bg-white text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                <Users size={15} />
+                <Users size={16} />
                 Individual
               </button>
               <button
-                onClick={() => setMode("guild")}
+                onClick={() => handleModeChange("followed")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
+                  mode === "followed"
+                    ? "bg-gray-800 text-white shadow"
+                    : "bg-white text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <UserCheck size={16} />
+                Followed
+              </button>
+              <button
+                onClick={() => handleModeChange("guild")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "guild"
                     ? "bg-gray-800 text-white shadow"
                     : "bg-white text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                <Swords size={15} />
-                Guilds
+                <Swords size={16} />
+                Guild
               </button>
             </div>
             
@@ -220,10 +367,9 @@ const Leaderboard: React.FC = () =>
             <div className="flex items-center justify-between gap-10">
               <button 
                 onClick={async () => {scrollToUser()}}
-                
-                className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow"
+                className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow hover:bg-blue-800"
               >
-                {mode === "individual" ? "Find Yourself" : "Find Your Guild"}
+                {mode === "guild" ? "Find Your Guild" : "Find Yourself"}
               </button>
 
               {/* Right: Weekly / Lifetime */}
@@ -246,19 +392,8 @@ const Leaderboard: React.FC = () =>
             </div>
           </div>
 
-          {/* Guild placeholder */}
-          {mode === "guild" && (
-            <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-              <Swords className="text-gray-300" size={56} />
-              <h2 className="text-xl font-bold text-gray-500">Guild Leaderboard Coming Soon</h2>
-              <p className="text-sm text-gray-400 max-w-sm">
-                Guilds haven't been implemented yet. Check back later to compete as a team!
-              </p>
-            </div>
-          )}
-
           {/* Your rank banner */}
-          {mode === "individual" && data && (
+          {((mode === "individual" || mode === "followed") && data) ? (
             <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
               <Trophy className="text-blue-400 shrink-0" size={32} />
               <div>
@@ -275,21 +410,38 @@ const Leaderboard: React.FC = () =>
                 </p>
               </div>
             </div>
+          ) : mode === "guild" && guildData && guildData.guildID !== null && (
+            <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+              <Trophy className="text-blue-400 shrink-0" size={32} />
+              <div>
+                <p className="text-sm text-blue-500 font-medium uppercase tracking-wide">
+                  Your Guild's {activeTab === "weekly" ? "Weekly" : "Lifetime"} Rank
+                </p>
+                <p className="text-xl font-bold text-blue-700">
+                  {guildData.guildRank !== null ? `${guildData.guildRank}${getRankOrdinal(guildData.guildRank)}` : "Unranked"}
+                  {guildData.guildExp !== null && (
+                    <span className="ml-3 text-base font-normal text-blue-500">
+                      {guildData.guildExp.toLocaleString()} XP
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
           )}
 
           {/* Loading state */}
-          {mode === "individual" && loading && (
+          {loading && (
             <div className="text-center py-16 text-gray-400 text-sm">Loading...</div>
           )}
 
           {/* Error state */}
-          {mode === "individual" && error && !loading && (
+          {error && !loading && (
             <div className="text-center py-8 text-red-500 text-sm">{error}</div>
           )}
 
           
-          {/* Table */}
-          {mode === "individual" && !loading && data && (
+          {/* Table for Individual/Follower Leaderboards */}
+          {(mode === "individual" || mode === "followed") && !loading && data && (
             <>
               <div className="w-full flex justify-center items-center">
                 <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
@@ -448,6 +600,183 @@ const Leaderboard: React.FC = () =>
                     </span>
                     <button
                       disabled={page >= data.totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                      className={backgroundUrl ? "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-white ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors" : 
+                        "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"}
+                    >
+                      Next
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Guild Leaderboard Table */}
+          {mode === "guild" && !loading && guildData && (
+            <>
+              <div className="w-full flex justify-center items-center">
+                <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
+                  [&::-webkit-scrollbar]:rounded-full
+                  [&::-webkit-scrollbar]:w-2 
+                  [&::-webkit-scrollbar-thumb]:bg-gray-400 
+                  [&::-webkit-scrollbar-thumb]:rounded-lg
+                  ">
+                  <table className="w-full text-sm py-12">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-left text-gray-500 text-sm uppercase tracking-wide">
+                        <th className="pb-3 pr-4 pl-10 w-16 text-center">Rank</th>
+                        <th className="pb-3 pl-5">Guild</th>
+                        <th className="pb-3 text-right pr-10">
+                          {activeTab === "weekly" ? "Weekly XP" : "Lifetime XP"}
+                        </th>
+                      </tr>
+                    </thead>
+                    
+                    <tbody>
+                      {guildData.leaderboard.map((entry) =>
+                      {
+                        const isCurrentUserGuild =
+                          guildData.guildID !== null &&
+                          guildData.guildID === entry.id;
+
+                        // TODO NOT SURE IF THIS WILL WORK
+                        const guildPicUrl = entry.guildPicture
+                          ? getProfilePictureUrlByItemName(entry.guildPicture)
+                          : null;
+
+                        const { symbol, color, size } = rankBadge(entry.rank);
+                        
+                        
+                        const resolvedGuildId = Number(entry.id);
+                        const hasValidGuildId = Number.isInteger(resolvedGuildId) && resolvedGuildId > 0;
+                        const hasGuildName = typeof entry.name === "string" && entry.name.trim().length > 0;
+                        const encodedGuildName = hasGuildName ? encodeURIComponent(entry.name.trim()) : "";
+                        
+                        // TODO NOT SURE IF THISLL WORK
+                        const guildPath = hasValidGuildId
+                          ? `/guild/${resolvedGuildId}`
+                          : (hasGuildName ? `/guild/u/${encodedGuildName}` : (isCurrentUserGuild ? "/guild" : null));
+                          
+                          
+                        return (
+                          <tr
+                            key={`${entry.name}-${entry.rank}`}
+                            className={`border-b border-gray-100 transition-colors ${
+                              isCurrentUserGuild
+                                ? "bg-blue-100"
+                                : "hover:bg-gray-200"
+                            }`}
+                            ref={isCurrentUserGuild ? guildRef : null}
+                          >
+                            {/* Rank */}
+                            <td className="py-3 pl-10 pr-4 text-center">
+                              <span className={`font-bold ${color} ${size}`}>
+                                {symbol}
+                              </span>
+                            </td>
+
+                            {/* User */}
+                            <td className="py-4 pl-5 text-base">
+                            
+                              { guildPath ? (
+                                <Link
+                                  to={guildPath}
+                                  state={{
+                                    guildLeaderboardEntry: {
+                                      name: entry.name,
+                                      guildPicture: entry.guildPicture,
+                                      exp: entry.exp,
+                                      tab: activeTab,
+                                    }
+                                  } }
+                                  className="group inline-flex max-w-full items-center gap-3 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                  aria-label={`View the Guild ${entry.name}`}
+                                >
+                                  {guildPicUrl ? (
+                                    <img
+                                      src={guildPicUrl}
+                                      alt={entry.name}
+                                      className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-sm font-bold shrink-0">
+                                      {(entry.name?.[0] ?? "?").toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className={`leading-tight truncate transition-colors pb-1 group-hover:text-blue-600 ${isCurrentUserGuild ? "font-semibold text-gray-800" : "text-gray-800"}`}>
+                                      {entry.name}
+                                    </p>
+                                  </div>
+                                  {isCurrentUserGuild && (
+                                      <span className="ml-1 shrink-0 text-xs bg-blue-200 border border-blue-600 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
+                                        Your Guild
+                                      </span>
+                                  )}
+                                </Link>
+                              ) : (
+                                <div
+                                  className="inline-flex max-w-full items-center gap-3"
+                                  title="Profile unavailable"
+                                >
+                                  {guildPicUrl ? (
+                                    <img
+                                      src={guildPicUrl}
+                                      alt={entry.name}
+                                      className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-bold shrink-0">
+                                      {(entry.name?.[0] ?? "?").toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className={`leading-tight truncate ${isCurrentUserGuild ? "font-semibold text-gray-800" : "text-gray-800"}`}>
+                                      {entry.name}
+                                    </p>
+                                    <p className="text-gray-400 text-xs truncate">@{entry.name}</p>
+                                  </div>
+                                  {isCurrentUserGuild && (
+                                    <span className="ml-1 shrink-0 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
+                                      Your Guild
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* XP */}
+                            <td className="py-3 pr-10 text-right font-semibold text-gray-700 text-sm">
+                              {entry.exp.toLocaleString()} XP
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Pagination */}
+              {guildData.totalPages > 1 && (
+                <div className="flex w-full h-10 relative items-center justify-center">
+                  <div className="flex w-full gap-10 items-center justify-center absolute">
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => p - 1)}
+                      className={backgroundUrl ? "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-white ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors" : 
+                        "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"}
+                    >
+                      <ChevronLeft size={16} />
+                      Prev
+                    </button>
+                    <span className="text-sm text-gray-500">
+                      Page {guildData.page} of {guildData.totalPages}
+                    </span>
+                    <button
+                      disabled={page >= guildData.totalPages}
                       onClick={() => setPage((p) => p + 1)}
                       className={backgroundUrl ? "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-white ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors" : 
                         "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"}
