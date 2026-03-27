@@ -215,6 +215,7 @@ router.get('/history', authMiddleware, asyncHandler(async (req, res) => {
       r.USER_ANSWER,
       r.POINTS_EARNED,
       r.POINTS_POSSIBLE,
+      r.ELAPSED_TIME,
       q.TYPE
      FROM Response r
      JOIN Question q ON r.PROBLEM_ID = q.ID
@@ -241,6 +242,7 @@ router.get('/history', authMiddleware, asyncHandler(async (req, res) => {
       userAnswer:     row.USER_ANSWER,
       pointsEarned:   row.POINTS_EARNED,
       pointsPossible: row.POINTS_POSSIBLE,
+      elapsedTime:    row.ELAPSED_TIME ?? null,
     })),
     totalEntries,
     currentPage: page,
