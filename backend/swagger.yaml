@@ -529,6 +529,64 @@ paths:
         500:
           description: Server Error
 
+  /users/{id}/followers:
+    get:
+      tags:
+        - Users
+      summary: Fetch a user's followers.
+      operationId: getFollowers
+      description: Returns a list of users who follow the given user. Any authenticated user can view any user's followers.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/FollowListResponse'
+        400:
+          description: Bad Request - Invalid user ID
+        401:
+          description: Unauthorized
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+
+  /users/{id}/followed:
+    get:
+      tags:
+        - Users
+      summary: Fetch users followed by a user.
+      operationId: getFollowed
+      description: Returns a list of users that the given user follows. Any authenticated user can view any user's followed list.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          description: The unique ID of the user.
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/FollowListResponse'
+        400:
+          description: Bad Request - Invalid user ID
+        401:
+          description: Unauthorized
+        404:
+          description: User Not Found
+        500:
+          description: Server Error
+
   /users/{id}/stats-opt-in:
     put:
       tags:
@@ -2328,6 +2386,44 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/StoreItem'
+
+  FollowListResponse:
+    type: object
+    properties:
+      followers:
+        type: array
+        items:
+          $ref: '#/definitions/FollowUser'
+        description: Present on /followers endpoint.
+      followed:
+        type: array
+        items:
+          $ref: '#/definitions/FollowUser'
+        description: Present on /followed endpoint.
+
+  FollowUser:
+    type: object
+    properties:
+      ID:
+        type: integer
+        example: 42
+      USERNAME:
+        type: string
+        example: "knightking"
+        nullable: true
+      FIRSTNAME:
+        type: string
+        example: "Arthur"
+        nullable: true
+      LASTNAME:
+        type: string
+        example: "Pendragon"
+        nullable: true
+      profilePicture:
+        type: string
+        example: "Octocat"
+        nullable: true
+        description: Name of the user's equipped profile picture item, or null if none equipped.
 
   UserSearchResponse:
     type: object

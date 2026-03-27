@@ -27,6 +27,8 @@ const {
         unequipItem,
         followUser,
         unfollowUser,
+        getFollowers,
+        getFollowed,
         searchUsers,
         updateStatsOptIn,
       } = require("../controllers/userController");
@@ -109,6 +111,20 @@ router.post("/:id/follow", authMiddleware, followUser);
  * @access  Protected
  */
 router.delete("/:id/follow", authMiddleware, unfollowUser);
+
+/**
+ * @route   GET /api/users/:id/followers
+ * @desc    Fetch a given user's list of followers
+ * @access  Protected
+ */
+router.get("/:id/followers", authMiddleware, getFollowers);
+
+/**
+ * @route   GET /api/users/:id/followed
+ * @desc    Fetch a given user's list of followed users
+ * @access  Protected
+ */
+router.get("/:id/followed", authMiddleware, getFollowed);
 
 /**
  * @route   PUT /api/users/:id/stats-opt-in
