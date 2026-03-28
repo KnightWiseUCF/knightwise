@@ -2395,10 +2395,6 @@ definitions:
         type: integer
         example: 7
         nullable: true
-      IS_PUBLISHED:
-        type: integer
-        example: 1
-        description: "Always 1, this endpoint only returns published questions."
       answers:
         type: array
         description: Associated answer rows from the AnswerText table.
