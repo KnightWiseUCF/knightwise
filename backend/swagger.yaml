@@ -2320,6 +2320,10 @@ definitions:
           COINS:
             type: number
             example: 450.0
+          IS_SHARING_STATS:
+            type: boolean
+            example: false
+            description: "True if user opted into sharing aggregate statistics, false otherwise."
       equippedItems:
         type: array
         items:

@@ -72,14 +72,15 @@ export interface LeaderboardResponse
 // User types
 export interface UserInfo
 {
-  ID:           number;
-  USERNAME:     string | null; // While these should never be null, technically
-  FIRSTNAME:    string | null; // they can be according to the schema.
-  LASTNAME:     string | null;
-  DAILY_EXP:    number;
-  LIFETIME_EXP: number;
-  WEEKLY_EXP:   number;
-  COINS:        number;
+  ID:               number;
+  USERNAME:         string | null; // While these should never be null, technically
+  FIRSTNAME:        string | null; // they can be according to the schema.
+  LASTNAME:         string | null;
+  DAILY_EXP:        number;
+  LIFETIME_EXP:     number;
+  WEEKLY_EXP:       number;
+  COINS:            number;
+  IS_SHARING_STATS: boolean; // a number in the database, converted to boolean by API
 }
 
 // GET /api/users/:id response
@@ -146,6 +147,7 @@ export interface HistoryEntry
   userAnswer:     string | null; // JSON with answer data
   pointsEarned:   number | null;
   pointsPossible: number | null;
+  elapsedTime:    number | null;
 }
 
 export interface HistoryResponse
