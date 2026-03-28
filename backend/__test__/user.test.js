@@ -743,6 +743,206 @@ describe('DELETE /api/users/:id/follow', () => {
   });
 });
 
+// Test user follower fetching
+describe('GET /api/users/:id/followers', () => {
+
+  test('200 - returns followers for user', async () => {
+    const followerId = await insertUser({ username: 'follower_a', email: 'follower_a@test.com' });
+
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [followerId, userId]
+    );
+
+    const res = await request(app)
+      .get(`/api/users/${userId}/followers`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('followers');
+    expect(res.body.followers.length).toBeGreaterThanOrEqual(1);
+
+    const follower = res.body.followers.find(f => f.ID === followerId);
+    expect(follower).toBeDefined();
+    expect(follower).toHaveProperty('USERNAME', 'follower_a');
+    expect(follower).toHaveProperty('FIRSTNAME');
+    expect(follower).toHaveProperty('LASTNAME');
+
+    await pool.query('DELETE FROM User WHERE ID = ?', [followerId]);
+  });
+
+  test('200 - returns empty array when user has no followers', async () => {
+    const res = await request(app)
+      .get(`/api/users/${userId}/followers`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.followers).toHaveLength(0);
+  });
+
+  test('400 - invalid user ID', async () => {
+    const res = await request(app)
+      .get('/api/users/abc/followers')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .get(`/api/users/${userId}/followers`);
+
+    expect(res.status).toBe(401);
+  });
+
+  test('404 - user not found', async () => {
+    const res = await request(app)
+      .get('/api/users/2147483647/followers')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  test('200 - includes profilePicture field, null when none equipped', async () => {
+    const followerId = await insertUser({ username: 'follower_pfp', email: 'follower_pfp@test.com' });
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [followerId, userId]
+    );
+
+    const res = await request(app)
+      .get(`/api/users/${userId}/followers`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const follower = res.body.followers.find(f => f.ID === followerId);
+    expect(follower).toHaveProperty('profilePicture');
+    expect(follower.profilePicture).toBeNull();
+
+    await pool.query('DELETE FROM User WHERE ID = ?', [followerId]);
+  });
+
+  test('200 - includes profilePicture when follower has one equipped', async () => {
+    const followerId = await insertUser({ username: 'follower_withpfp', email: 'follower_withpfp@test.com' });
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [followerId, userId]
+    );
+    const itemId = await insertPurchase(followerId, { type: 'profile_picture', cost: '10.00', name: 'Octocat' }, true);
+
+    const res = await request(app)
+      .get(`/api/users/${userId}/followers`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const follower = res.body.followers.find(f => f.ID === followerId);
+    expect(follower.profilePicture).toBe('Octocat');
+
+    await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+    await pool.query('DELETE FROM User WHERE ID = ?', [followerId]);
+  });
+});
+
+// Test user followed fetching
+describe('GET /api/users/:id/followed', () => {
+
+  test('200 - returns users followed by user', async () => {
+    const followeeId = await insertUser({ username: 'followee_a', email: 'followee_a@test.com' });
+
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [userId, followeeId]
+    );
+
+    const res = await request(app)
+      .get(`/api/users/${userId}/followed`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('followed');
+    expect(res.body.followed.length).toBeGreaterThanOrEqual(1);
+
+    const followee = res.body.followed.find(f => f.ID === followeeId);
+    expect(followee).toBeDefined();
+    expect(followee).toHaveProperty('USERNAME', 'followee_a');
+    expect(followee).toHaveProperty('FIRSTNAME');
+    expect(followee).toHaveProperty('LASTNAME');
+
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('200 - returns empty array when user follows nobody', async () => {
+    const res = await request(app)
+      .get(`/api/users/${userId}/followed`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.followed).toHaveLength(0);
+  });
+
+  test('400 - invalid user ID', async () => {
+    const res = await request(app)
+      .get('/api/users/abc/followed')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+  });
+
+  test('401 - no auth token', async () => {
+    const res = await request(app)
+      .get(`/api/users/${userId}/followed`);
+
+    expect(res.status).toBe(401);
+  });
+
+  test('404 - user not found', async () => {
+    const res = await request(app)
+      .get('/api/users/2147483647/followed')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  test('200 - includes profilePicture field, null when none equipped', async () => {
+    const followeeId = await insertUser({ username: 'followee_pfp', email: 'followee_pfp@test.com' });
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [userId, followeeId]
+    );
+
+    const res = await request(app)
+      .get(`/api/users/${userId}/followed`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const followee = res.body.followed.find(f => f.ID === followeeId);
+    expect(followee).toHaveProperty('profilePicture');
+    expect(followee.profilePicture).toBeNull();
+
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+
+  test('200 - includes profilePicture when followed user has one equipped', async () => {
+    const followeeId = await insertUser({ username: 'followee_withpfp', email: 'followee_withpfp@test.com' });
+    await pool.query(
+      'INSERT INTO Follower (FOLLOWER_ID, FOLLOWING_ID) VALUES (?, ?)',
+      [userId, followeeId]
+    );
+    const itemId = await insertPurchase(followeeId, { type: 'profile_picture', cost: '10.00', name: 'Octocat' }, true);
+
+    const res = await request(app)
+      .get(`/api/users/${userId}/followed`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const followee = res.body.followed.find(f => f.ID === followeeId);
+    expect(followee.profilePicture).toBe('Octocat');
+
+    await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+    await pool.query('DELETE FROM User WHERE ID = ?', [followeeId]);
+  });
+});
+
 // Test user searching
 describe('GET /api/users/search', () => {
 
