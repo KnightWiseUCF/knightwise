@@ -472,6 +472,92 @@ const unfollowUser = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route   GET /api/users/:id/followers
+ * @desc    Fetch a given user's list of followers
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @throws  {AppError} 400                  - Throwable by parseUserId
+ * @throws  {AppError} 404                  - If user not found
+ * @returns {Promise<void>}                 - Sends HTTP/JSON response with follower info
+ */
+const getFollowers = asyncHandler(async (req, res) => {
+  const context = 'getFollowers';
+  const userId  = parseUserId(req.params.id, context);
+
+  // Get user ID
+  const [users] = await req.db.query(
+    'SELECT ID FROM User WHERE ID = ?',
+    [userId]
+  );
+  if (users.length === 0)
+  { 
+    throw new AppError(`Failed to get followers, userId not found: ${userId}`, 404, "User not found");
+  }
+
+  // Get and return all of the users that follow this user
+  // Include ID, first name, last name, username, profile picture for flexibility
+  const [followers] = await req.db.query(
+    `SELECT u.ID, u.USERNAME, u.FIRSTNAME, u.LASTNAME, pfp.NAME AS profilePicture
+    FROM Follower f
+    JOIN User u ON u.ID = f.FOLLOWER_ID
+    LEFT JOIN (
+      SELECT p.USER_ID, si.NAME
+      FROM Purchase p
+      JOIN StoreItem si ON si.ID = p.ITEM_ID
+      WHERE p.IS_EQUIPPED = 1 AND si.TYPE = 'profile_picture' AND si.IS_GUILD_ITEM = 0
+    ) pfp ON pfp.USER_ID = u.ID
+    WHERE f.FOLLOWING_ID = ?`,
+    [userId]
+  );
+  return res.status(200).json({followers})
+});
+
+/**
+ * @route   GET /api/users/:id/followed
+ * @desc    Fetch a given user's list of followed users
+ * @access  Protected
+ *
+ * @param {import('express').Request}  req  - Express request object
+ * @param {import('express').Response} res  - Express response object
+ * @throws  {AppError} 400                  - Throwable by parseUserId
+ * @throws  {AppError} 404                  - If user not found
+ * @returns {Promise<void>}                 - Sends HTTP/JSON response with followed info
+ */
+const getFollowed = asyncHandler(async (req, res) => {
+  const context = 'getFollowed';
+  const userId  = parseUserId(req.params.id, context);
+
+  // Get user ID
+  const [users] = await req.db.query(
+    'SELECT ID FROM User WHERE ID = ?',
+    [userId]
+  );
+  if (users.length === 0)
+  { 
+    throw new AppError(`Failed to get followed list, userId not found: ${userId}`, 404, "User not found");
+  }
+
+  // Get and return all of the users that this user follows
+  // Include ID, first name, last name, username, profile picture for flexibility
+  const [followed] = await req.db.query(
+    `SELECT u.ID, u.USERNAME, u.FIRSTNAME, u.LASTNAME, pfp.NAME AS profilePicture
+    FROM Follower f
+    JOIN User u ON u.ID = f.FOLLOWING_ID
+    LEFT JOIN (
+      SELECT p.USER_ID, si.NAME
+      FROM Purchase p
+      JOIN StoreItem si ON si.ID = p.ITEM_ID
+      WHERE p.IS_EQUIPPED = 1 AND si.TYPE = 'profile_picture' AND si.IS_GUILD_ITEM = 0
+    ) pfp ON pfp.USER_ID = u.ID
+    WHERE f.FOLLOWER_ID = ?`,
+    [userId]
+  );
+  return res.status(200).json({followed})
+});
+
+/**
  * @route   GET /api/users/search
  * @desc    Search users by username (partial, case-insensitive), paginated
  *          Call with username and page as query parameters
@@ -573,6 +659,8 @@ module.exports = {
   unequipItem,
   followUser,
   unfollowUser,
+  getFollowers,
+  getFollowed,
   searchUsers,
   updateStatsOptIn,
 };
