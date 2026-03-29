@@ -8,10 +8,11 @@ import { getProfilePictureUrlByItemName } from '../utils/storeCosmetics';
 */
 
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../api";
 import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
+import { getProfilePathForUser } from "../utils/profileRouting";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { Trophy, ChevronLeft, ChevronRight, Swords, Users } from "lucide-react";
 
@@ -39,14 +40,34 @@ interface LeaderboardResponse
 type Tab  = "weekly" | "lifetime";
 type Mode = "individual" | "guild";
 
+interface LeaderboardNavigationState {
+  focusLeaderboardUsername?: string;
+}
+
+interface UserSearchResult {
+  ID: number;
+  USERNAME: string;
+  FIRSTNAME: string | null;
+  LASTNAME: string | null;
+}
+
+interface UserSearchResponse {
+  users: UserSearchResult[];
+}
+
 const Leaderboard: React.FC = () =>
 {
+  const location = useLocation();
   const [mode, setMode]             = useState<Mode>("individual");
   const [activeTab, setActiveTab]   = useState<Tab>("weekly");
   const [data, setData]             = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [page, setPage]             = useState(1);
+  const [focusedUsername, setFocusedUsername] = useState<string | null>(null);
+  const [searchUsername, setSearchUsername] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<UserSearchResult[]>([]);
+  const [searchSuggestionsLoading, setSearchSuggestionsLoading] = useState(false);
   const { equippedItems } = useUserCustomizationStore();
 
   const { user } = useUserCustomizationStore();
@@ -127,6 +148,72 @@ const Leaderboard: React.FC = () =>
   };
 
   const userRef = useRef<HTMLTableRowElement | null>(null);
+  const focusedUserRef = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    const navigationState = location.state as LeaderboardNavigationState | null;
+    const requestedUsername = (navigationState?.focusLeaderboardUsername || "").trim().toLowerCase();
+    if (!requestedUsername) {
+      return;
+    }
+
+    setMode("individual");
+    setActiveTab("weekly");
+    setPage(1);
+    setData(null);
+    setFocusedUsername(requestedUsername);
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!focusedUsername || mode !== "individual" || loading || !data) {
+      return;
+    }
+
+    const matchingEntry = data.leaderboard.find(
+      (entry) => entry.username.toLowerCase() === focusedUsername
+    );
+
+    if (matchingEntry) {
+      focusedUserRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    let cancelled = false;
+
+    const findUserPage = async () => {
+      for (let i = 1; i <= data.totalPages; i += 1) {
+        if (i === page) {
+          continue;
+        }
+
+        try {
+          const response = await api.get<LeaderboardResponse>(`/api/leaderboard/${activeTab}?page=${i}`);
+          const found = response.data.leaderboard.some(
+            (entry) => entry.username.toLowerCase() === focusedUsername
+          );
+
+          if (found) {
+            if (!cancelled) {
+              setPage(i);
+            }
+            return;
+          }
+        } catch {
+          // Keep existing leaderboard errors and continue trying remaining pages.
+        }
+      }
+
+      if (!cancelled) {
+        setError(`Could not find @${focusedUsername} on the ${activeTab} leaderboard.`);
+      }
+    };
+
+    void findUserPage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, data, focusedUsername, loading, mode, page]);
 
   const scrollToUser = async () => 
   {
@@ -171,6 +258,69 @@ const Leaderboard: React.FC = () =>
       }
     }
   };
+
+  const handleUserSearch = () => {
+    const normalizedQuery = searchUsername.trim().replace(/^@+/, "").toLowerCase();
+
+    if (!normalizedQuery) {
+      setError("Enter a username to search.");
+      return;
+    }
+
+    setMode("individual");
+    setError(null);
+    setPage(1);
+    setFocusedUsername(normalizedQuery);
+    setSearchSuggestions([]);
+  };
+
+  const handleSelectSuggestedUser = (username: string) => {
+    setSearchUsername(username);
+    setMode("individual");
+    setError(null);
+    setPage(1);
+    setFocusedUsername(username.toLowerCase());
+    setSearchSuggestions([]);
+  };
+
+  useEffect(() => {
+    const normalizedQuery = searchUsername.trim().replace(/^@+/, "").toLowerCase();
+
+    if (!normalizedQuery) {
+      setSearchSuggestions([]);
+      setSearchSuggestionsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setSearchSuggestionsLoading(true);
+
+      try {
+        const response = await api.get<UserSearchResponse>(`/api/users/search?username=${encodeURIComponent(normalizedQuery)}&page=1`);
+        const prefixMatches = (response.data.users || [])
+          .filter((candidate) => candidate.USERNAME.trim().toLowerCase().startsWith(normalizedQuery))
+          .slice(0, 6);
+
+        if (!cancelled) {
+          setSearchSuggestions(prefixMatches);
+        }
+      } catch {
+        if (!cancelled) {
+          setSearchSuggestions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setSearchSuggestionsLoading(false);
+        }
+      }
+    }, 220);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchUsername]);
 
   return (
     
@@ -218,6 +368,51 @@ const Leaderboard: React.FC = () =>
             
             {/*Find Yourself Button next to Weekly/Lifetime*/}
             <div className="flex items-center justify-between gap-10">
+              <div className="relative flex items-center gap-2">
+                <input
+                  type="text"
+                  value={searchUsername}
+                  onChange={(event) => setSearchUsername(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleUserSearch();
+                    }
+                  }}
+                  placeholder="Search @username"
+                  className="w-48 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
+                />
+                <button
+                  type="button"
+                  onClick={handleUserSearch}
+                  className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-black"
+                >
+                  Find User
+                </button>
+
+                {(searchSuggestionsLoading || searchSuggestions.length > 0) && (
+                  <div className="absolute left-0 top-full z-20 mt-1 w-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {searchSuggestionsLoading && (
+                      <p className="px-3 py-2 text-xs text-gray-500">Searching users...</p>
+                    )}
+
+                    {!searchSuggestionsLoading && searchSuggestions.map((candidate) => (
+                      <button
+                        key={candidate.ID}
+                        type="button"
+                        onClick={() => handleSelectSuggestedUser(candidate.USERNAME)}
+                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <span className="font-semibold text-gray-900">@{candidate.USERNAME}</span>
+                        {candidate.FIRSTNAME ? (
+                          <span className="ml-2 text-xs text-gray-500">{candidate.FIRSTNAME}</span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button 
                 onClick={async () => {scrollToUser()}}
                 
@@ -315,6 +510,8 @@ const Leaderboard: React.FC = () =>
                         const isCurrentUser =
                           currentUsername !== null &&
                           entry.username.toLowerCase() === currentUsername;
+                        const isFocusedUser = focusedUsername !== null
+                          && entry.username.toLowerCase() === focusedUsername;
 
                         const pfpUrl = entry.profilePicture
                           ? getProfilePictureUrlByItemName(entry.profilePicture)
@@ -322,23 +519,25 @@ const Leaderboard: React.FC = () =>
 
                         const { symbol, color, size } = rankBadge(entry.rank);
 
-                        const resolvedUserId = Number(entry.userId ?? entry.id ?? entry.ID);
-                        const hasValidUserId = Number.isInteger(resolvedUserId) && resolvedUserId > 0;
-                        const hasUsername = typeof entry.username === "string" && entry.username.trim().length > 0;
-                        const encodedUsername = hasUsername ? encodeURIComponent(entry.username.trim()) : "";
-                        const profilePath = hasValidUserId
-                          ? `/profile/${resolvedUserId}`
-                          : (hasUsername ? `/profile/u/${encodedUsername}` : (isCurrentUser ? "/profile" : null));
+                        const profilePath = getProfilePathForUser({
+                          userId: entry.userId,
+                          id: entry.id,
+                          ID: entry.ID,
+                          username: entry.username,
+                          fallbackToOwnProfile: isCurrentUser,
+                        });
 
                         return (
                           <tr
                             key={`${entry.username}-${entry.rank}`}
                             className={`border-b border-gray-100 transition-colors ${
-                              isCurrentUser
+                              isFocusedUser
+                                ? "bg-amber-100"
+                                : isCurrentUser
                                 ? "bg-blue-100"
                                 : "hover:bg-gray-200"
                             }`}
-                            ref={isCurrentUser ? userRef : null}
+                            ref={isFocusedUser ? focusedUserRef : (isCurrentUser ? userRef : null)}
                           >
                             {/* Rank */}
                             <td className="py-3 pl-10 pr-4 text-center">

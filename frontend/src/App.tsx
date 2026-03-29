@@ -30,8 +30,6 @@ import ProfilePage from "./pages/ProfilePage";
 import StorePage from "./pages/StorePage.tsx";
 import GuildsPage from "./pages/GuildsPage";
 import LeaderboardPage from "./pages/LeaderboardPage.tsx";
-
-
 function App() 
 {
   return (
