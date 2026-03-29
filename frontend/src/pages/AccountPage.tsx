@@ -248,7 +248,7 @@ const AccountPage: React.FC = () => {
           
           {/* Statistics Sharing Toggle */}
           {!loading && (
-          <div className="p-6 flex justify-start items-center">
+          <div className="p-6 flex justify-start items-center accent-amber-500">
             <input className="mr-4 w-5 h-5" 
               type="checkbox"
               defaultChecked={isSharingStats}
