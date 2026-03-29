@@ -15,20 +15,122 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import api from "../api";
-import correctAnswerImg from "../assets/correctAnswer.png";
-import incorrectAnswerImg from "../assets/incorrectAnswer.png";
-import viewProblemImg from "../assets/viewProblem.png";
-import { RawQuestion, HistoryEntry, HistoryResponse } from '../models';
+import { RawQuestion, HistoryEntry, HistoryResponse} from '../models';
+import { ALL_TOPICS} from "../utils/topicLabels"
 import { formatSubcategoryLabel } from '../utils/topicLabels';
 import { X, Check, SquareArrowOutUpRightIcon } from "lucide-react";
+import { ALL } from 'dns';
 
-const HistoryTable: React.FC = () => {
-  const [history, setHistory]         = useState<HistoryEntry[]>([]);
+
+/*
+export interface HistoryEntry
+{
+  datetime:       string;
+  topic:          string;
+  type:           string; // Question.TYPE (Multiple Choice, Programming, etc.)
+  isCorrect:      boolean;
+  problem_id:     number;
+  userAnswer:     string | null; // JSON with answer data
+  pointsEarned:   number | null;
+  pointsPossible: number | null;
+}
+
+export interface HistoryResponse
+{
+  history:      HistoryEntry[];
+  totalPages:   number;
+  currentPage:  number;
+}
+
+export interface RawQuestion
+{
+  ID:             number;
+  TYPE:           string;
+  SECTION:        string;
+  CATEGORY:       string;   //question type: mult choice etc
+  SUBCATEGORY:    string;   //question topic
+  AUTHOR_EXAM_ID: string;
+  POINTS_POSSIBLE: number;
+  QUESTION_TEXT:  string;
+  OWNER_ID:       number;
+  answers?:       Answer[];
+}
+
+export const ALL_TOPICS = [
+  "InputOutput", // Canonical name, display name is Input/Output
+  "Branching",
+  "Loops",
+  "Variables",
+  "Arrays",
+  "Linked Lists",
+  "Strings",
+  "Classes",
+  "Methods",
+  "Trees",
+  "Stacks",
+  "Heaps",
+  "Tries",
+  "Bitwise Operators",
+  "Dynamic Memory",
+  "Algorithm Analysis",
+  "Recursion",
+  "Sorting",
+] as const;
+
+*/
+
+const ALL_STATS = [
+    "Performance",
+    "Accuracy", //median
+    "Average Score", //median
+    "Average Elapsed Time", //median
+    "Completed Questions",
+]
+
+const StatsViewer: React.FC = () => {
+
+  var [history, setHistory]         = useState<HistoryEntry[]>([]);
   const [totalPages, setTotalPages]   = useState<number>(1);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isLoading, setIsLoading]     = useState<boolean>(true);
 
+  const nullOrNumToNum = (nullOrNum: number | null) => {
+
+    return nullOrNum == null ? 0 : nullOrNum;
+  }
+
+  const aggregateStats = (topic: string) => {
+
+    let numCorrect = 0;
+    let numCompletedQuestions = 0;
+
+    let pointsEarned = 0;
+    let numPointsPossible = 0;
+
+    let totalElapsedTime = 0;
+    
+    
+
+
+    for (let i = 0; i < history.length; i++)
+    {
+        if(topic.toLowerCase() !== "All".toLowerCase() || history[i].topic.toLowerCase() !== topic.toLowerCase())
+            continue;
+
+        if (history[i].isCorrect) numCorrect++;
+        numCompletedQuestions++;
+        pointsEarned += nullOrNumToNum(history[i].pointsEarned);
+        numPointsPossible += nullOrNumToNum(history[i].pointsPossible);
+        totalElapsedTime += nullOrNumToNum(history[i].elapsedTime);
+
+    }
+  }
+
+  
+
+
   const fetchHistory = useCallback(async (page: number) => {
+
     setIsLoading(true);
     const token = localStorage.getItem('token');
 
@@ -36,12 +138,16 @@ const HistoryTable: React.FC = () => {
       const response = await api.get<HistoryResponse>("api/progress/history", 
       {
         headers: { 'Authorization': `Bearer ${token}` },
-        params: { page, limit: 10 },
+        params: { page, limit: 20 },
       });
 
-      setHistory(response.data.history);
-      setTotalPages(response.data.totalPages);
-      setCurrentPage(response.data.currentPage);
+      //setHistory(response.data.history);
+      response.data.history.map((entry) => {
+        history.push(entry);
+      })
+
+      //setTotalPages(response.data.totalPages);
+      //setCurrentPage(response.data.currentPage);
     } 
     catch 
     {
@@ -53,32 +159,9 @@ const HistoryTable: React.FC = () => {
     }
   }, []);
 
-  // Helper function, gets full question from backend, combines it with
-  // user response data and sends it to the popup through
-  // localStorage (to handle long text)
   const fetchProblem = async (entry: HistoryEntry) => {
 
-    // Set popup size
-    const width   = 700;
-    const height  = 600;
-    const left    = (window.innerWidth - width) / 2;
-    const top     = (window.innerHeight - height) / 2;
-
-    // Write to localStorage so popup can read it
-    // Unique storage key
-    const storageKey = `kwProblemView_${entry.problem_id}_${Date.now()}`;
-
-    // Open popup
-    const popupWindow = window.open(
-      `/problem-view?key=${storageKey}`, 
-      'kwProblemViewPopup', 
-      `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
-    );
-    if (popupWindow) 
-    {
-      popupWindow.focus();
-    }
-
+    setIsLoading(true);
     const token = localStorage.getItem('token');
 
     try 
@@ -88,31 +171,17 @@ const HistoryTable: React.FC = () => {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
-      const problem = response.data;
+      //const problem = response.data;
 
-      // Combine question data and user response data
-      const popupPayload = {
-        // Question data
-        questionText: problem.QUESTION_TEXT,
-        category:     problem.CATEGORY,
-        topic:        formatSubcategoryLabel(problem.SUBCATEGORY),
-        type:         problem.TYPE,
-        answers:      problem.answers ?? [],
-
-        // User response data
-        userAnswer:     entry.userAnswer, // JSON
-        pointsEarned:   entry.pointsEarned,
-        pointsPossible: entry.pointsPossible,
-        isCorrect:      entry.isCorrect,
-        datetime:       entry.datetime,
-      };
-
-      // Write to localStorage
-      localStorage.setItem(storageKey, JSON.stringify(popupPayload));
-    } 
+      return response.data;
+    }
     catch
     {
       console.error('Error fetching problem');
+    }
+    finally
+    {
+      setIsLoading(false);
     }
   };
 
@@ -120,9 +189,10 @@ const HistoryTable: React.FC = () => {
     fetchHistory(currentPage);
   }, [currentPage, fetchHistory]);
 
+
   return (
     <div className="m-1">
-      <h2 className="text-2xl font-semibold mb-4">Problem History</h2>
+      <h2 className="text-2xl font-semibold mb-4">Statistics Viewer</h2>
 
       {/* Check for loading state */}
       {isLoading ? (
@@ -130,6 +200,29 @@ const HistoryTable: React.FC = () => {
       ) : history.length === 0 ? (
         <p className="text-center">No history yet, but every expert starts somewhere!</p>
       ) : (
+        <div className='justify-between'>
+            <table className='items-start max-w-1/4'>
+                <tbody>
+                    <tr key="0">
+                        <td>
+                            <span>Topic </span>
+                            <select>
+                                <option key='0' value="All">All</option>
+                                {ALL_TOPICS.map((topic, index) => (
+                                    <option key={index+1} value={topic}>{topic}</option>
+                                ))};
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+                
+            <div className="justify-between max-w-1/2">
+                
+            </div>
+        </div>
+
+        /*
         <div className="overflow-hidden rounded-lg shadow-lg">
           <table className="min-w-full table-auto">
             <thead className="bg-gray-800 text-white">
@@ -173,32 +266,11 @@ const HistoryTable: React.FC = () => {
             </tbody>
           </table>
         </div>
+        */
       )}
   
-      {/* Pagination Controls */}
-      <div className="flex justify-center items-center mt-4 space-x-4">
-        <button
-          disabled={isLoading || currentPage === 1}
-          onClick={() => setCurrentPage(currentPage - 1)}
-          className="px-4 py-2 bg-yellow-500 text-black rounded hover:bg-blue-yellow disabled:bg-gray-300 disabled:text-gray-700 disabled:border-gray-400 disabled:cursor-not-allowed"
-        >
-          Previous
-        </button>
-
-        {/* Check for loading state */}
-        <span className="text-lg">
-          {isLoading ? 'Loading...' : `Page ${currentPage} of ${totalPages}`}
-        </span>
-        <button
-          disabled={isLoading || currentPage === totalPages}
-          onClick={() => setCurrentPage(currentPage + 1)}
-          className="px-4 py-2 bg-yellow-500 text-black rounded hover:bg-yellow-700 disabled:bg-gray-300 disabled:text-gray-700 disabled:border-gray-400 disabled:cursor-not-allowed"
-        >
-          Next
-        </button>
-      </div>
     </div>
   );
 }  
 
-export default HistoryTable;
+export default StatsViewer;
