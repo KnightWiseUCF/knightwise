@@ -663,6 +663,6 @@ const Leaderboard: React.FC = () =>
         </div>
       </div>
   );
-};
+}
 
 export default Leaderboard;
