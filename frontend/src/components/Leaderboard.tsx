@@ -317,10 +317,8 @@ const Leaderboard: React.FC = () =>
           
           {/* Page header */}
           <div className="flex items-center gap-3 mb-6">
-            {/*<Trophy className="text-yellow-500" size={32} />*/}
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Leaderboard</h1>
-
             </div>
           </div>
 
@@ -581,7 +579,7 @@ const Leaderboard: React.FC = () =>
                               {entry.exp.toLocaleString()} XP
                             </td>
                           </tr>
-                        );
+                        )
                       })}
                     </tbody>
                   </table>
@@ -620,7 +618,7 @@ const Leaderboard: React.FC = () =>
           ):<div className="text-center pt-16 text-gray-900 font-bold text-xl">
                 {data ? "Nobody's Here!" : null}
             </div> 
-          };
+          }
 
           {/* Guild Leaderboard Table */}
           {mode === "guild" && !loading && guildData && (
