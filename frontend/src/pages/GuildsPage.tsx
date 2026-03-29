@@ -1057,9 +1057,10 @@ const GuildsPage: React.FC = () => {
                       <input
                         type="text"
                         value={createName}
-                        onChange={(event) => setCreateName(event.target.value)}
+                        readOnly
                         placeholder="Guild name"
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-100 cursor-not-allowed pointer-events-none"
+                        tabIndex={-1}
                       />
                       <button
                         type="button"
