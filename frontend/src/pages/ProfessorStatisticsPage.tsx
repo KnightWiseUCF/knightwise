@@ -108,6 +108,8 @@ const ProfessorStatisticsPage: React.FC = () =>
     const { equippedItems } = useUserCustomizationStore();
     const { user } = useUserCustomizationStore();
 
+    var topicStatsLoaded: boolean = false;
+
     const isProfessor = localStorage.getItem("account_type") === "professor";
 
     
@@ -127,7 +129,7 @@ const ProfessorStatisticsPage: React.FC = () =>
             });
 
             setAggregateStats(response.data);
-            //console.log(response.data)
+            console.log(response.data)
 
         }
         catch
@@ -181,10 +183,9 @@ const ProfessorStatisticsPage: React.FC = () =>
             })
             */
 
-
-            console.log('responses: ',temp);
-            console.log('responses.[0]: ', temp[0]);
-            console.log('responses.length: ', temp.length);
+            //console.log('responses: ',temp);
+            //console.log('responses[0]: ', temp[0]);
+            //console.log('responses.length: ', temp.length);
             setQuestionsAggregateStats(temp);
         }
         catch
@@ -208,13 +209,17 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     
     useEffect(() => {
-        //console.log('questions Agg Stats ', questionsAggregateStats); 
-    }, [questionsAggregateStats])
+        console.log('check questions', checkQuestions); 
+    }, [checkQuestions])
     
 
     useEffect(() => {
-        resolveTopicData();
-    }, [statsRetrieved])
+        resolveTopicData('All');
+    }, [aggregateStats])
+
+    useEffect(() => {
+        topicStatsLoaded = true;
+    }, [topicStats])
 
     useEffect(() => {
         const fetchPublishedQuestions = async () => {
@@ -297,9 +302,14 @@ const ProfessorStatisticsPage: React.FC = () =>
         backgroundPosition: "center",
       } : undefined;
 
-    const resolveTopicData = () => {
-        setLoading(true)
 
+
+    const resolveTopicData = (topicChoice: string) => 
+    {
+
+
+        //console.log(topicChoice)
+        //console.log(aggregateStats)
         if (topicChoice.toLowerCase() === "All".toLowerCase()){
             let topicData: StatData = {
                 medianAccuracy:     aggregateStats?.medianAccuracy == undefined ? 0 : aggregateStats?.medianAccuracy == null ? 0 : aggregateStats.medianAccuracy,
@@ -307,6 +317,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                 responseCount:      aggregateStats?.responseCount == undefined ? 0 : aggregateStats?.responseCount == null ? 0 : aggregateStats.responseCount
             };
             setTopicStats(topicData);
+            
         }
         else {
             setTopicStats({medianAccuracy: 0, medianElapsedTime: 0, responseCount: 0});
@@ -319,12 +330,15 @@ const ProfessorStatisticsPage: React.FC = () =>
                         responseCount: aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].responseCount,
                     };  
                     setTopicStats(topicData);
+                    
                 }
             })
         }
+        
+        
 
-        setLoading(false)
-    }
+        //setLoading(false)
+    };
 
     const updateCheckQuestions = (id: number, checked: boolean ) => {
         let temp: CheckQuestion[] = [];
@@ -333,6 +347,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                 ?   temp.push({questionID: checkQuestion.questionID, isChecked: checked})
                 :   temp.push({questionID: checkQuestion.questionID, isChecked: checkQuestion.isChecked})
         ))
+
         setCheckQuestions(temp);
     }
 
@@ -348,12 +363,10 @@ const ProfessorStatisticsPage: React.FC = () =>
         */
 
 
-        /*
-        if (questionsAggregateStats.length === 0)
+        
+        if (questionsAggregateStats.length < 1)
             return;
-        */
-
-        setLoading(true)
+        
         
         const length = questionsAggregateStats.length;
         let totalMedianElapsedTime = 0;
@@ -374,13 +387,13 @@ const ProfessorStatisticsPage: React.FC = () =>
             responseCount: totalQuestionsCompleted
         })
 
-        setLoading(false)
+        //setLoading(false)
 
     }
 
     const getPercentageGraphs = () => {
 
-        if (!loading) {
+        
             return (
                 <div className="flex items-end gap-2 h-30">
                     <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
@@ -409,7 +422,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                     */}
                 </div>
             )
-        }
+        
     }
 
     const getStatisticsGrid = () => {
@@ -427,6 +440,15 @@ const ProfessorStatisticsPage: React.FC = () =>
         )
     }
 
+    const getCheckedQuestions = (questionID: number) => {
+        for (let i = 0; i < checkQuestions.length; i++)
+        {
+            if(questionID === checkQuestions[i].questionID)
+                return checkQuestions[i].isChecked;
+        }
+        return false;
+    }
+
     const getQuestionStatisticsGrid = () => {
         //console.log(questionsAggregateStats.length)
         /*
@@ -435,7 +457,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         });
         */
 
-        return questionStatsRetrieved ? 
+        return questionStats?.responseCount !== undefined && questionStats?.responseCount > 0 ? 
         (
             <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
@@ -452,8 +474,8 @@ const ProfessorStatisticsPage: React.FC = () =>
                 </div>
             </div>
         ) : (
-            <div>
-
+            <div className="mt-3 flex text-center justify-center py-10">
+                <p className="text-xl font-bold text-gray-900">No Question Responses To Show!</p>
             </div>
         );
     }
@@ -489,7 +511,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 onChange={(event) => {
                                     let topic: string = event.target.value as string;
                                     setTopicChoice(topic);
-                                    resolveTopicData();
+                                    resolveTopicData(topic);
                                 }}>
                                 <option key='0' value="All">All</option>
                                 {ALL_TOPICS.map((topic, index) => (
@@ -504,7 +526,9 @@ const ProfessorStatisticsPage: React.FC = () =>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                         <section className="rounded-xl border border-gray-200 bg-white p-5">
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Percentages</p>
+
                             {getPercentageGraphs()}
+
                         </section>
                         <section className="rounded-xl border border-gray-200 bg-white p-5">
                              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Statistics</p>
@@ -545,6 +569,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                     <input className="mr-4 w-5 h-5" 
                                         id="this"
                                         type="checkbox"
+                                        checked={getCheckedQuestions(question.id)}
                                         onChange={(e) => {
                                             updateCheckQuestions(question.id, e.target.checked)
 

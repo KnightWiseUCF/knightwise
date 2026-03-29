@@ -81,7 +81,7 @@ const MyProgressPage: React.FC = () => {
           </div>
 
           {/* Graph Section */}
-          <div className="w-full border-3 bg-white border-gray-300 p-4 rounded-lg shadow mb-6">
+          <div className="w-full bg-white border-gray-300 px-4 py-8 rounded-lg shadow mb-10">
             <Graph />
           </div>
 
