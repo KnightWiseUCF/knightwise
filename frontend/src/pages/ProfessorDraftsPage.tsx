@@ -55,7 +55,7 @@ const topicCategoryMap: Record<string, string[]> = {
   "Intermediate Programming": ["Bitwise Operators", "Dynamic Memory", "Algorithm Analysis", "Recursion", "Sorting"],
 };
 
-const defaultSections = ["A", "B", "C", "D"];
+
 
 const defaultSubcategories = Object.values(topicCategoryMap).flat();
 
@@ -340,7 +340,6 @@ const ProfessorDraftsPage: React.FC = () => {
   const [draggedAnswerId, setDraggedAnswerId] = useState<string | null>(null);
   const answerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const answerPositions = useRef<Map<string, DOMRect>>(new Map());
-  const [_, setAvailableSections] = useState<string[]>(defaultSections);
   const [availableCategories, setAvailableCategories] = useState<string[]>(defaultCategories);
   const [availableSubcategories, setAvailableSubcategories] = useState<string[]>(defaultSubcategories);
   const [showQuestionPreview, setShowQuestionPreview] = useState(false);
@@ -391,21 +390,19 @@ const ProfessorDraftsPage: React.FC = () => {
         const res = await api.get<{ questions?: Array<{ SECTION?: string; CATEGORY?: string; SUBCATEGORY?: string }> }>("/api/test/mocktest");
         const questions = res.data?.questions || [];
 
-        const sectionsFromApi = questions
-          .map((question) => String(question.SECTION || "").trim())
-          .filter(Boolean);
+        // sectionsFromApi removed
         const subcategoriesFromApi = questions
           .map((question) => String(question.SUBCATEGORY || "").trim())
           .filter(Boolean);
 
-        setAvailableSections(Array.from(new Set([...defaultSections, ...sectionsFromApi])));
+        // setAvailableSections removed
         const mappedCategoryNames = defaultCategories;
         const mergedSubcategories = Array.from(new Set(subcategoriesFromApi));
 
         setAvailableCategories(mappedCategoryNames);
         setAvailableSubcategories(mergedSubcategories.length > 0 ? mergedSubcategories : defaultSubcategories);
       } catch {
-        setAvailableSections(defaultSections);
+        // setAvailableSections removed
         setAvailableCategories(defaultCategories);
         setAvailableSubcategories(defaultSubcategories);
       }
