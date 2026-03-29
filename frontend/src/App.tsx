@@ -27,9 +27,10 @@ import AccountPage from "./pages/AccountPage";
 import ProfessorApplyPage from "./pages/ProfessorApplyPage";
 import ProfessorDraftsPage from "./pages/ProfessorDraftsPage";
 import ProfilePage from "./pages/ProfilePage";
-import StorePage from "./pages/StorePage.tsx";
-import GuildsPage from "./pages/GuildsPage";
-import LeaderboardPage from "./pages/LeaderboardPage.tsx";
+import StorePage from "./pages/StorePage";
+import LeaderboardPage from "./pages/LeaderboardPage";
+
+
 function App() 
 {
   return (
@@ -49,10 +50,10 @@ function App()
         <Route path="/profile/:userId"            element={<ProfilePage />} />
         <Route path="/profile/u/:username"        element={<ProfilePage />} />
         <Route path="/store"                      element={<StorePage />} />
-        <Route path="/guilds"                     element={<GuildsPage />} />
         <Route path="/professor-apply"            element={<ProfessorApplyPage />} />
         <Route path="/professor-drafts"           element={<ProfessorDraftsPage />} />
         <Route path="/leaderboard"                element={<LeaderboardPage />} />
+        {/* <Route path="/professor-statistics"        element={<ProfessorStatisticsPage />} /> */}
       </Routes>
     </Router>
   );

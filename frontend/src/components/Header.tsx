@@ -1,7 +1,7 @@
-import React, { useRef } from "react";
+import React from "react";
 import logo from "../assets/kw_logo.png";
 import { Menu } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 
 interface HeaderProps {

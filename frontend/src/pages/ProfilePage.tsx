@@ -584,13 +584,17 @@ const ProfilePage: React.FC = () => {
       : isInvalidProfileRoute
         ? null
         : user;
-  const activeEquippedItems = isUsernameProfileRoute
-    ? (leaderboardEntry?.equippedItems ?? [])
-    : isReadOnlyProfile
-      ? publicProfile?.equippedItems ?? []
-      : isInvalidProfileRoute
-        ? []
-        : equippedItems;
+  const activeEquippedItems = useMemo(() => {
+    if (isUsernameProfileRoute) {
+      return leaderboardEntry?.equippedItems ?? [];
+    } else if (isReadOnlyProfile) {
+      return publicProfile?.equippedItems ?? [];
+    } else if (isInvalidProfileRoute) {
+      return [];
+    } else {
+      return equippedItems;
+    }
+  }, [isUsernameProfileRoute, leaderboardEntry, isReadOnlyProfile, publicProfile, isInvalidProfileRoute, equippedItems]);
   const activeLoading = isUsernameProfileRoute
     ? false
     : isReadOnlyProfile

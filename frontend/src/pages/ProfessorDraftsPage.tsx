@@ -340,7 +340,7 @@ const ProfessorDraftsPage: React.FC = () => {
   const [draggedAnswerId, setDraggedAnswerId] = useState<string | null>(null);
   const answerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const answerPositions = useRef<Map<string, DOMRect>>(new Map());
-  const [availableSections, setAvailableSections] = useState<string[]>(defaultSections);
+  const [_, setAvailableSections] = useState<string[]>(defaultSections);
   const [availableCategories, setAvailableCategories] = useState<string[]>(defaultCategories);
   const [availableSubcategories, setAvailableSubcategories] = useState<string[]>(defaultSubcategories);
   const [showQuestionPreview, setShowQuestionPreview] = useState(false);
