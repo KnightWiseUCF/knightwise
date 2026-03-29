@@ -1084,14 +1084,14 @@ const GuildsPage: React.FC = () => {
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
                     <h2 className="text-xl font-semibold text-gray-900">Need a Guild?</h2>
                     <p className="mt-1 text-sm text-gray-600">
-                      Guild discovery and leaderboard are moving to the upcoming Statistics page.
+                      Check out guilds current accepting new members on the Browse Guilds tab!
                     </p>
                     <button
                       type="button"
-                      onClick={() => setTab("inbox")}
+                      onClick={() => setTab("browse")}
                       className="mt-4 rounded-lg bg-gray-900 px-4 py-2 font-semibold text-white hover:bg-black"
                     >
-                      Open Inbox
+                      Open Browse
                     </button>
                   </div>
                 </div>

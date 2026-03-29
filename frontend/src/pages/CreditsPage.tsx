@@ -21,7 +21,6 @@ const CreditsPage: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
         <li><span className="font-semibold">Mina Georgoudiou</span> – DB + API</li>
         <li><span className="font-semibold">Dayton Hawk</span> – Frontend</li>
         <li><span className="font-semibold">Dahlia Frederico</span> – Frontend + Project Manager</li>
-        <li><span className="font-semibold">UCF COP4331</span> – Course Inspiration</li>
         <br />
         <span className="font-semibold">Special Thanks To:</span> 
         <li><span className="font-semibold">Joshua Paz</span> </li>
