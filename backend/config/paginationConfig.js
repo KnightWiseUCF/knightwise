@@ -14,6 +14,7 @@ const PAGE_SIZES = Object.freeze({
                           // less than regular leaderboard because there are fewer guilds
   USER_SEARCH:        20, // Max number of users shown on a page of the user search componnet
   HISTORY_TABLE:      10, // Max number of responses shown on a page of the History Table
+  PROF_QUESTIONS:     10, // Max number of questions shown on a page of the aggregated statistics view
 });
 
 module.exports = { PAGE_SIZES };
