@@ -15,12 +15,11 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import api from "../api";
-import { RawQuestion, HistoryEntry, HistoryResponse} from '../models';
+import { RawQuestion, HistoryEntry, HistoryResponse, ProgressData} from '../models';
 import { ALL_TOPICS} from "../utils/topicLabels"
 import { formatSubcategoryLabel } from '../utils/topicLabels';
 import { X, Check, SquareArrowOutUpRightIcon } from "lucide-react";
 import { ALL } from 'dns';
-
 
 /*
 export interface HistoryEntry
@@ -87,9 +86,27 @@ const ALL_STATS = [
     "Completed Questions",
 ]
 
+interface AggregateData
+{
+    Performance:    number;
+    Accuracy:       number;
+    AvgScore:       number;
+    AvgElapsedTime: number;
+    NumQuestions:   number;
+}
+
 const StatsViewer: React.FC = () => {
 
-  var [history, setHistory]         = useState<HistoryEntry[]>([]);
+  const   [history, setHistory]         = useState<HistoryEntry[]>([]);
+  var allHistory: HistoryEntry[] = [];
+  const [progressData, setProgressData] = useState<ProgressData>({});
+  const [statViewerData, setStatViewerData] = useState<AggregateData>({
+    Performance: 0, 
+    Accuracy: 0, 
+    AvgScore: 0, 
+    AvgElapsedTime:0, 
+    NumQuestions: 0});
+  const [topicChoice, setTopicChoice] = useState<string>("All");
   const [totalPages, setTotalPages]   = useState<number>(1);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isLoading, setIsLoading]     = useState<boolean>(true);
@@ -108,14 +125,14 @@ const StatsViewer: React.FC = () => {
     let numPointsPossible = 0;
 
     let totalElapsedTime = 0;
+    let performance = 0;
     
-    
-
 
     for (let i = 0; i < history.length; i++)
     {
         if(topic.toLowerCase() !== "All".toLowerCase() || history[i].topic.toLowerCase() !== topic.toLowerCase())
             continue;
+
 
         if (history[i].isCorrect) numCorrect++;
         numCompletedQuestions++;
@@ -124,13 +141,31 @@ const StatsViewer: React.FC = () => {
         totalElapsedTime += nullOrNumToNum(history[i].elapsedTime);
 
     }
+
+    if (topic.toLowerCase() === "All".toLowerCase())
+    {
+      let totalPerformance = 0;
+      ALL_TOPICS.map((entry) => {
+        totalPerformance += progressData[entry].metric
+      })
+      performance = totalPerformance / ALL_TOPICS.length;
+    }
+
+    console.log(topic)
+
+    setStatViewerData({
+        Performance: topic.toLowerCase() === "All".toLowerCase() 
+          ? performance : progressData[topic].metric,
+        Accuracy: numCorrect / numCompletedQuestions,
+        AvgScore: pointsEarned / numPointsPossible,
+        AvgElapsedTime: totalElapsedTime / numCompletedQuestions,
+        NumQuestions: numCompletedQuestions
+    })
+
   }
 
-  
-
-
+  /*
   const fetchHistory = useCallback(async (page: number) => {
-
     setIsLoading(true);
     const token = localStorage.getItem('token');
 
@@ -138,16 +173,67 @@ const StatsViewer: React.FC = () => {
       const response = await api.get<HistoryResponse>("api/progress/history", 
       {
         headers: { 'Authorization': `Bearer ${token}` },
-        params: { page, limit: 20 },
+        params: { page, limit: 10 },
+      });
+
+      setHistory(response.data.history);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage);
+    } 
+    catch 
+    {
+      console.error('Error fetching history');
+    }
+    finally
+    {
+      setIsLoading(false);
+    }
+  }, []);
+  */
+
+
+  const fetchHistory = useCallback(async () => {
+
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+
+    try {
+      
+      const response = await api.get<HistoryResponse>("api/progress/history", 
+      {
+          headers: { 'Authorization': `Bearer ${token}` },
+          params: { currentPage, limit: 20 },
       });
 
       //setHistory(response.data.history);
+
       response.data.history.map((entry) => {
-        history.push(entry);
+          allHistory.push(entry);
       })
 
-      //setTotalPages(response.data.totalPages);
-      //setCurrentPage(response.data.currentPage);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage);
+
+      for(let i = currentPage+1; i < totalPages; i++)
+      {
+        try 
+        {
+          const response = await api.get<HistoryResponse>("api/progress/history", 
+          {
+              headers: { 'Authorization': `Bearer ${token}` },
+              params: { i, limit: 20 },
+          });
+
+          //setHistory(response.data.history);
+          response.data.history.map((entry) => {
+              allHistory.push(entry);
+          })
+        }
+        catch 
+        {
+          console.error('Error fetching history');
+        }
+      }
     } 
     catch 
     {
@@ -185,28 +271,85 @@ const StatsViewer: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchHistory(currentPage);
-  }, [currentPage, fetchHistory]);
+  // Fetch user progress data
+  const fetchProgressData = async () => {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
 
+    try {
+      const response = await api.get<{ progress: ProgressData }>("api/progress/graph", 
+      {
+        headers: 
+        {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      setProgressData(response.data.progress);
+    } 
+    catch 
+    {
+      console.error('Error fetching progress data');
+    }
+  };
+
+  useEffect(() => {
+    fetchProgressData();
+    fetchHistory();
+    //aggregateStats();
+  }, [topicChoice]);
+
+  /*
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    // Fetch user progress data
+    const fetchProgressData = async () => {
+      try {
+        const response = await api.get<{ progress: ProgressData }>("api/progress/graph", 
+        {
+          headers: 
+          {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+
+        setProgressData(response.data.progress);
+      } 
+      catch 
+      {
+        console.error('Error fetching progress data');
+      }
+    };
+
+    fetchProgressData();
+  }, []);
+  */
+
+  //setTopicChoice("All");
 
   return (
+    
     <div className="m-1">
       <h2 className="text-2xl font-semibold mb-4">Statistics Viewer</h2>
 
       {/* Check for loading state */}
       {isLoading ? (
         <p className="text-center text-gray-500">Loading history...</p>
-      ) : history.length === 0 ? (
+      ) : allHistory.length === 0 ? (
         <p className="text-center">No history yet, but every expert starts somewhere!</p>
       ) : (
         <div className='justify-between'>
             <table className='items-start max-w-1/4'>
                 <tbody>
-                    <tr key="0">
+                    <tr>
                         <td>
                             <span>Topic </span>
-                            <select>
+                            <select onChange={(event) => {
+                                let topic: string = event.target.value as string;
+                                setTopicChoice(topic);
+                                aggregateStats(topic);
+                              }}>
                                 <option key='0' value="All">All</option>
                                 {ALL_TOPICS.map((topic, index) => (
                                     <option key={index+1} value={topic}>{topic}</option>
@@ -218,7 +361,7 @@ const StatsViewer: React.FC = () => {
             </table>
                 
             <div className="justify-between max-w-1/2">
-                
+              
             </div>
         </div>
 

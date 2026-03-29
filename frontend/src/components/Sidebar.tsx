@@ -87,7 +87,7 @@ const Sidebar = () => {
           {
             name: "Statistics",
             icon: <BarChart2 size={24} />,
-            path: "",
+            path: "/professor-stats",
           },
         ]
       : [
