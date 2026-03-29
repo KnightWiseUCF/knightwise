@@ -8,8 +8,24 @@ import { RawQuestion, HistoryEntry, HistoryResponse, ProgressData} from '../mode
 import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+import { formatSubcategoryLabel } from '../utils/topicLabels';
 import { isAxiosError } from "axios";
 import { Key } from "lucide-react";
+
+interface Pagination {
+    page:               number;
+    pageSize:           number;
+    totalQuestions:     number;
+    totalPages:         number;
+}
+
+interface TopicQuestionList
+{   questions: {
+        [key: string]:      RawQuestion[];
+    }
+    pagination: Pagination;
+}
+
 
 interface StatData {
     medianAccuracy?:        number;
@@ -77,7 +93,7 @@ interface ProfessorQuestionItem {
   title: string;
   category: string;
   subcategory: string;
-  status: QuestionStatus;
+  type: string;  
 }
 
 interface DraftListResponse {
@@ -86,7 +102,13 @@ interface DraftListResponse {
 
 const ProfessorStatisticsPage: React.FC = () => 
 {
+    const removeHtmlTags = /(<([^>]+)>)/gi;
+
+
+    const [topicQuestionList, setTopicQuestionList] = useState<TopicQuestionList>();
     const [questions, setQuestions] = useState<ProfessorQuestionItem[]>([]);
+    const [questionsPagination, setQuestionsPagination] = useState<Pagination>();
+
     const [publishedQuestions, setPublishedQuestions] = useState<PublishedQuestion[]>([]);
     const [checkQuestions, setCheckQuestions] = useState<CheckQuestion[]>([]);
 
@@ -104,6 +126,7 @@ const ProfessorStatisticsPage: React.FC = () =>
     const [error, setError]           = useState<string | null>(null);
 
     const [topicChoice, setTopicChoice] = useState<string>("All");
+    const [topicChoice2, setTopicChoice2] = useState<string>("My Questions");
 
     const { equippedItems } = useUserCustomizationStore();
     const { user } = useUserCustomizationStore();
@@ -112,7 +135,21 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const isProfessor = localStorage.getItem("account_type") === "professor";
 
-    
+    const getUserId = () => {
+        let parsedUserId: number | null = null;
+        try {
+            const rawUserData = localStorage.getItem("user_data");
+            const parsedUser = rawUserData ? JSON.parse(rawUserData) as { id?: number; ID?: number } : {};
+            const value = Number(parsedUser.id ?? parsedUser.ID);
+            parsedUserId = Number.isFinite(value) ? value : null;
+
+        } catch {
+            parsedUserId = null;
+        }
+        return parsedUserId;
+    }
+
+    const userID = getUserId();
 
     const fetchAggregateStats = useCallback( async () => 
     {
@@ -183,7 +220,7 @@ const ProfessorStatisticsPage: React.FC = () =>
             })
             */
 
-            //console.log('responses: ',temp);
+            console.log('responses: ',temp);
             //console.log('responses[0]: ', temp[0]);
             //console.log('responses.length: ', temp.length);
             setQuestionsAggregateStats(temp);
@@ -199,6 +236,236 @@ const ProfessorStatisticsPage: React.FC = () =>
         }
     }, []);
 
+    const fetchQuestionList = (async (page: number) => {
+
+        setLoading(true);
+        setError(null);
+        setQuestionStatsRetrieved(false);
+        const token = localStorage.getItem('token');
+
+        try
+        {
+            
+            const response = await api.get<TopicQuestionList>(
+                `/api/problems?page=${page}&${topicChoice2.toLowerCase() === "My Questions".toLowerCase() ? "mine=true" : `subcategory=${topicChoice2}`}`,
+            {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            console.log('response', response.data)
+
+            setQuestionsPagination(response.data.pagination);
+
+            
+            let converted: ProfessorQuestionItem[] = [];
+
+            
+            let currPageSize: number = topicChoice2.toLowerCase() !== "My Questions".toLowerCase() 
+                ?   response.data.questions[topicChoice2].length
+                :   response.data.pagination.page === response.data.pagination.totalPages 
+                        ?   response.data.pagination.totalQuestions % response.data.pagination.pageSize
+                        :   response.data.pagination.pageSize
+            
+            
+            
+            console.log('topic choice2', topicChoice2)
+            
+            if(topicChoice2.toLowerCase() === "My Questions".toLowerCase())
+            {
+                console.log('in my question section...')
+
+                ALL_TOPICS.map((topic) => {
+                    if(response.data.questions[topic] !== undefined && response.data.questions[topic] !== null)
+                    {
+                        //console.log(topic)
+
+                        for(let k = 0; k < response.data.questions[topic].length; k++)
+                        {
+                            console.log(response.data.questions[topic][k])
+                            converted.push({
+                                id: response.data.questions[topic][k].ID,
+                                title: response.data.questions[topic][k].QUESTION_TEXT.replace(removeHtmlTags, ""),
+                                category: response.data.questions[topic][k].CATEGORY,
+                                subcategory: response.data.questions[topic][k].SUBCATEGORY,
+                                type: response.data.questions[topic][k].TYPE
+                            })
+                            console.log(converted)
+                        }
+                    }
+                })
+                console.log('converted', converted)
+            } else {
+                //console.log('in generic topic section...')
+
+                for(let i = 0; i < response.data.questions[topicChoice2].length; i++) {
+                    
+                    console.log('topic', {id: response.data.questions[topicChoice2][i].ID,
+                        title: response.data.questions[topicChoice2][i].QUESTION_TEXT.replace(removeHtmlTags, ""),
+                        category: response.data.questions[topicChoice2][i].CATEGORY,
+                        subcategory: response.data.questions[topicChoice2][i].SUBCATEGORY,
+                        type: response.data.questions[topicChoice2][i].TYPE})
+                    converted.push({
+                        id: response.data.questions[topicChoice2][i].ID,
+                        title: response.data.questions[topicChoice2][i].QUESTION_TEXT.replace(removeHtmlTags, ""),
+                        category: response.data.questions[topicChoice2][i].CATEGORY,
+                        subcategory: response.data.questions[topicChoice2][i].SUBCATEGORY,
+                        type: response.data.questions[topicChoice2][i].TYPE
+                    })
+                    //console.log('converted', converted);
+
+
+                }   
+            }
+
+
+            console.log('converted outside of loops', converted);
+
+            setQuestions(converted);
+            
+
+            //setAggregateStats(response.data);
+            //console.log(response.data)
+
+        }
+        catch
+        {
+            setError("Failed to load aggregate stats. Please try again.");
+        }
+        finally
+        {
+            setStatsRetrieved(true);
+            setLoading(false);
+        }
+
+
+    });
+
+    const fetchProfessorQuestions2 = async () => {
+        if (!isProfessor) {
+            setQuestions([]);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+
+
+    }
+    /*
+    const fetchProfessorQuestions = async () => 
+    {
+        if (!isProfessor) {
+            setQuestions([]);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        let parsedUserId: number | null = null;
+        try {
+            const rawUserData = localStorage.getItem("user_data");
+            const parsedUser = rawUserData ? JSON.parse(rawUserData) as { id?: number; ID?: number } : {};
+            const value = Number(parsedUser.id ?? parsedUser.ID);
+            parsedUserId = Number.isFinite(value) ? value : null;
+            
+        } catch {
+            parsedUserId = null;
+            return null;
+        }
+
+        //const draftPromise = api.get<DraftListResponse>("/api/admin/drafts");
+
+        const publishedPromise = Promise.allSettled(
+            Array.from(new Set(defaultSubcategories)).map((subcategory) =>
+            api.get<RawQuestion[]>(`/api/test/topic/${encodeURIComponent(subcategory)}`)
+            )
+        );
+        console.log(publishedPromise)
+
+        const [publishedResult] = await Promise.allSettled([publishedPromise]);
+
+        const collected: ProfessorQuestionItem[] = [];
+        const errors: string[] = [];
+
+        /*
+        if (draftResult.status === "fulfilled") {
+            const draftRows = Array.isArray(draftResult.value.data?.drafts) ? draftResult.value.data.drafts : [];
+            draftRows.forEach((question) => {
+            if (typeof question.ID === "number") {
+                collected.push({
+                id: question.ID,
+                title: String(question.QUESTION_TEXT || `Draft #${question.ID}`),
+                category: String(question.CATEGORY || "General"),
+                subcategory: String(question.SUBCATEGORY || "General"),
+                status: "Draft",
+                });
+            }
+            });
+        } else if (!(isAxiosError(draftResult.reason) && draftResult.reason.response?.status === 404)) {
+            errors.push("Failed to load draft questions.");
+        }
+            */
+           /*
+
+        if (publishedResult.status === "fulfilled") {
+            const merged: RawQuestion[] = [];
+            publishedResult.value.forEach((result) => {
+            if (result.status === "fulfilled" && Array.isArray(result.value.data)) {
+                merged.push(...result.value.data);
+            }
+            });
+
+            const dedupedById = new Map<number, RawQuestion>();
+            merged.forEach((question) => {
+            if (typeof question.ID === "number") {
+                dedupedById.set(question.ID, question);
+            }
+            });
+
+            Array.from(dedupedById.values()).forEach((question) => {
+            const ownerId = Number(question.OWNER_ID);
+            if (parsedUserId !== null && Number.isFinite(ownerId) && ownerId !== parsedUserId) {
+                return;
+            }
+
+            collected.push({
+                id: question.ID,
+                title: String(question.QUESTION_TEXT || `Question #${question.ID}`),
+                category: String(question.CATEGORY || "General"),
+                subcategory: String(question.SUBCATEGORY || "General"),
+                status: "Published",
+            });
+            });
+        } else {
+            errors.push("Failed to load published questions.");
+        }
+
+        const dedupedById = new Map<number, ProfessorQuestionItem>();
+        collected.forEach((item) => {
+            const existing = dedupedById.get(item.id);
+            if (!existing) {
+            dedupedById.set(item.id, item);
+            return;
+            }
+
+            if (existing.status === "Published" && item.status === "Draft") {
+            dedupedById.set(item.id, item);
+            }
+        });
+
+        setQuestions(Array.from(dedupedById.values()));
+        setError(errors.length > 0 ? errors[0] : "");
+        setLoading(false);
+    };
+    */
+
+    const fetchAllQuestions = async () => {
+
+    }
+
     useEffect(() => {
         fetchAggregateStats();
     }, [])
@@ -206,6 +473,10 @@ const ProfessorStatisticsPage: React.FC = () =>
     useEffect(() => {
         fetchQuestionAggregateStats(checkQuestions);
     }, [checkQuestions])
+
+    useEffect(() => {
+        fetchQuestionList(questionsPagination?.page == undefined ? 1 : questionsPagination?.page);
+    }, [topicChoice2])
 
     
     useEffect(() => {
@@ -221,6 +492,16 @@ const ProfessorStatisticsPage: React.FC = () =>
         topicStatsLoaded = true;
     }, [topicStats])
 
+    /*
+    useEffect(() => {
+
+        
+
+        topicChoice2.toLowerCase() === "My Questions".toLowerCase() ? fetchProfessorQuestions() 
+            : null;
+    }, [isProfessor, ]);
+    */
+
     useEffect(() => {
         const fetchPublishedQuestions = async () => {
         if (!isProfessor) {
@@ -232,9 +513,12 @@ const ProfessorStatisticsPage: React.FC = () =>
         setError("");
 
         try {
+
             // Get published raw questions
             const res = await api.get<{published: RawQuestion[] }>("/api/admin/published");
             const questions = Array.isArray(res.data?.published) ? res.data.published : [];
+
+
 
             // Map to published question type and sort
             const mapped = questions
@@ -248,6 +532,28 @@ const ProfessorStatisticsPage: React.FC = () =>
                 ownerId: question.OWNER_ID,
             }))
             .sort((first, second) => second.id - first.id);
+
+            let converted: ProfessorQuestionItem[] = []
+
+            /*
+            for(let i = 0; i < mapped.length; i++){
+
+                try
+                {
+
+                }
+
+
+                converted.push({
+                    id: number;
+                    title: string;
+                    category: string;
+                    subcategory: string;
+                    type: string;  
+                })
+            }
+                */
+            
 
             setPublishedQuestions(mapped);
             //console.log(mapped)
@@ -267,14 +573,14 @@ const ProfessorStatisticsPage: React.FC = () =>
     useEffect(() => {
         const temp: CheckQuestion[] = [];
         
-        for (let i = 0; i < publishedQuestions.length; i++)
+        for (let i = 0; i < questions.length; i++)
         {
-            temp.push({questionID: publishedQuestions[i].id, isChecked: false})
+            temp.push({questionID: questions[i].id, isChecked: false})
         }
 
         setCheckQuestions(temp);
 
-    }, [questionsRetrieved])
+    }, [questions])
 
     useEffect(() =>
     {
@@ -306,7 +612,6 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const resolveTopicData = (topicChoice: string) => 
     {
-
 
         //console.log(topicChoice)
         //console.log(aggregateStats)
@@ -362,8 +667,6 @@ const ProfessorStatisticsPage: React.FC = () =>
         console.log(questionsAggregateStats2.length)
         */
 
-
-        
         if (questionsAggregateStats.length < 1)
             return;
         
@@ -372,6 +675,8 @@ const ProfessorStatisticsPage: React.FC = () =>
         let totalMedianElapsedTime = 0;
         let totalMedianAccuracy = 0;
         let totalQuestionsCompleted = 0;
+
+        console.log('length' ,length)
 
         questionsAggregateStats.map((question) => {
             totalMedianElapsedTime += question?.medianAccuracy == undefined || question?.medianAccuracy == null ? 0 : question?.medianAccuracy;
@@ -480,6 +785,60 @@ const ProfessorStatisticsPage: React.FC = () =>
         );
     }
 
+    const fetchProblem = async (problemID: number) => {
+
+        // Set popup size
+        const width   = 700;
+        const height  = 600;
+        const left    = (window.innerWidth - width) / 2;
+        const top     = (window.innerHeight - height) / 2;
+
+        // Write to localStorage so popup can read it
+        // Unique storage key
+        const storageKey = `kwProblemView_${problemID}_${Date.now()}`;
+
+        // Open popup
+        const popupWindow = window.open(
+        `/problem-view?key=${storageKey}`, 
+        'kwProblemViewPopup', 
+        `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
+        );
+        if (popupWindow) 
+        {
+        popupWindow.focus();
+        }
+
+        const token = localStorage.getItem('token');
+
+        try 
+        {
+        const response = await api.get<RawQuestion>(`api/problems/${problemID}`, 
+        {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        const problem = response.data;
+
+        // Combine question data and user response data
+        const popupPayload = {
+            // Question data
+            questionText: problem.QUESTION_TEXT,
+            category:     problem.CATEGORY,
+            topic:        formatSubcategoryLabel(problem.SUBCATEGORY),
+            type:         problem.TYPE,
+            answers:      problem.answers ?? [],
+
+        };
+
+        // Write to localStorage
+        localStorage.setItem(storageKey, JSON.stringify(popupPayload));
+        } 
+        catch
+        {
+        console.error('Error fetching problem');
+        }
+    };
+
     return (
         <Layout>
             <div className="bg-gray-100 py-8 px-4">
@@ -540,6 +899,21 @@ const ProfessorStatisticsPage: React.FC = () =>
                     {!loading && (
                     <div className="flex justify-between items-center w-full">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Question Stats</h2>
+
+                        <select 
+                            value={topicChoice2}
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-md text-gray-700 bg-gray-100"
+                            onChange={(event) => {
+                                let topic: string = event.target.value as string;
+                                //console.log(topic)
+                                setTopicChoice2(topic);
+                                //resolveTopicData(topic);
+                            }}>
+                            <option key='0' value="My Questions">My Questions</option>
+                            {ALL_TOPICS.map((topic, index) => (
+                                <option key={index+1} value={topic}>{topic}</option>
+                            ))};
+                        </select>
                     </div>
                     )}
 
@@ -551,34 +925,76 @@ const ProfessorStatisticsPage: React.FC = () =>
                         </section>
                         <section className="rounded-xl border border-gray-200 bg-white p-5 max-h-80 overflow-auto">
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Question Select</p>
-                            {publishedQuestions.map((question) => (
-                                <div key={question.id} className="flex mt-3 gap-3 rounded-lg border border-gray-300 items-center justify-between px-4 py-3">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className="min-w-0">
-                                            <p className="text-sm sm:text-base text-gray-900 truncate pb-1">
-                                                Question #{question.id}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">
-                                                {question.section} • {question.category} • {question.subcategory}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">
-                                                Type: {question.questionType}
-                                            </p>
+
+                                <>
+                                {/*publishedQuestions.map((question) => (
+                                    <div key={question.id} className="flex mt-3 gap-3 rounded-lg border border-gray-300 items-center justify-between px-4 py-3">
+                                        
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="min-w-0">
+                                                <p className="text-sm sm:text-base text-gray-900 truncate pb-1"
+                                                    onClick={() => {
+                                                        //popup for question preview
+                                                    }}
+                                                >
+                                                    Questions #{question.id}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    {question.section} • {question.category} / {question.subcategory}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    Type: {question.questionType}
+                                                </p>
+                                            </div>
                                         </div>
+
+                                        <input className="mr-4 w-5 h-5" 
+                                            id="this"
+                                            type="checkbox"
+                                            checked={getCheckedQuestions(question.id)}
+                                            onChange={(e) => {
+                                                updateCheckQuestions(question.id, e.target.checked)
+
+                                            }}
+                                        >
+                                        </input>
                                     </div>
-                                    <input className="mr-4 w-5 h-5" 
-                                        id="this"
-                                        type="checkbox"
-                                        checked={getCheckedQuestions(question.id)}
-                                        onChange={(e) => {
-                                            updateCheckQuestions(question.id, e.target.checked)
+                                ))*/}
+                                </>
+                            
+                                {questions.map((question) => (
+                                    <div key={question.id} className="flex mt-3 gap-3 rounded-lg border border-gray-300 items-center justify-between px-4 py-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="min-w-0">
+                                                <p className="text-sm sm:text-base text-gray-900 truncate pb-1 hover:cursor-pointer"
+                                                    onClick={() => {
+                                                        fetchProblem(question.id)
+                                                    }}
+                                                >
+                                                    {question.title}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    #{question.id} • {question.category} / {question.subcategory}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    Type: {question.type}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                        }}
-                                    >
+                                        <input className="mr-2 w-5 h-5 min-w-5 min-h-5 hover:cursor-pointer" 
+                                            type="checkbox"
+                                            checked={getCheckedQuestions(question.id)}
+                                            onChange={(e) => {
+                                                updateCheckQuestions(question.id, e.target.checked)
 
-                                    </input>
-                                </div>
-                            ))}
+                                            }}
+                                        >
+                                        </input>
+                                    </div>
+                                ))}
+                           
+
                         </section>
                     </div>
                     )}
@@ -592,11 +1008,5 @@ const ProfessorStatisticsPage: React.FC = () =>
 
 
 export default ProfessorStatisticsPage;
-/*
-className={`w-full rounded-t ${topicStats?.medianAccuracy !== null ? (topicStats.medianAccuracy > 0  ? "bg-blue-500" : "bg-gray-300") : "bg-gray-300"}`}
-    style={{ height: `${Math.max(8, topicStats?.medianAccuracy)}%` }}
-    title={`${day.label}: ${day.attempts} attempts, ${accuracy}% accuracy`}
-
-*/
 
 
