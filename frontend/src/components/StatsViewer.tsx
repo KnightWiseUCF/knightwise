@@ -1,14 +1,14 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2025-2026
-//  Author(s):     Daniel Landsman
+//  Year:          2026
+//  Author(s):     Dayton Hawk
 //  File:          HistoryTable.tsx
-//  Description:   My Progress tab's Problem History table
+//  Description:   My Progress tab's Problem Statistics Viewer
 //
 //  Dependencies:  react
 //                 api instance
-//                 models (RawQuestion, HistoryEntry, HistoryResponse)
+//                 models (HistoryEntry, HistoryResponse, ProgressData)
 //                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
@@ -16,76 +16,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import api from "../api";
-import { RawQuestion, HistoryEntry, HistoryResponse, ProgressData} from '../models';
+import { HistoryEntry, HistoryResponse, ProgressData} from '../models';
 import { ALL_TOPICS} from "../utils/topicLabels"
-import { formatSubcategoryLabel } from '../utils/topicLabels';
-import { X, Check, SquareArrowOutUpRightIcon } from "lucide-react";
-import { ALL } from 'dns';
-
-/*
-export interface HistoryEntry
-{
-  datetime:       string;
-  topic:          string;
-  type:           string; // Question.TYPE (Multiple Choice, Programming, etc.)
-  isCorrect:      boolean;
-  problem_id:     number;
-  userAnswer:     string | null; // JSON with answer data
-  pointsEarned:   number | null;
-  pointsPossible: number | null;
-}
-
-export interface HistoryResponse
-{
-  history:      HistoryEntry[];
-  totalPages:   number;
-  currentPage:  number;
-}
-
-export interface RawQuestion
-{
-  ID:             number;
-  TYPE:           string;
-  SECTION:        string;
-  CATEGORY:       string;   //question type: mult choice etc
-  SUBCATEGORY:    string;   //question topic
-  AUTHOR_EXAM_ID: string;
-  POINTS_POSSIBLE: number;
-  QUESTION_TEXT:  string;
-  OWNER_ID:       number;
-  answers?:       Answer[];
-}
-
-export const ALL_TOPICS = [
-  "InputOutput", // Canonical name, display name is Input/Output
-  "Branching",
-  "Loops",
-  "Variables",
-  "Arrays",
-  "Linked Lists",
-  "Strings",
-  "Classes",
-  "Methods",
-  "Trees",
-  "Stacks",
-  "Heaps",
-  "Tries",
-  "Bitwise Operators",
-  "Dynamic Memory",
-  "Algorithm Analysis",
-  "Recursion",
-  "Sorting",
-] as const;
-
-*/
-
-const ALL_STATS = [
-    "Performance",
-    "Accuracy", //median
-    "Average Score", //median
-    "Average Elapsed Time", //median
-    "Completed Questions",
-]
 
 interface AggregateData
 {
@@ -100,7 +32,6 @@ const StatsViewer: React.FC = () => {
 
   const navigate = useNavigate();
   const   [history, setHistory]         = useState<HistoryEntry[]>([]);
-  //var allHistory: HistoryEntry[] = [];
   const [progressData, setProgressData] = useState<ProgressData>({});
   const [statViewerData, setStatViewerData] = useState<AggregateData>({
     Performance: 0, 
@@ -191,34 +122,6 @@ const StatsViewer: React.FC = () => {
 
   }
 
-  /*
-  const fetchHistory = useCallback(async (page: number) => {
-    setIsLoading(true);
-    const token = localStorage.getItem('token');
-
-    try {
-      const response = await api.get<HistoryResponse>("api/progress/history", 
-      {
-        headers: { 'Authorization': `Bearer ${token}` },
-        params: { page, limit: 10 },
-      });
-
-      setHistory(response.data.history);
-      setTotalPages(response.data.totalPages);
-      setCurrentPage(response.data.currentPage);
-    } 
-    catch 
-    {
-      console.error('Error fetching history');
-    }
-    finally
-    {
-      setIsLoading(false);
-    }
-  }, []);
-  */
-
-
   const fetchHistory = useCallback(async () => {
 
     setIsLoading(true);
@@ -274,32 +177,6 @@ const StatsViewer: React.FC = () => {
     }
   }, []);
 
-  const fetchProblem = async (entry: HistoryEntry) => {
-
-    setIsLoading(true);
-    const token = localStorage.getItem('token');
-
-    try 
-    {
-      const response = await api.get<RawQuestion>(`api/problems/${entry.problem_id}`, 
-      {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      //const problem = response.data;
-
-      return response.data;
-    }
-    catch
-    {
-      console.error('Error fetching problem');
-    }
-    finally
-    {
-      setIsLoading(false);
-    }
-  };
-
   // Fetch user progress data
   const fetchProgressData = async () => {
     setIsLoading(true);
@@ -314,7 +191,6 @@ const StatsViewer: React.FC = () => {
         }
       });
 
-      //console.log(response.data.progress)
       setProgressData(response.data.progress);
     } 
     catch 
@@ -330,46 +206,19 @@ const StatsViewer: React.FC = () => {
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
-    //aggregateStats();
+
   }, [topicChoice]);
 
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
-    //aggregateStats();
+
   }, []);
 
   useEffect(() => {
     
     aggregateStats(topicChoice);
   }, [history, progressData, topicChoice]);
-
-  /*
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    // Fetch user progress data
-    const fetchProgressData = async () => {
-      try {
-        const response = await api.get<{ progress: ProgressData }>("api/progress/graph", 
-        {
-          headers: 
-          {
-            'Authorization': `Bearer ${token}`,
-          }
-        });
-
-        setProgressData(response.data.progress);
-      } 
-      catch 
-      {
-        console.error('Error fetching progress data');
-      }
-    };
-
-    fetchProgressData();
-  }, []);
-  */
 
   const generateStatsMessage = () => {
     let seed: number = Math.round(((Math.random()*7)%7))
@@ -416,13 +265,11 @@ const StatsViewer: React.FC = () => {
     }
     navigate(`/topic-practice/${encodeURIComponent(slug)}`);
   };
-    
+
 
   return (
     
     <div className="mb-10">
-
-      
 
       {/* Check for loading state */}
       {isLoading ? (
