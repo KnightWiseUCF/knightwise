@@ -55,7 +55,7 @@ const topicCategoryMap: Record<string, string[]> = {
   "Intermediate Programming": ["Bitwise Operators", "Dynamic Memory", "Algorithm Analysis", "Recursion", "Sorting"],
 };
 
-const defaultSections = ["A", "B", "C", "D"];
+
 
 const defaultSubcategories = Object.values(topicCategoryMap).flat();
 
@@ -340,7 +340,6 @@ const ProfessorDraftsPage: React.FC = () => {
   const [draggedAnswerId, setDraggedAnswerId] = useState<string | null>(null);
   const answerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const answerPositions = useRef<Map<string, DOMRect>>(new Map());
-  const [availableSections, setAvailableSections] = useState<string[]>(defaultSections);
   const [availableCategories, setAvailableCategories] = useState<string[]>(defaultCategories);
   const [availableSubcategories, setAvailableSubcategories] = useState<string[]>(defaultSubcategories);
   const [showQuestionPreview, setShowQuestionPreview] = useState(false);
@@ -391,21 +390,19 @@ const ProfessorDraftsPage: React.FC = () => {
         const res = await api.get<{ questions?: Array<{ SECTION?: string; CATEGORY?: string; SUBCATEGORY?: string }> }>("/api/test/mocktest");
         const questions = res.data?.questions || [];
 
-        const sectionsFromApi = questions
-          .map((question) => String(question.SECTION || "").trim())
-          .filter(Boolean);
+        // sectionsFromApi removed
         const subcategoriesFromApi = questions
           .map((question) => String(question.SUBCATEGORY || "").trim())
           .filter(Boolean);
 
-        setAvailableSections(Array.from(new Set([...defaultSections, ...sectionsFromApi])));
+        // setAvailableSections removed
         const mappedCategoryNames = defaultCategories;
         const mergedSubcategories = Array.from(new Set(subcategoriesFromApi));
 
         setAvailableCategories(mappedCategoryNames);
         setAvailableSubcategories(mergedSubcategories.length > 0 ? mergedSubcategories : defaultSubcategories);
       } catch {
-        setAvailableSections(defaultSections);
+        // setAvailableSections removed
         setAvailableCategories(defaultCategories);
         setAvailableSubcategories(defaultSubcategories);
       }
@@ -1407,21 +1404,7 @@ const ProfessorDraftsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <select
-                name="section"
-                value={form.section}
-                onChange={handleChange}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required
-              >
-                <option value="">Select section</option>
-                {availableSections.map((section) => (
-                  <option key={section} value={section}>
-                    {section}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <select
                 name="category"
                 value={form.category}
@@ -1571,7 +1554,6 @@ const ProfessorDraftsPage: React.FC = () => {
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Test Page Preview</h3>
                   <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-6 bg-white rounded-lg border border-gray-200">
                     <div className="flex flex-col sm:flex-row justify-between mb-2 text-sm sm:text-lg md:text-xl">
-                      <p className="text-gray-600">Section {form.section || "—"}</p>
                       <p className="font-medium">Question 1 of 1</p>
                     </div>
 
@@ -1971,7 +1953,7 @@ const ProfessorDraftsPage: React.FC = () => {
                       )}
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
-                      {draft.section || "No section"} • {draft.category || "No category"} • {draft.subcategory || "No subcategory"}
+                      {draft.category || "No category"} • {draft.subcategory || "No subcategory"}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">Type: {draft.questionType}</p>
                     <p className="text-sm text-gray-600 mt-1">Answers: {draft.answers.length}</p>
@@ -2053,7 +2035,7 @@ const ProfessorDraftsPage: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        {question.section || "No section"} • {question.category || "No category"} • {question.subcategory || "No subcategory"}
+                        {question.category || "No category"} • {question.subcategory || "No subcategory"}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">Type: {question.questionType}</p>
                       <p className="text-xs text-gray-600 mt-1">Credit: {question.authorExamId || "N/A"}</p>

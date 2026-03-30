@@ -27,8 +27,8 @@ import AccountPage from "./pages/AccountPage";
 import ProfessorApplyPage from "./pages/ProfessorApplyPage";
 import ProfessorDraftsPage from "./pages/ProfessorDraftsPage";
 import ProfilePage from "./pages/ProfilePage";
-import StorePage from "./pages/StorePage.tsx";
-import LeaderboardPage from "./pages/LeaderboardPage.tsx";
+import StorePage from "./pages/StorePage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 
 function App() 
@@ -53,6 +53,7 @@ function App()
         <Route path="/professor-apply"            element={<ProfessorApplyPage />} />
         <Route path="/professor-drafts"           element={<ProfessorDraftsPage />} />
         <Route path="/leaderboard"                element={<LeaderboardPage />} />
+        {/* <Route path="/professor-statistics"        element={<ProfessorStatisticsPage />} /> */}
       </Routes>
     </Router>
   );

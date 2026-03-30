@@ -4,10 +4,12 @@ import { Menu } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 
-const Header: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+  onLogoClick?: () => void;
+}
 
-  // collapse sidebar on small screens 
-  // but hide sidebar when logging in/signing up
+const Header: React.FC<HeaderProps> = ({ onMenuClick, onLogoClick }) => {
   const location = useLocation();
   const hideMenu = location.pathname === "/";
 
@@ -19,7 +21,12 @@ const Header: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
             <Menu size={28} />
           </button>
         )}
-        <img src={logo} alt="KnightWise Logo" className="w-12 h-12 brightness-0 invert" />
+        <img
+          src={logo}
+          alt="KnightWise Logo"
+          className="w-12 h-12 brightness-0 invert"
+          onClick={onLogoClick}
+        />
         <h1 className="text-lg font-bold hidden sm:block">
           KNIGHTWISE
         </h1>

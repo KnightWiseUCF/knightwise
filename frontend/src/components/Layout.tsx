@@ -12,17 +12,28 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { PropsWithChildren, useState } from "react";
+import React, { PropsWithChildren, useState, useRef, useCallback } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import CreditsModal from "../pages/CreditsPage";
 
 const Layout: React.FC<PropsWithChildren> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false); 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
+  const logoClickCount = useRef(0);
+
+  const handleLogoClick = useCallback(() => {
+    logoClickCount.current += 1;
+    if (logoClickCount.current === 10) {
+      logoClickCount.current = 0;
+      setCreditsOpen(true);
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <Header onMenuClick={() => setSidebarOpen(true)} />
+      <Header onMenuClick={() => setSidebarOpen(true)} onLogoClick={handleLogoClick} />
 
       <div className="flex flex-1 overflow-hidden">
         {/* desktop Sidebar */}
@@ -50,6 +61,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
           {children}
         </main>
       </div>
+      <CreditsModal open={creditsOpen} onClose={() => setCreditsOpen(false)} />
     </div>
   );
 };

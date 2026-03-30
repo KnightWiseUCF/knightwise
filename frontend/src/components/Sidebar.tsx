@@ -11,6 +11,7 @@ import {
   UserCircle,
   UserRoundCog,
   FileCode,
+  Shield,
   Trophy,
 } from "lucide-react"; // for icons
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
@@ -97,6 +98,11 @@ const Sidebar = () => {
             path: "/my-progress",
           },
         ]),
+    {
+      name: "Guilds",
+      icon: <Shield size={24} />,
+      path: "/guilds"
+    },
     {
       name: "Leaderboard",
       icon: <Trophy size={24} />,
