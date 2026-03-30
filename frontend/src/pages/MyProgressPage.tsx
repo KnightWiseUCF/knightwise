@@ -4,10 +4,8 @@ import Graph from "../components/Graph";
 import HistoryTable from "../components/HistoryTable";
 import ProgressMessage from "../components/ProgressMessage";
 import api from "../api";
-import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { Trophy, ChevronLeft, ChevronRight, Swords, Users } from "lucide-react";
 import StatsViewer from "../components/StatsViewer";
 
 const MyProgressPage: React.FC = () => {
@@ -16,28 +14,26 @@ const MyProgressPage: React.FC = () => {
   const [streakCount, setStreakCount] = useState<number>(0);
   const { equippedItems } = useUserCustomizationStore();
   
-    const { user } = useUserCustomizationStore();
+  useEffect(() =>
+  {
+    void userCustomizationStore.refresh();
+  }, []);
   
-    useEffect(() =>
-    {
-      void userCustomizationStore.refresh();
-    }, []);
-    
-    const backgroundItem = useMemo(
-      () => equippedItems.find((item) => item.TYPE === "background") || null,
-      [equippedItems]
-    );
-  
-    const backgroundUrl = useMemo(
-      () => (backgroundItem ? getBackgroundUrlByItemName(backgroundItem.NAME) : null),
-      [backgroundItem]
-    );
-  
-    const backgroundStyle = backgroundUrl ? {
-      backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${backgroundUrl})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    } : undefined;
+  const backgroundItem = useMemo(
+    () => equippedItems.find((item) => item.TYPE === "background") || null,
+    [equippedItems]
+  );
+
+  const backgroundUrl = useMemo(
+    () => (backgroundItem ? getBackgroundUrlByItemName(backgroundItem.NAME) : null),
+    [backgroundItem]
+  );
+
+  const backgroundStyle = backgroundUrl ? {
+    backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${backgroundUrl})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  } : undefined;
 
 
   useEffect(() => {

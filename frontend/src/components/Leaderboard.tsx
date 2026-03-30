@@ -1,12 +1,3 @@
-/*
-import { lstat } from 'fs'
-import React, { FC, useState, useEffect, useMemo } from 'react'
-import { useNavigate } from "react-router-dom";
-import api from "../api";
-import { LeaderboardT, LeaderboardResponse  } from '../models';
-import { getProfilePictureUrlByItemName } from '../utils/storeCosmetics';
-*/
-
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from "../api";
@@ -149,9 +140,6 @@ const Leaderboard: React.FC = () =>
         `/api/leaderboard/guilds/${tab}?page=${pageNum}`
       );
       setguildData(response.data);
-      
-
-      //setguildData(generateGuildLeaderboardResponse(52));
     }
     catch
     {
@@ -453,7 +441,6 @@ const Leaderboard: React.FC = () =>
                     <tbody>
                       {data.leaderboard.map((entry) =>
                       {
-                        console.log('entry | currentUsername', entry.username, currentUsername)
                         const isCurrentUser =
                           currentUsername !== null &&
                           entry.username.toLowerCase() === currentUsername;
@@ -630,8 +617,6 @@ const Leaderboard: React.FC = () =>
                     <tbody>
                       {guildData.leaderboard.map((entry) =>
                       {
-                        //TODO
-                        console.log('guildId and api id:', entry.id, guildData)
                         const isCurrentUserGuild =
                           guildData.guildId !== null &&
                           guildData.guildId === entry.id;
