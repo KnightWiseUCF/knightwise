@@ -15,9 +15,6 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import api from "../api";
-import correctAnswerImg from "../assets/correctAnswer.png";
-import incorrectAnswerImg from "../assets/incorrectAnswer.png";
-import viewProblemImg from "../assets/viewProblem.png";
 import { RawQuestion, HistoryEntry, HistoryResponse } from '../models';
 import { formatSubcategoryLabel } from '../utils/topicLabels';
 

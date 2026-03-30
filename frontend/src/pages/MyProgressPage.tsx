@@ -1,14 +1,40 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Layout from "../components/Layout";
 import Graph from "../components/Graph";
 import HistoryTable from "../components/HistoryTable";
 import ProgressMessage from "../components/ProgressMessage";
 import api from "../api";
+import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
+import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+import StatsViewer from "../components/StatsViewer";
 
 const MyProgressPage: React.FC = () => {
   const [history, setHistory] = useState<{ datetime: string; topic: string }[]>([]);
   const [mastery, setMastery] = useState<{ [topic: string]: number }>({});
   const [streakCount, setStreakCount] = useState<number>(0);
+  const { equippedItems } = useUserCustomizationStore();
+  
+  useEffect(() =>
+  {
+    void userCustomizationStore.refresh();
+  }, []);
+  
+  const backgroundItem = useMemo(
+    () => equippedItems.find((item) => item.TYPE === "background") || null,
+    [equippedItems]
+  );
+
+  const backgroundUrl = useMemo(
+    () => (backgroundItem ? getBackgroundUrlByItemName(backgroundItem.NAME) : null),
+    [backgroundItem]
+  );
+
+  const backgroundStyle = backgroundUrl ? {
+    backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${backgroundUrl})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  } : undefined;
+
 
   useEffect(() => {
     const fetchProgressData = async () => {

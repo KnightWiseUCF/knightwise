@@ -13,15 +13,25 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/DeleteAccount";
 import Layout from "../components/Layout";
+import api from "../api";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+
+interface UserInfoResponse {
+  user: {
+    IS_SHARING_STATS: boolean;
+  };
+}
 
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [statusRetrieved, setStatusRetrieved] = useState(false);
+  const [isSharingStats, setIsSharingStats] = useState(false);
   const { user, isLoading, error } = useUserCustomizationStore();
 
   useEffect(() => {
@@ -43,6 +53,38 @@ const AccountPage: React.FC = () => {
     console.error("Failed to get user data");
     parseError = true;
   }
+
+  const getUserOptInStatus = useCallback(async (id: number) => {
+    setLoading(true);
+    setStatusRetrieved(false);
+
+    try
+    { 
+      const response = await api.get<UserInfoResponse>(`/api/users/${id}`);
+      //console.log(response.data.user.IS_SHARING_STATS)
+      setIsSharingStats(response.data.user.IS_SHARING_STATS)
+      setStatusRetrieved(true);
+    }
+    catch
+    {
+      console.error("Failed to update opt-in status");
+      parseError = true;
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
+  const isProfessor = localStorage.getItem("account_type") === "professor";
+  const userId = user?.ID || userData?.id;
+  //console.log(userId);
+
+  useEffect(() => {
+    if (userId) {
+      void getUserOptInStatus(userId);
+    }
+  }, [userId, getUserOptInStatus]);
 
   const userEmail = userData?.email;
   const userName = (user?.USERNAME || userData?.name || "").trim();
@@ -158,6 +200,20 @@ const AccountPage: React.FC = () => {
               )}
             </div>
           </section>
+
+          {/* Statistics Sharing Toggle */}
+          {!loading && !isProfessor && (
+          <div className="p-6 flex justify-start items-center accent-amber-500">
+            <input className="mr-4 w-5 h-5" 
+              type="checkbox"
+              defaultChecked={isSharingStats}
+              onChange={() => {setIsSharingStats(!isSharingStats)
+                console.log(isSharingStats, "=>", !isSharingStats)}
+              }>
+            </input>            
+            <span className="font-semibold text-gray-600">Opt-in to Statistics Sharing:</span>
+          </div>
+          )}
 
           {/* Delete Account */}
           <DeleteAccount onDeleteSuccess={handleDeleteSuccess} />
