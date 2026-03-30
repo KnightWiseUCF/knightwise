@@ -49,7 +49,7 @@ const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, str
           {todayProblemCount > 1 ? "s" : ""} today! 🎉&nbsp;
         </span>
       ) : (
-        <span>Ready to start practicing? Go to the topic practice page or build an exam to begin!&nbsp;</span>
+        <span>Ready to start practicing? Solve your first problem today!&nbsp;</span>
       )}
 
       {weakestTopic && (

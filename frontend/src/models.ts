@@ -20,6 +20,7 @@ export interface StoreItem
   TYPE: ItemType;
   COST: string; // Decimal in database, arrives as string
   NAME: string;
+  IS_GUILD_ITEM?: boolean | number;
 }
 
 export interface Purchase
@@ -205,4 +206,88 @@ export interface TopicProgress
 {
   metric:        number;
   responseCount: number;
+}
+
+// Guild types
+export type GuildRole = "Owner" | "Officer" | "Member";
+
+export interface GuildSummary
+{
+  ID:           number;
+  NAME:         string;
+  OWNER_ID:     number;
+  LIFETIME_EXP: number | string;
+  WEEKLY_EXP:   number | string;
+  COINS:        number | string;
+  DAILY_EXP:    number | string;
+  ESTABLISHED:  string;
+  IS_OPEN:      boolean | number;
+}
+
+export interface GuildMember
+{
+  ID:                number;
+  USERNAME:          string;
+  FIRSTNAME:         string | null;
+  LASTNAME:          string | null;
+  ROLE:              GuildRole;
+  COINS_CONTRIBUTED: number | string;
+  JOINED:            string;
+}
+
+export interface GuildUnlockItem extends StoreItem
+{
+  IS_EQUIPPED: boolean | number;
+}
+
+export interface GuildInfoResponse
+{
+  guild:         GuildSummary;
+  equippedItems: StoreItem[];
+  members:       GuildMember[];
+  unlockedItems: GuildUnlockItem[];
+}
+
+export interface GuildInvite
+{
+  GUILD_ID:   number;
+  guildName:  string;
+  OWNER_ID:   number;
+}
+
+export interface GuildInvitesResponse
+{
+  invites: GuildInvite[];
+}
+
+export interface GuildJoinRequest
+{
+  USER_ID:    number;
+  USERNAME:   string;
+  FIRSTNAME:  string | null;
+  LASTNAME:   string | null;
+}
+
+export interface GuildRequestsResponse
+{
+  requests: GuildJoinRequest[];
+}
+
+export interface GuildLeaderboardEntry
+{
+  rank:         number;
+  id:           number;
+  name:         string;
+  exp:          number | string;
+  guildPicture: string | null;
+}
+
+export interface GuildLeaderboardResponse
+{
+  guildRank:    number | null;
+  guildExp:     number | string | null;
+  guildId:      number | null;
+  page:         number;
+  totalPages:   number;
+  leaderboard:  GuildLeaderboardEntry[];
 }

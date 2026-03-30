@@ -143,7 +143,6 @@ const RankedChoice: React.FC<Props> = ({
     <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 mt-12 sm:mt-16 md:mt-20">
       {/* top: section, category, subcategory, exam date */}
       <div className="flex flex-col sm:flex-row justify-between mb-2 text-sm sm:text-lg md:text-2xl">
-        <p className="text-gray-600">Section {current.SECTION}</p>
         <p className="font-medium">
           Question {currentIndex + 1} of {total}
         </p>

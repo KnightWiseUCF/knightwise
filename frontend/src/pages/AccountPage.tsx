@@ -14,34 +14,25 @@
 ////////////////////////////////////////////////////////////////
 
 import React, { useCallback, useEffect, useState } from "react";
-import api from "../api";
 import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/DeleteAccount";
 import Layout from "../components/Layout";
+import api from "../api";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { Check } from "lucide-react";
-import { Switch } from "@material-tailwind/react";
-import { UserInfo, UserInfoResponse } from "../models";
 
-interface StatsOptIn {
-  optIn:    boolean;
+interface UserInfoResponse {
+  user: {
+    IS_SHARING_STATS: boolean;
+  };
 }
-
-interface StatsOptInResponse {
-  message:  string;
-  optIn:    boolean;
-}
-
-
 
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteSuccess, setDeleteSuccess] = useState(false);
-  const { user, isLoading, error, } = useUserCustomizationStore();
-  const [loading, setLoading]       = useState(true);
-
-  const [isSharingStats, setIsSharingStats] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [statusRetrieved, setStatusRetrieved] = useState(false);
+  const [isSharingStats, setIsSharingStats] = useState(false);
+  const { user, isLoading, error } = useUserCustomizationStore();
 
   useEffect(() => {
     void userCustomizationStore.refresh();
@@ -88,14 +79,18 @@ const AccountPage: React.FC = () => {
   const isProfessor = localStorage.getItem("account_type") === "professor";
   const userId = user?.ID || userData?.id;
   //console.log(userId);
+
+  useEffect(() => {
+    if (userId) {
+      void getUserOptInStatus(userId);
+    }
+  }, [userId, getUserOptInStatus]);
+
   const userEmail = userData?.email;
   const userName = (user?.USERNAME || userData?.name || "").trim();
   const firstName = (user?.FIRSTNAME || userData?.firstName || "").trim();
   const lastName = (user?.LASTNAME || userData?.lastName || "").trim();
   const fullName = `${firstName} ${lastName}`.trim();
-  
-  //console.log(isSharingStats)
-
 
   // Delete success, remove items from localStorage, redirect to login
   const handleDeleteSuccess = () => {
@@ -108,40 +103,6 @@ const AccountPage: React.FC = () => {
       navigate("/");
     }, 1500);
   };
-
-  const updateOptInStatus = useCallback(async (optIn: boolean) => {
-    setLoading(true);
-
-    try
-    { 
-      const response = await api.put<StatsOptInResponse>(`/api/users/${userId}/stats-opt-in`,
-        {
-          "id": userId,
-          "optIn": optIn
-        }
-      );
-    }
-    catch
-    {
-      console.error("Failed to update opt-in status");
-      parseError = true;
-    }
-    finally
-    {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    getUserOptInStatus(userId);
-  }, []);
-
-  useEffect(() => {
-    statusRetrieved ? updateOptInStatus(isSharingStats == undefined ? false : isSharingStats) : null;
-    //console.log(isSharingStats == undefined, " that isSharingStats is undefined")
-  }, [isSharingStats]);
-
-  
 
   // Show error if user data couldn't be parsed
   if (parseError) {
@@ -159,7 +120,7 @@ const AccountPage: React.FC = () => {
     );
   }
 
-  return ( 
+  return (
     <Layout>
       <div className="bg-gray-100 py-8 px-4 min-h-full">
         <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-8">
@@ -167,21 +128,15 @@ const AccountPage: React.FC = () => {
             Account Settings
           </h1>
 
-          {/* Loading state */}
-          {loading && (
-            <div className="text-center py-16 text-gray-400 text-sm">Loading...</div>
-          )}
-
           {/* Success Message */}
-          {deleteSuccess && !loading && (
+          {deleteSuccess && (
             <div className="bg-green-50 border border-green-500 text-green-700 px-4 py-3 rounded-lg mb-6 animate-fade-in">
               Account deleted successfully! Redirecting to login...
             </div>
           )}
 
           {/* User Information Section */}
-          {!loading && (
-          <section className="mb-2">
+          <section className="mb-10">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               Profile Information
             </h2>
@@ -245,8 +200,7 @@ const AccountPage: React.FC = () => {
               )}
             </div>
           </section>
-          )}
-          
+
           {/* Statistics Sharing Toggle */}
           {!loading && !isProfessor && (
           <div className="p-6 flex justify-start items-center accent-amber-500">
@@ -262,9 +216,7 @@ const AccountPage: React.FC = () => {
           )}
 
           {/* Delete Account */}
-          {!loading && (
           <DeleteAccount onDeleteSuccess={handleDeleteSuccess} />
-          )}
         </div>
       </div>
     </Layout>

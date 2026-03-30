@@ -25,7 +25,8 @@ const StorePage: React.FC = () => {
       try {
         const response = await api.get<StoreItemsResponse>("/api/store");
         if (mounted) {
-          setItems(response.data.items);
+          // Only include items that are not guild items
+          setItems(response.data.items.filter(item => item.IS_GUILD_ITEM !== 1));
         }
       } catch (requestError) {
         const message = requestError instanceof Error ? requestError.message : "Failed to load store items.";

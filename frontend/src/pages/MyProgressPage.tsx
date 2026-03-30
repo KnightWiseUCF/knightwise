@@ -62,32 +62,19 @@ const MyProgressPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="bg-gray-100 py-8 px-4">
-        <div 
-          className="max-w-6xl mx-auto bg-gray-50 rounded-lg shadow-md border border-gray-200 p-4 sm:p-8 md:p-10 space-y-6"
-          style={backgroundStyle}>
-          
-          {/* Page header */}
-          <div className="flex items-center gap-3 mb-6">
-            {/*<Trophy className="text-yellow-500" size={32} />*/}
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">My Progress</h1>
+      <div className="min-h-screen flex flex-col items-center space-y-8 pt-8">
+        <h1 className="text-5xl font-bold mb-4">My Progress</h1>
 
-            </div>
-          </div>
+        {/* Graph Section */}
+        <div className="w-3/4 border-3 border-gray-300 p-4 rounded-lg shadow mb-6">
+          <Graph />
+        </div>
 
-          {/* Graph Section */}
-          <div className="w-full bg-white border-gray-300 px-4 py-8 rounded-lg shadow mb-10">
-            <Graph />
-          </div>
+        {/* Progress Message */}
+        <ProgressMessage history={history} mastery={mastery} streakCount={streakCount} />
 
-          {/* Progress Message */}
-          <ProgressMessage history={history} mastery={mastery} streakCount={streakCount} />
-
-          {/* Stats Viewer */}
-          <StatsViewer />
-
-          {/* History Table Section */}
+        {/* History Table Section */}
+        <div className="w-3/4 border-3 border-gray-300 p-4 rounded-lg shadow">
           <HistoryTable />
         </div>
       </div>

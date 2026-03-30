@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../api";
 import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
+import { getProfilePathForUser } from "../utils/profileRouting";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { Trophy, ChevronLeft, ChevronRight, Swords, Users, UserCheck } from "lucide-react";
+import { Trophy, ChevronLeft, ChevronRight, Swords, Users } from "lucide-react";
 
 interface LeaderboardEntry
 {
@@ -47,20 +48,40 @@ interface GuildLeaderboardResponse
 }
 
 
-
 type Tab  = "weekly" | "lifetime";
-type Mode = "individual" | "guild" | "followed";
+type Mode = "individual" | "guild";
+
+interface LeaderboardNavigationState {
+  focusLeaderboardUsername?: string;
+}
+
+interface UserSearchResult {
+  ID: number;
+  USERNAME: string;
+  FIRSTNAME: string | null;
+  LASTNAME: string | null;
+}
+
+interface UserSearchResponse {
+  users: UserSearchResult[];
+}
 
 const Leaderboard: React.FC = () =>
 {
+  const location = useLocation();
   const [mode, setMode]             = useState<Mode>("individual");
   const [activeTab, setActiveTab]   = useState<Tab>("weekly");
   const [data, setData]             = useState<LeaderboardResponse | null>(null);
-  const [guildData, setguildData]   = useState<GuildLeaderboardResponse | null>(null);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [page, setPage]             = useState(1);
+  const [focusedUsername, setFocusedUsername] = useState<string | null>(null);
+  const [searchUsername, setSearchUsername] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<UserSearchResult[]>([]);
+  const [searchSuggestionsLoading, setSearchSuggestionsLoading] = useState(false);
+  const [guildData, setguildData] = useState<GuildLeaderboardResponse | null>(null);
   const { equippedItems } = useUserCustomizationStore();
+
   const { user } = useUserCustomizationStore();
 
   useEffect(() =>
@@ -154,22 +175,17 @@ const Leaderboard: React.FC = () =>
   useEffect(() =>
   {
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
-    else if (mode === "followed") void fetchFollowedLeaderboard(activeTab, page);
-    else if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
-  }, [mode, activeTab, page, fetchLeaderboard, fetchFollowedLeaderboard, fetchGuildLeaderboard]);
+  }, [mode, activeTab, page, fetchLeaderboard]);
+
+  useEffect(() =>
+  {
+    if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
+  }, [mode, activeTab, page, fetchGuildLeaderboard]);
 
   const handleTabChange = (tab: Tab) =>
   {
     if (tab === activeTab) return;
     setActiveTab(tab);
-    setPage(1);
-    setData(null);
-  };
-
-  const handleModeChange = (newMode: Mode) =>
-  {
-    if (mode === newMode) return;
-    setMode(newMode);
     setPage(1);
     setData(null);
   };
@@ -193,11 +209,77 @@ const Leaderboard: React.FC = () =>
   };
 
   const userRef = useRef<HTMLTableRowElement | null>(null);
+  const focusedUserRef = useRef<HTMLTableRowElement | null>(null);
   const guildRef = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    const navigationState = location.state as LeaderboardNavigationState | null;
+    const requestedUsername = (navigationState?.focusLeaderboardUsername || "").trim().toLowerCase();
+    if (!requestedUsername) {
+      return;
+    }
+
+    setMode("individual");
+    setActiveTab("weekly");
+    setPage(1);
+    setData(null);
+    setFocusedUsername(requestedUsername);
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!focusedUsername || mode !== "individual" || loading || !data) {
+      return;
+    }
+
+    const matchingEntry = data.leaderboard.find(
+      (entry) => entry.username.toLowerCase() === focusedUsername
+    );
+
+    if (matchingEntry) {
+      focusedUserRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    let cancelled = false;
+
+    const findUserPage = async () => {
+      for (let i = 1; i <= data.totalPages; i += 1) {
+        if (i === page) {
+          continue;
+        }
+
+        try {
+          const response = await api.get<LeaderboardResponse>(`/api/leaderboard/${activeTab}?page=${i}`);
+          const found = response.data.leaderboard.some(
+            (entry) => entry.username.toLowerCase() === focusedUsername
+          );
+
+          if (found) {
+            if (!cancelled) {
+              setPage(i);
+            }
+            return;
+          }
+        } catch {
+          // Keep existing leaderboard errors and continue trying remaining pages.
+        }
+      }
+
+      if (!cancelled) {
+        setError(`Could not find @${focusedUsername} on the ${activeTab} leaderboard.`);
+      }
+    };
+
+    void findUserPage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, data, focusedUsername, loading, mode, page]);
 
   const scrollToUser = async () => 
   {
-    if(loading == false && mode !== "guild"){
+    if(loading == false){
       userRef.current?.scrollIntoView({ behavior: 'smooth', block: "center"})
 
       if (userRef.current == null) 
@@ -239,47 +321,70 @@ const Leaderboard: React.FC = () =>
         }
       }
     }
-    else if(loading == false && mode === "guild"){
-      guildRef.current?.scrollIntoView({ behavior: 'smooth', block: "center"})
+  };
 
-      if (guildRef.current == null) 
-      {
-        let userFound = false; 
+  const handleUserSearch = () => {
+    const normalizedQuery = searchUsername.trim().replace(/^@+/, "").toLowerCase();
 
-        if(guildData?.totalPages != undefined)
-        {
-          //go thru all leaderboard pages and find user
-          for(let i = 1; i <= guildData?.totalPages && !userFound; i++) 
-          {
-            setError(null);
-            try
-            {
-              
-              const response = await api.get<GuildLeaderboardResponse>(
-                `/api/leaderboard/guilds/${activeTab}?page=${i}`
-              );
+    if (!normalizedQuery) {
+      setError("Enter a username to search.");
+      return;
+    }
 
-              for(let k = 0; k < response.data.leaderboard.length && !userFound; k++) 
-              {
-                if (response.data?.leaderboard[k].id === response.data?.guildId) 
-                {
-                  //set page to user's page and scroll to them
-                  setPage(i);
-                  scrollToUser();
-                  //stops searching in both loops
-                  userFound = true;
-                }
-              }
-            }
-            catch
-            {
-              setError("Failed to load leaderboard. Please try again.");
-            }
-          }
+    setMode("individual");
+    setError(null);
+    setPage(1);
+    setFocusedUsername(normalizedQuery);
+    setSearchSuggestions([]);
+  };
+
+  const handleSelectSuggestedUser = (username: string) => {
+    setSearchUsername(username);
+    setMode("individual");
+    setError(null);
+    setPage(1);
+    setFocusedUsername(username.toLowerCase());
+    setSearchSuggestions([]);
+  };
+
+  useEffect(() => {
+    const normalizedQuery = searchUsername.trim().replace(/^@+/, "").toLowerCase();
+
+    if (!normalizedQuery) {
+      setSearchSuggestions([]);
+      setSearchSuggestionsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setSearchSuggestionsLoading(true);
+
+      try {
+        const response = await api.get<UserSearchResponse>(`/api/users/search?username=${encodeURIComponent(normalizedQuery)}&page=1`);
+        const prefixMatches = (response.data.users || [])
+          .filter((candidate) => candidate.USERNAME.trim().toLowerCase().startsWith(normalizedQuery))
+          .slice(0, 6);
+
+        if (!cancelled) {
+          setSearchSuggestions(prefixMatches);
+        }
+      } catch {
+        if (!cancelled) {
+          setSearchSuggestions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setSearchSuggestionsLoading(false);
         }
       }
-    }
-  };
+    }, 220);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchUsername]);
 
   return (
     
@@ -300,72 +405,114 @@ const Leaderboard: React.FC = () =>
             {/* Left: Individual / Guild */}
             <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
               <button
-                onClick={() => handleModeChange("individual")}
+                onClick={() => setMode("individual")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "individual"
                     ? "bg-gray-800 text-white shadow"
                     : "bg-white text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                <Users size={16} />
+                <Users size={15} />
                 Individual
               </button>
               <button
-                onClick={() => handleModeChange("followed")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
-                  mode === "followed"
-                    ? "bg-gray-800 text-white shadow"
-                    : "bg-white text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                <UserCheck size={16} />
-                Followed
-              </button>
-              <button
-                onClick={() => handleModeChange("guild")}
+                onClick={() => setMode("guild")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "guild"
                     ? "bg-gray-800 text-white shadow"
                     : "bg-white text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                <Swords size={16} />
-                Guild
+                <Swords size={15} />
+                Guilds
               </button>
             </div>
             
             {/*Find Yourself Button next to Weekly/Lifetime*/}
-            
-              <div className="flex items-center justify-between gap-10">
-                {
-                  <button 
-                    onClick={async () => {scrollToUser()}}
-                    className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow hover:bg-blue-800"
+            <div className="flex items-center justify-between gap-10">
+              <div className="relative flex items-center gap-2">
+                <input
+                  type="text"
+                  value={searchUsername}
+                  onChange={(event) => setSearchUsername(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleUserSearch();
+                    }
+                  }}
+                  placeholder="Search @username"
+                  className="w-48 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
+                />
+                <button
+                  type="button"
+                  onClick={handleUserSearch}
+                  className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-black"
+                >
+                  Find User
+                </button>
+
+                {(searchSuggestionsLoading || searchSuggestions.length > 0) && (
+                  <div className="absolute left-0 top-full z-20 mt-1 w-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {searchSuggestionsLoading && (
+                      <p className="px-3 py-2 text-xs text-gray-500">Searching users...</p>
+                    )}
+
+                    {!searchSuggestionsLoading && searchSuggestions.map((candidate) => (
+                      <button
+                        key={candidate.ID}
+                        type="button"
+                        onClick={() => handleSelectSuggestedUser(candidate.USERNAME)}
+                        className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <span className="font-semibold text-gray-900">@{candidate.USERNAME}</span>
+                        {candidate.FIRSTNAME ? (
+                          <span className="ml-2 text-xs text-gray-500">{candidate.FIRSTNAME}</span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button 
+                onClick={async () => {scrollToUser()}}
+                
+                className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow"
+              >
+                {mode === "individual" ? "Find Yourself" : "Find Your Guild"}
+              </button>
+
+              {/* Right: Weekly / Lifetime */}
+              <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
+                {(["weekly", "lifetime"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => handleTabChange(tab)}
+                    className={`px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize ${
+                      activeTab === tab
+                        ? "bg-blue-600 text-white shadow"
+                        : "bg-white text-gray-600 hover:bg-gray-200"
+                    }`}
                   >
-                    {mode === "guild" ? "Find Your Guild" : "Find Yourself"}
+                    {tab}
                   </button>
-                }
-
-                {/* Right: Weekly / Lifetime */}
-                <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
-                  {(["weekly", "lifetime"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => handleTabChange(tab)}
-                      className={`px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize ${
-                        activeTab === tab
-                          ? "bg-blue-600 text-white shadow"
-                          : "bg-white text-gray-600 hover:bg-gray-200"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-              </div>              
-
+                ))}
+              </div>
+              
+            </div>
           </div>
 
+          {/* Guild placeholder */}
+          {mode === "guild" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+              <Swords className="text-gray-300" size={56} />
+              <h2 className="text-xl font-bold text-gray-500">Guild Leaderboard Coming Soon</h2>
+              <p className="text-sm text-gray-400 max-w-sm">
+                Guilds haven't been implemented yet. Check back later to compete as a team!
+              </p>
+            </div>
+          )}
 
           {/* Your rank banner*/}
           {((mode === "individual") && data) ? (
@@ -405,20 +552,18 @@ const Leaderboard: React.FC = () =>
           )}
 
           {/* Loading state */}
-          {loading && (
+          {mode === "individual" && loading && (
             <div className="text-center py-16 text-gray-400 text-sm">Loading...</div>
           )}
 
           {/* Error state */}
-          {error && !loading && (
+          {mode === "individual" && error && !loading && (
             <div className="text-center py-8 text-red-500 text-sm">{error}</div>
           )}
 
           
-          {/* Table for Individual/Follower Leaderboards */}
-          
-
-          {(mode === "individual" || mode === "followed") && !loading && data && data.leaderboard.length > 0 ? (
+          {/* Table */}
+          {mode === "individual" && !loading && data && (
             <>
               <div className="w-full flex justify-center items-center">
                 <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
@@ -444,6 +589,8 @@ const Leaderboard: React.FC = () =>
                         const isCurrentUser =
                           currentUsername !== null &&
                           entry.username.toLowerCase() === currentUsername;
+                        const isFocusedUser = focusedUsername !== null
+                          && entry.username.toLowerCase() === focusedUsername;
 
                         const pfpUrl = entry.profilePicture
                           ? getProfilePictureUrlByItemName(entry.profilePicture)
@@ -451,23 +598,25 @@ const Leaderboard: React.FC = () =>
 
                         const { symbol, color, size } = rankBadge(entry.rank);
 
-                        const resolvedUserId = Number(entry.userId ?? entry.id ?? entry.ID);
-                        const hasValidUserId = Number.isInteger(resolvedUserId) && resolvedUserId > 0;
-                        const hasUsername = typeof entry.username === "string" && entry.username.trim().length > 0;
-                        const encodedUsername = hasUsername ? encodeURIComponent(entry.username.trim()) : "";
-                        const profilePath = hasValidUserId
-                          ? `/profile/${resolvedUserId}`
-                          : (hasUsername ? `/profile/u/${encodedUsername}` : (isCurrentUser ? "/profile" : null));
+                        const profilePath = getProfilePathForUser({
+                          userId: entry.userId,
+                          id: entry.id,
+                          ID: entry.ID,
+                          username: entry.username,
+                          fallbackToOwnProfile: isCurrentUser,
+                        });
 
                         return (
                           <tr
                             key={`${entry.username}-${entry.rank}`}
                             className={`border-b border-gray-100 transition-colors ${
-                              isCurrentUser
+                              isFocusedUser
+                                ? "bg-amber-100"
+                                : isCurrentUser
                                 ? "bg-blue-100"
                                 : "hover:bg-gray-200"
                             }`}
-                            ref={isCurrentUser ? userRef : null}
+                            ref={isFocusedUser ? focusedUserRef : (isCurrentUser ? userRef : null)}
                           >
                             {/* Rank */}
                             <td className="py-3 pl-10 pr-4 text-center">
@@ -772,6 +921,6 @@ const Leaderboard: React.FC = () =>
         </div>
       </div>
   );
-};
+}
 
 export default Leaderboard;
