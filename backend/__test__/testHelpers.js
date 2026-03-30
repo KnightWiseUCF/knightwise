@@ -184,12 +184,13 @@ const insertPurchase = async (userId, itemInfo = {}, isEquipped = false) => {
  * @param {number}        points      - Number of points question is worth, default 2.00
  * @param {boolean=true}  isPublished - True inserts as published, false inserts as draft. True by default.
  * @param {number=null}   ownerId     - Question.OWNER_ID to insert. Null by default.
+ * @param {string}        subcategory - Question.SUBCATEGORY to insert. 'Arrays' by default.
  * @returns {Promise<number>}           Inserted question ID
  */
-const insertQuestion = async (type, answers = [], { points = 2.00, isPublished = true, ownerId = null } = {}) => {
+const insertQuestion = async (type, answers = [], { points = 2.00, isPublished = true, ownerId = null, subcategory = 'Arrays' } = {}) => {
   const [result] = await pool.query(
     'INSERT INTO Question (QUESTION_TEXT, TYPE, SUBCATEGORY, SECTION, CATEGORY, POINTS_POSSIBLE, IS_PUBLISHED, OWNER_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    ['Test question', type, 'Arrays', 'A', 'Introductory Programming', points, isPublished ? 1 : 0, ownerId]
+    ['Test question', type, subcategory, 'A', 'Introductory Programming', points, isPublished ? 1 : 0, ownerId]
   );
   const questionId = result.insertId;
 
