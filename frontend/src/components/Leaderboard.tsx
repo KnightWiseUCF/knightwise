@@ -49,7 +49,7 @@ interface GuildLeaderboardResponse
 {
   guildRank:    number | null;
   guildExp:     number | null;
-  guildID:      number | null;
+  guildId:      number | null;
   page:         number;
   totalPages:   number;
   leaderboard:  GuildLeaderboardEntry[];
@@ -71,24 +71,6 @@ const Leaderboard: React.FC = () =>
   const [page, setPage]             = useState(1);
   const { equippedItems } = useUserCustomizationStore();
   const { user } = useUserCustomizationStore();
-
-  const generateGuildLeaderboard = (n: number) => {
-    let i = 0;
-    let output: GuildLeaderboardEntry[] = [];
-    for (i = 0; i < n; i++)
-    {
-      if(i === 7) output[i] = {id: i, rank: n-i, name: 'MyGuild' + i, exp: (n%(i+1))*(2/(i+1)), guildPicture: null};
-      else output[i] = {id: i, rank: n-i, name: 'Guild' + i, exp: (n%(i+1))*(2/(i+1)), guildPicture: null};
-      
-    }
-    output.sort((a: GuildLeaderboardEntry, b: GuildLeaderboardEntry) => {return a.rank - b.rank})
-    return output;
-  }
-
-  const generateGuildLeaderboardResponse = (n: number) => {
-    let output: GuildLeaderboardResponse = {guildRank: n-7, guildExp: (n%(7+1))*(2/(7+1)), guildID: 7, page: 1, totalPages: n%25, leaderboard: generateGuildLeaderboard(n)}
-    return output
-  }
 
   useEffect(() =>
   {
@@ -162,11 +144,12 @@ const Leaderboard: React.FC = () =>
     setError(null);
     try
     {
-
+      
       const response = await api.get<GuildLeaderboardResponse>(
-        `/api/leaderboard/guild/${tab}?page=${pageNum}`
+        `/api/leaderboard/guilds/${tab}?page=${pageNum}`
       );
       setguildData(response.data);
+      
 
       //setguildData(generateGuildLeaderboardResponse(52));
     }
@@ -239,11 +222,13 @@ const Leaderboard: React.FC = () =>
           for(let i = 1; i <= data?.totalPages && !userFound; i++) 
           {
             setError(null);
+
             try
             {
-              const response = await api.get<LeaderboardResponse>(
-                `/api/leaderboard/${activeTab}?page=${i}`
-              );
+              
+              const response = mode === "individual" 
+                ? await api.get<LeaderboardResponse>(`/api/leaderboard/${activeTab}?page=${i}`)
+                : await api.get<LeaderboardResponse>(`/api/leaderboard/followed/${activeTab}?page=${i}`)
 
               
               for(let k = 0; k < response.data.leaderboard.length && !userFound; k++) 
@@ -288,7 +273,7 @@ const Leaderboard: React.FC = () =>
 
               for(let k = 0; k < response.data.leaderboard.length && !userFound; k++) 
               {
-                if (response.data?.leaderboard[k].id === response.data?.guildID) 
+                if (response.data?.leaderboard[k].id === response.data?.guildId) 
                 {
                   //set page to user's page and scroll to them
                   setPage(i);
@@ -317,10 +302,8 @@ const Leaderboard: React.FC = () =>
           
           {/* Page header */}
           <div className="flex items-center gap-3 mb-6">
-            {/*<Trophy className="text-yellow-500" size={32} />*/}
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Leaderboard</h1>
-
             </div>
           </div>
 
@@ -366,14 +349,14 @@ const Leaderboard: React.FC = () =>
             {/*Find Yourself Button next to Weekly/Lifetime*/}
             
               <div className="flex items-center justify-between gap-10">
-                {mode === "individual" || mode === "guild" ? (
+                {
                   <button 
                     onClick={async () => {scrollToUser()}}
                     className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow hover:bg-blue-800"
                   >
                     {mode === "guild" ? "Find Your Guild" : "Find Yourself"}
                   </button>
-                ) : null }
+                }
 
                 {/* Right: Weekly / Lifetime */}
                 <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
@@ -396,8 +379,8 @@ const Leaderboard: React.FC = () =>
           </div>
 
 
-          {/* Your rank banner; Unsure if User will be added to followed */}
-          {((mode === "individual" /*|| mode === "followed"*/) && data) ? (
+          {/* Your rank banner*/}
+          {((mode === "individual") && data) ? (
             <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
               <Trophy className="text-blue-400 shrink-0" size={32} />
               <div>
@@ -414,7 +397,7 @@ const Leaderboard: React.FC = () =>
                 </p>
               </div>
             </div>
-          ) : mode === "guild" && guildData && guildData.guildID !== null && (
+          ) : mode === "guild" && guildData && guildData.guildId !== null && (
             <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
               <Trophy className="text-blue-400 shrink-0" size={32} />
               <div>
@@ -470,6 +453,7 @@ const Leaderboard: React.FC = () =>
                     <tbody>
                       {data.leaderboard.map((entry) =>
                       {
+                        console.log('entry | currentUsername', entry.username, currentUsername)
                         const isCurrentUser =
                           currentUsername !== null &&
                           entry.username.toLowerCase() === currentUsername;
@@ -581,7 +565,7 @@ const Leaderboard: React.FC = () =>
                               {entry.exp.toLocaleString()} XP
                             </td>
                           </tr>
-                        );
+                        )
                       })}
                     </tbody>
                   </table>
@@ -617,10 +601,10 @@ const Leaderboard: React.FC = () =>
                 </div>
               )}
             </>
-          ):<div className="text-center pt-16 text-gray-900 font-bold text-xl">
+          ):<div className={data ? `text-center pt-16 text-gray-900 font-bold text-xl` : ''}>
                 {data ? "Nobody's Here!" : null}
             </div> 
-          };
+          }
 
           {/* Guild Leaderboard Table */}
           {mode === "guild" && !loading && guildData && (
@@ -646,11 +630,12 @@ const Leaderboard: React.FC = () =>
                     <tbody>
                       {guildData.leaderboard.map((entry) =>
                       {
+                        //TODO
+                        console.log('guildId and api id:', entry.id, guildData)
                         const isCurrentUserGuild =
-                          guildData.guildID !== null &&
-                          guildData.guildID === entry.id;
+                          guildData.guildId !== null &&
+                          guildData.guildId === entry.id;
 
-                        // TODO NOT SURE IF THIS WILL WORK
                         const guildPicUrl = entry.guildPicture
                           ? getProfilePictureUrlByItemName(entry.guildPicture)
                           : null;
@@ -666,7 +651,7 @@ const Leaderboard: React.FC = () =>
                         // TODO NOT SURE IF THISLL WORK
                         const guildPath = hasValidGuildId
                           ? `/guild/${resolvedGuildId}`
-                          : (hasGuildName ? `/guild/u/${encodedGuildName}` : (isCurrentUserGuild ? "/guild" : null));
+                          : (hasGuildName ? `/guild/${encodedGuildName}` : (isCurrentUserGuild ? "/guild" : null));
                           
                           
                         return (

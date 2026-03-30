@@ -4,8 +4,8 @@ import React, { useCallback, useEffect, useState, useMemo, useRef } from "react"
 import api from "../api";
 import Layout from "../components/Layout";
 import { ALL_TOPICS} from "../utils/topicLabels"
-import { RawQuestion, HistoryEntry, HistoryResponse, ProgressData} from '../models';
-import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
+import { RawQuestion} from '../models';
+
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { formatSubcategoryLabel } from '../utils/topicLabels';
@@ -78,29 +78,12 @@ interface PublishedQuestion {
   ownerId: number;
 }
 
-const topicCategoryMap: Record<string, string[]> = {
-  "Introductory Programming": ["Input/Output", "Branching", "Loops", "Variables"],
-  "Simple Data Structures": ["Arrays", "Linked Lists", "Strings"],
-  "Object Oriented Programming": ["Classes", "Methods"],
-  "Intermediate Data Structures": ["Trees", "Stacks"],
-  "Complex Data Structures": ["Heaps", "Tries"],
-  "Intermediate Programming": ["Bitwise Operators", "Dynamic Memory", "Algorithm Analysis", "Recursion", "Sorting"],
-};
-
-const defaultSubcategories = Object.values(topicCategoryMap).flat();
-
-type QuestionStatus = "Draft" | "Published";
-
 interface ProfessorQuestionItem {
   id: number;
   title: string;
   category: string;
   subcategory: string;
   type: string;  
-}
-
-interface DraftListResponse {
-  drafts?: RawQuestion[];
 }
 
 const ProfessorStatisticsPage: React.FC = () => 
@@ -111,11 +94,9 @@ const ProfessorStatisticsPage: React.FC = () =>
     // State to store the current scroll position
     const [scrollPos, setScrollPos] = useState(0);
 
-    const [topicQuestionList, setTopicQuestionList] = useState<TopicQuestionList>();
     const [questions, setQuestions] = useState<ProfessorQuestionItem[]>([]);
     const [questionsPagination, setQuestionsPagination] = useState<Pagination>();
 
-    const [publishedQuestions, setPublishedQuestions] = useState<PublishedQuestion[]>([]);
     const [checkQuestions, setCheckQuestions] = useState<CheckQuestion[]>([]);
 
     const [aggregateStats, setAggregateStats] = useState<AggregateStatsResponse>();
@@ -342,16 +323,11 @@ const ProfessorStatisticsPage: React.FC = () =>
         updateQuestionStats(questionsAggregateStats);
     }, [questionsAggregateStats]);
 
-    useEffect(() => {
-
-    }, [questionStats])
-
     useEffect(() =>
       {
         void userCustomizationStore.refresh();
       }, []);
 
-      
       const backgroundItem = useMemo(
         () => equippedItems.find((item) => item.TYPE === "background") || null,
         [equippedItems]
@@ -368,8 +344,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         backgroundPosition: "center",
       } : undefined;
 
-
-
+    //aggregate
     const resolveTopicData = (topicChoice: string) => 
     {
 
@@ -405,6 +380,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         //setLoading(false)
     };
 
+    //question
     const updateCheckQuestions = (id: number, checked: boolean ) => {
         let temp: CheckQuestion[] = [];
         checkQuestions.map((checkQuestion) => (
@@ -416,6 +392,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         setCheckQuestions(temp);
     }
 
+    //question
     const updateQuestionStats = (questionsAggregateStats: AggregateStatsByQuestionResponse[]) => {
         //console.log('question stats',questionsAggregateStats)
         //console.log('question stats[0] ',questionsAggregateStats[0])
@@ -457,6 +434,7 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     }
 
+    //aggregate
     const getPercentageGraphs = () => {
 
         
@@ -491,6 +469,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         
     }
 
+    //aggregate
     const getStatisticsGrid = () => {
         return (
             <div className="mt-3 grid grid-cols-2 gap-3">
@@ -506,6 +485,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         )
     }
 
+    //question
     const getCheckedQuestions = (questionID: number) => {
         for (let i = 0; i < checkQuestions.length; i++)
         {
@@ -515,6 +495,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         return false;
     }
 
+    //question
     const getQuestionStatisticsGrid = () => {
         //console.log('question stats ',questionStats)
 
@@ -546,6 +527,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         );
     }
 
+    //question
     const isSelected = (id: number) => {
         console.log(checkQuestions.filter((question) => {return question.questionID === id}))
         return checkQuestions.filter((question) => {return question.questionID === id && question.isChecked}).length < 1 
@@ -615,6 +597,7 @@ const ProfessorStatisticsPage: React.FC = () =>
     };
     */
 
+    //question
     const handlePreviewQuestion = async (questionId: number) => {
     setPreviewError("");
     setPreviewLoadingId(questionId);
@@ -629,6 +612,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         }
     };
 
+    //question
     const normalizeQuestionType = (questionType?: string): string => {
         const normalized = (questionType || "").trim();
         switch (normalized.toLowerCase()) {
@@ -695,6 +679,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                     style={backgroundStyle}
                 >
 
+                    {/*Header*/}
                     <div className="flex items-center gap-3 mb-6">
                         <div>
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Statistics</h1>
@@ -707,6 +692,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                         </div>
                     )}
 
+                    {/*Aggregate Stats*/}
                     {!loading && (
                     <div className="flex justify-between items-center w-full">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Topic Stats</h2>
@@ -733,7 +719,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                         <section className="rounded-xl border border-gray-200 bg-white p-5">
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Percentages</p>
-
                             {getPercentageGraphs()}
 
                         </section>
@@ -744,6 +729,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                     </div>
                     )}
 
+                    {/*Question Stats*/}
                     {!loading && (
                     <div className="flex justify-between items-center w-full">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Question Stats</h2>
@@ -822,7 +808,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                                 //pagination.page--;
                                                 //setQuestionsPagination(pagination);
                                                 fetchQuestionList(questionsPagination.page-1);
-                                                fetchAggregateStats();
+                                                //fetchAggregateStats();
                                             }}
                                             className= "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
@@ -839,7 +825,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                                 //pagination.page++;
                                                 //setQuestionsPagination(pagination);
                                                 fetchQuestionList(questionsPagination.page+1);
-                                                fetchAggregateStats();
+                                                //fetchAggregateStats();
                                             }}
                                             className= "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >

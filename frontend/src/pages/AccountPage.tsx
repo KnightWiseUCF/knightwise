@@ -85,6 +85,7 @@ const AccountPage: React.FC = () => {
     }
   }, []);
 
+  const isProfessor = localStorage.getItem("account_type") === "professor";
   const userId = user?.ID || userData?.id;
   //console.log(userId);
   const userEmail = userData?.email;
@@ -247,7 +248,7 @@ const AccountPage: React.FC = () => {
           )}
           
           {/* Statistics Sharing Toggle */}
-          {!loading && (
+          {!loading && !isProfessor && (
           <div className="p-6 flex justify-start items-center accent-amber-500">
             <input className="mr-4 w-5 h-5" 
               type="checkbox"

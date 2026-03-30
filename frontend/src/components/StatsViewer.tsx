@@ -372,13 +372,13 @@ const StatsViewer: React.FC = () => {
   */
 
   const generateStatsMessage = () => {
-    let seed: number = Math.round(((Math.random()*7)%7)+1)
+    let seed: number = Math.round(((Math.random()*7)%7))
     console.log(seed)
 
     if(statViewerData.NumQuestions === 0)
       return "No completed questions? Then I got nothing for you here!"
 
-      if(seed === 1 || seed === 2 ||  seed === 3) //performance
+      if(seed === 0 || seed === 1 || seed === 2 ||  seed === 3) //performance
         return statViewerData.Performance > 90 ? "Maybe you'll get an A on a real transcript card for all that work!" 
           : statViewerData.Performance > 70 ? "Performance looking good so far, keep up the good work!" 
           : statViewerData.Performance > 50 ? "Pretty close! Pro-Tip: Speed is key if you can get it right!"
