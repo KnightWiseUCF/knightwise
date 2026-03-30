@@ -5,12 +5,8 @@ import api from "../api";
 import Layout from "../components/Layout";
 import { ALL_TOPICS} from "../utils/topicLabels"
 import { RawQuestion} from '../models';
-
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { formatSubcategoryLabel } from '../utils/topicLabels';
-
-import { isAxiosError } from "axios";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
 import { Key, ChevronLeft, ChevronRight } from "lucide-react";
@@ -68,16 +64,6 @@ interface CheckQuestion
 
 }
 
-interface PublishedQuestion {
-  id: number;
-  section: string;
-  category: string;
-  subcategory: string;
-  questionType: string;
-  authorExamId: string;
-  ownerId: number;
-}
-
 interface ProfessorQuestionItem {
   id: number;
   title: string;
@@ -103,7 +89,6 @@ const ProfessorStatisticsPage: React.FC = () =>
     const [questionsAggregateStats, setQuestionsAggregateStats] = useState<AggregateStatsByQuestionResponse[]>([]);
     const [topicStats, setTopicStats]   = useState<StatData | null>();
     const [questionStats, setQuestionStats] = useState<StatData>();
-    const [questionStatsReady, setQuestionsStatsReady] = useState<Boolean>();
 
     const [loading, setLoading]       = useState(false);
     const [error, setError]           = useState<string | null>(null);
@@ -117,8 +102,6 @@ const ProfessorStatisticsPage: React.FC = () =>
     const [previewQuestion, setPreviewQuestion] = useState<RawQuestion | null>(null);
     const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
     const [previewError, setPreviewError] = useState("");
-
-
 
     const fetchAggregateStats = useCallback( async () => 
     {
@@ -134,8 +117,6 @@ const ProfessorStatisticsPage: React.FC = () =>
             });
 
             setAggregateStats(response.data);
-            //console.log(response.data)
-
         }
         catch
         {
@@ -149,8 +130,6 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const fetchQuestionAggregateStats =  useCallback(async (checkQuestions: CheckQuestion[]) => 
     {   
-        //console.log('in fetch, checkquestions: ',checkQuestions);
-
         if (checkQuestions.length < 1)
             return;
 
@@ -173,22 +152,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                 }
             }
 
-            /*
-            checkQuestions.map(async (question) => {
-                if(question.isChecked) {
-                    const response = await api.get<AggregateStatsByQuestionResponse>(`/api/stats/aggregate/${question.questionID}`,
-                    {
-                        headers: { 'Authorization': `Bearer ${token}` },
-                    });
-                    temp.push(response.data);
-                    //temp.length++;
-                }
-            })
-            */
-
-            //console.log('responses: ',temp);
-            //console.log('responses[0]: ', temp[0]);
-            //console.log('responses.length: ', temp.length);
             setQuestionsAggregateStats(temp);
         }
         catch
@@ -217,27 +180,22 @@ const ProfessorStatisticsPage: React.FC = () =>
                 headers: { 'Authorization': `Bearer ${token}` },
             });
 
-            //console.log('response', response.data)
 
             setQuestionsPagination(response.data.pagination);
 
             
             let converted: ProfessorQuestionItem[] = [];
             
-            //console.log('topic choice2', topicChoice2)
             
             if(topicChoice2.toLowerCase() === "My Questions".toLowerCase())
             {
-                //console.log('in my question section...')
 
                 ALL_TOPICS.map((topic) => {
                     if(response.data.questions[topic] !== undefined && response.data.questions[topic] !== null)
                     {
-                        //console.log(topic)
 
                         for(let k = 0; k < response.data.questions[topic].length; k++)
                         {
-                            //console.log(response.data.questions[topic][k])
                             converted.push({
                                 id: response.data.questions[topic][k].ID,
                                 title: response.data.questions[topic][k].QUESTION_TEXT.replace(removeHtmlTags, ""),
@@ -245,13 +203,10 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 subcategory: response.data.questions[topic][k].SUBCATEGORY,
                                 type: response.data.questions[topic][k].TYPE
                             })
-                            //console.log(converted)
                         }
                     }
                 })
-                //console.log('converted', converted)
             } else {
-                //console.log('in generic topic section...')
 
                 for(let i = 0; i < response.data.questions[topicChoice2].length; i++) {
                 
@@ -262,21 +217,10 @@ const ProfessorStatisticsPage: React.FC = () =>
                         subcategory: response.data.questions[topicChoice2][i].SUBCATEGORY,
                         type: response.data.questions[topicChoice2][i].TYPE
                     })
-                    //console.log('converted', converted);
-
-
                 }   
             }
 
-
-            //console.log('converted outside of loops', converted);
-
             setQuestions(converted);
-            
-
-            //setAggregateStats(response.data);
-            //console.log(response.data)
-
         }
         catch
         {
@@ -344,12 +288,9 @@ const ProfessorStatisticsPage: React.FC = () =>
         backgroundPosition: "center",
       } : undefined;
 
-    //aggregate
     const resolveTopicData = (topicChoice: string) => 
     {
 
-        //console.log(topicChoice)
-        //console.log(aggregateStats)
         if (topicChoice.toLowerCase() === "All".toLowerCase()){
             let topicData: StatData = {
                 medianAccuracy:     aggregateStats?.medianAccuracy == undefined ? 0 : aggregateStats?.medianAccuracy == null ? 0 : aggregateStats.medianAccuracy,
@@ -380,7 +321,6 @@ const ProfessorStatisticsPage: React.FC = () =>
         //setLoading(false)
     };
 
-    //question
     const updateCheckQuestions = (id: number, checked: boolean ) => {
         let temp: CheckQuestion[] = [];
         checkQuestions.map((checkQuestion) => (
@@ -394,15 +334,8 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     //question
     const updateQuestionStats = (questionsAggregateStats: AggregateStatsByQuestionResponse[]) => {
-        //console.log('question stats',questionsAggregateStats)
-        //console.log('question stats[0] ',questionsAggregateStats[0])
-        //console.log('question stats length ',questionsAggregateStats.length)
         setLoading(true)
-        /*
-        let questionsAggregateStats2: AggregateStatsByQuestionResponse[] = questionsAggregateStats;
-        console.log(questionsAggregateStats2)
-        console.log(questionsAggregateStats2.length)
-        */
+
 
         if (questionsAggregateStats.length < 1){
             setLoading(false)
@@ -414,15 +347,11 @@ const ProfessorStatisticsPage: React.FC = () =>
         let totalMedianAccuracy = 0;
         let totalQuestionsCompleted = 0;
 
-        //console.log('question agg stats' ,questionsAggregateStats)
-
         questionsAggregateStats.map((question) => {
             totalMedianAccuracy += question?.medianAccuracy == undefined || question?.medianAccuracy == null ? 0 : question?.medianAccuracy;
             totalMedianElapsedTime += question?.medianElapsedTime == undefined || question?.medianElapsedTime == null ? 0 : question?.medianElapsedTime;
             totalQuestionsCompleted += question?.responseCount == undefined || question?.responseCount == null ? 0 : question?.responseCount;
         })
-
-        //console.log('questions stats: ', 'medAcc', totalMedianAccuracy / length, 'medTime', totalMedianElapsedTime / length, 'questions', totalQuestionsCompleted)
 
         setQuestionStats({
             medianAccuracy: Math.round(totalMedianAccuracy*100 / length),
@@ -434,7 +363,6 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     }
 
-    //aggregate
     const getPercentageGraphs = () => {
 
         
@@ -469,7 +397,6 @@ const ProfessorStatisticsPage: React.FC = () =>
         
     }
 
-    //aggregate
     const getStatisticsGrid = () => {
         return (
             <div className="mt-3 grid grid-cols-2 gap-3">
@@ -485,7 +412,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         )
     }
 
-    //question
+
     const getCheckedQuestions = (questionID: number) => {
         for (let i = 0; i < checkQuestions.length; i++)
         {
@@ -495,10 +422,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         return false;
     }
 
-    //question
     const getQuestionStatisticsGrid = () => {
-        //console.log('question stats ',questionStats)
-
         let length = checkQuestions.filter((question) => {return question.isChecked}).length
         let moreThanOneChecked: boolean =  length > 1
         let noneChecked: boolean = length < 1
@@ -529,13 +453,12 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     //question
     const isSelected = (id: number) => {
-        console.log(checkQuestions.filter((question) => {return question.questionID === id}))
         return checkQuestions.filter((question) => {return question.questionID === id && question.isChecked}).length < 1 
             ?  false
             :  true;
     }
 
-    /* Might Come Back to later, would make for v nice polish
+    /* Might Come Back to later: Saving scroll position in checklist would make for nice polish {currently not working}
 
     // Effect to update scrollPos state when the user scrolls
     useEffect(() => {
@@ -597,7 +520,6 @@ const ProfessorStatisticsPage: React.FC = () =>
     };
     */
 
-    //question
     const handlePreviewQuestion = async (questionId: number) => {
     setPreviewError("");
     setPreviewLoadingId(questionId);
@@ -612,7 +534,6 @@ const ProfessorStatisticsPage: React.FC = () =>
         }
     };
 
-    //question
     const normalizeQuestionType = (questionType?: string): string => {
         const normalized = (questionType || "").trim();
         switch (normalized.toLowerCase()) {
@@ -803,12 +724,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                         <button
                                             disabled={questionsPagination.page <= 1}
                                             onClick={() => {
-
-                                                //let pagination: Pagination = questionsPagination;
-                                                //pagination.page--;
-                                                //setQuestionsPagination(pagination);
                                                 fetchQuestionList(questionsPagination.page-1);
-                                                //fetchAggregateStats();
                                             }}
                                             className= "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
@@ -821,11 +737,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                         <button
                                             disabled={questionsPagination.page >= questionsPagination.totalPages}
                                             onClick={() => {
-                                                //let pagination: Pagination = questionsPagination;
-                                                //pagination.page++;
-                                                //setQuestionsPagination(pagination);
                                                 fetchQuestionList(questionsPagination.page+1);
-                                                //fetchAggregateStats();
                                             }}
                                             className= "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
