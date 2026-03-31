@@ -218,20 +218,34 @@ const AccountPage: React.FC = () => {
             </div>
           </section>
 
-          {/* Statistics Sharing Toggle */}
+          {/* Privacy */}
           {!loading && !isProfessor && (
-          <div className="p-6 flex justify-start items-center accent-amber-500">
-            <input className="mr-4 w-5 h-5"
-              type="checkbox"
-              checked={isSharingStats}
-              onChange={() => {
-                const next = !isSharingStats;
-                setIsSharingStats(next);
-                void updateOptInStatus(next);
-              }}
-            />
-            <span className="font-semibold text-gray-600">Opt-in to Statistics Sharing:</span>
-          </div>
+            <section className="p-6 border-t border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Privacy</h2>
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-700">Statistics Sharing</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Allow your performance statistics to be visible to professors and used for course analytics.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-amber-500"
+                    checked={isSharingStats}
+                    onChange={() => {
+                      const next = !isSharingStats;
+                      setIsSharingStats(next);
+                      void updateOptInStatus(next);
+                    }}
+                  />
+                  <span className="text-sm font-medium text-gray-600">
+                    {isSharingStats ? "Enabled" : "Disabled"}
+                  </span>
+                </label>
+              </div>
+            </section>
           )}
 
           {/* Delete Account */}

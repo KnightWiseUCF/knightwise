@@ -28,6 +28,7 @@ interface QuestionDraft {
   dropSections: string[];
   updatedAt: string;
   publishedQuestionId?: number;
+  pointsPossible: number;
 }
 
 interface PublishedQuestion {
@@ -45,6 +46,24 @@ interface DraftListResponse {
 }
 
 const DRAFTS_STORAGE_KEY = "prof_question_drafts";
+
+const POINT_VALUE_OPTIONS = [
+  { value: 2,  label: "Easy (2 pts)"   },
+  { value: 5,  label: "Medium (5 pts)" },
+  { value: 10, label: "Hard (10 pts)"  },
+] as const;
+
+const DEFAULT_POINTS_POSSIBLE = 5;
+
+const normalizePointsPossible = (value: unknown, fallback: number = DEFAULT_POINTS_POSSIBLE): number => {
+  const parsed = Number(value);
+  return POINT_VALUE_OPTIONS.some((opt) => opt.value === parsed) ? parsed : fallback;
+};
+
+const getPointsLabel = (value: number): string => {
+  const opt = POINT_VALUE_OPTIONS.find((o) => o.value === value);
+  return opt ? opt.label : `${value} pts`;
+};
 
 const topicCategoryMap: Record<string, string[]> = {
   "Introductory Programming": ["Input/Output", "Branching", "Loops", "Variables"],
@@ -208,6 +227,7 @@ const buildDraftFromPublishedQuestion = (
     dropSections: dropSections.length > 0 ? dropSections : createDefaultDropSections(),
     updatedAt: new Date().toISOString(),
     publishedQuestionId: question.ID,
+    pointsPossible: normalizePointsPossible(question.POINTS_POSSIBLE),
   };
 };
 
@@ -258,6 +278,7 @@ const loadDrafts = (): QuestionDraft[] => {
                   dropSections?: unknown;
           updatedAt?: unknown;
           publishedQuestionId?: unknown;
+          pointsPossible?: unknown;
         };
 
         const safeDropSections = Array.isArray(typedItem.dropSections)
@@ -291,6 +312,7 @@ const loadDrafts = (): QuestionDraft[] => {
           dropSections: safeDropSections.length > 0 ? safeDropSections : createDefaultDropSections(),
           updatedAt: typeof typedItem.updatedAt === "string" ? typedItem.updatedAt : new Date().toISOString(),
           publishedQuestionId: parsedPublishedQuestionId,
+          pointsPossible: normalizePointsPossible(typedItem.pointsPossible),
         } as QuestionDraft;
       });
   } catch {
@@ -321,6 +343,7 @@ const emptyForm = {
   questionText: "",
   answers: createDefaultAnswers(),
   dropSections: createDefaultDropSections(),
+  pointsPossible: String(DEFAULT_POINTS_POSSIBLE),
 };
 
 const ProfessorDraftsPage: React.FC = () => {
@@ -712,7 +735,7 @@ const ProfessorDraftsPage: React.FC = () => {
       section: draft.section || "General",
       category: draft.category || "General",
       subcategory: draft.subcategory || "General",
-      points_possible: 1,
+      points_possible: normalizePointsPossible(draft.pointsPossible),
       is_published: isPublished ? 1 : 0,
       question_text: draft.questionText,
       answer_text: filteredAnswers.map((answer) => answer.text.trim()),
@@ -830,6 +853,7 @@ const ProfessorDraftsPage: React.FC = () => {
         dropSections: form.dropSections.map((item) => item.trim()).filter(Boolean),
         updatedAt: now,
         publishedQuestionId: existingDraft?.publishedQuestionId,
+        pointsPossible: normalizePointsPossible(form.pointsPossible),
       };
 
       if (!Number.isFinite(draftQuestionId) || draftQuestionId <= 0) {
@@ -848,7 +872,7 @@ const ProfessorDraftsPage: React.FC = () => {
           section: nextDraftState.section || "General",
           category: nextDraftState.category || "General",
           subcategory: nextDraftState.subcategory || "General",
-          points_possible: 1,
+          points_possible: normalizePointsPossible(nextDraftState.pointsPossible),
           question_text: nextDraftState.questionText,
           answer_text: filteredAnswers.map((answer) => answer.text.trim()),
           answer_correctness: filteredAnswers.map((answer) => ((nextDraftState.questionType === "Ranked Choice" || nextDraftState.questionType === "Drag and Drop") ? 1 : (answer.isCorrect ? 1 : 0))),
@@ -912,6 +936,7 @@ const ProfessorDraftsPage: React.FC = () => {
       })),
       dropSections: form.dropSections.map((item) => item.trim()).filter(Boolean),
       updatedAt: now,
+      pointsPossible: normalizePointsPossible(form.pointsPossible),
     };
 
     setPublishingDraftId("new");
@@ -963,6 +988,7 @@ const ProfessorDraftsPage: React.FC = () => {
       questionText: draft.questionText,
       answers: draft.answers.length > 0 ? draft.answers : createDefaultAnswers(),
       dropSections: draft.dropSections.length > 0 ? draft.dropSections : createDefaultDropSections(),
+      pointsPossible: String(normalizePointsPossible(draft.pointsPossible)),
     });
   }, []);
 
@@ -1404,35 +1430,56 @@ const ProfessorDraftsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <select
-                name="category"
-                value={form.category}
-                onChange={handleChange}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required
-              >
-                <option value="">Select category</option>
-                {availableCategories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="subcategory"
-                value={form.subcategory}
-                onChange={handleChange}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required
-              >
-                <option value="">Select subcategory</option>
-                {subcategoryOptions.map((subcategory) => (
-                  <option key={subcategory} value={subcategory}>
-                    {subcategory}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Category</label>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  required
+                >
+                  <option value="">Select category</option>
+                  {availableCategories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Subcategory</label>
+                <select
+                  name="subcategory"
+                  value={form.subcategory}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  required
+                >
+                  <option value="">Select subcategory</option>
+                  {subcategoryOptions.map((subcategory) => (
+                    <option key={subcategory} value={subcategory}>
+                      {subcategory}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Difficulty</label>
+                <select
+                  name="pointsPossible"
+                  value={form.pointsPossible}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                >
+                  {POINT_VALUE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>
@@ -1953,7 +2000,7 @@ const ProfessorDraftsPage: React.FC = () => {
                       )}
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
-                      {draft.category || "No category"} • {draft.subcategory || "No subcategory"}
+                      {draft.category || "No category"} • {draft.subcategory || "No subcategory"} • {getPointsLabel(draft.pointsPossible)}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">Type: {draft.questionType}</p>
                     <p className="text-sm text-gray-600 mt-1">Answers: {draft.answers.length}</p>

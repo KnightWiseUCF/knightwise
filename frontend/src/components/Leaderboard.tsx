@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import api from "../api";
 import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
+import type { GuildInfoResponse, UserInfoResponse } from "../models";
+import { getFlairPresentation } from "../utils/flairPresentation";
 import { getProfilePathForUser } from "../utils/profileRouting";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { Trophy, ChevronLeft, ChevronRight, Swords, Users, UserCheck } from "lucide-react";
@@ -17,6 +19,8 @@ interface LeaderboardEntry
   firstName:      string;
   exp:            number;
   profilePicture: string | null;
+  background:     string | null;
+  flairNames:     string[];
 }
 
 interface LeaderboardResponse
@@ -66,9 +70,59 @@ interface UserSearchResponse {
   users: UserSearchResult[];
 }
 
+const LEADERBOARD_CACHE_KEY = "leaderboard_snapshot_v2";
+
+interface LeaderboardCacheSnapshot {
+  username: string | null;
+  leaderboardPages: Array<[string, LeaderboardResponse]>;
+  guildPages: Array<[string, GuildLeaderboardResponse]>;
+  guildBackgrounds: Array<[number, string | null]>;
+  leaderboardFlairs: Array<[string, string[]]>;
+  leaderboardBackgrounds: Array<[string, string | null]>;
+}
+
+const getStoredUsername = (): string | null => {
+  try {
+    const raw = localStorage.getItem("user_data");
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as { name?: unknown; USERNAME?: unknown; username?: unknown };
+    const resolved = String(parsed.name ?? parsed.USERNAME ?? parsed.username ?? "").trim().toLowerCase();
+    return resolved || null;
+  } catch {
+    return null;
+  }
+};
+
+const loadLeaderboardSnapshot = (): LeaderboardCacheSnapshot | null => {
+  try {
+    const raw = localStorage.getItem(LEADERBOARD_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    return JSON.parse(raw) as LeaderboardCacheSnapshot;
+  } catch {
+    return null;
+  }
+};
+
+const saveLeaderboardSnapshot = (snapshot: LeaderboardCacheSnapshot): void => {
+  try {
+    localStorage.setItem(LEADERBOARD_CACHE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Ignore storage quota failures.
+  }
+};
+
+const getLeaderboardPageKey = (mode: Mode, tab: Tab, page: number): string => `${mode}:${tab}:${page}`;
+
 const Leaderboard: React.FC = () =>
 {
   const location = useLocation();
+  const storedUsername = useMemo(() => getStoredUsername(), []);
   const [mode, setMode]             = useState<Mode>("individual");
   const [activeTab, setActiveTab]   = useState<Tab>("weekly");
   const [data, setData]             = useState<LeaderboardResponse | null>(null);
@@ -80,6 +134,14 @@ const Leaderboard: React.FC = () =>
   const [searchSuggestions, setSearchSuggestions] = useState<UserSearchResult[]>([]);
   const [searchSuggestionsLoading, setSearchSuggestionsLoading] = useState(false);
   const [guildData, setguildData] = useState<GuildLeaderboardResponse | null>(null);
+  const [guildBackgrounds, setGuildBackgrounds] = useState<Map<number, string | null>>(new Map());
+  const [leaderboardFlairs, setLeaderboardFlairs] = useState<Map<string, string[]>>(new Map());
+  const [leaderboardBackgrounds, setLeaderboardBackgrounds] = useState<Map<string, string | null>>(new Map());
+  const leaderboardCacheRef = useRef<Map<string, LeaderboardResponse>>(new Map());
+  const guildLeaderboardCacheRef = useRef<Map<string, GuildLeaderboardResponse>>(new Map());
+  const pendingGuildBackgroundsRef = useRef<Set<number>>(new Set());
+  const pendingUserCosmeticsRef = useRef<Set<string>>(new Set());
+  const hasHydratedSnapshotRef = useRef(false);
   const { equippedItems } = useUserCustomizationStore();
 
   const { user } = useUserCustomizationStore();
@@ -107,15 +169,71 @@ const Leaderboard: React.FC = () =>
 
   const currentUsername = user?.USERNAME?.toLowerCase() ?? null;
 
+  useEffect(() => {
+    if (hasHydratedSnapshotRef.current) {
+      return;
+    }
+
+    const snapshot = loadLeaderboardSnapshot();
+    hasHydratedSnapshotRef.current = true;
+
+    if (!snapshot || snapshot.username !== storedUsername) {
+      return;
+    }
+
+    leaderboardCacheRef.current = new Map(snapshot.leaderboardPages ?? []);
+    guildLeaderboardCacheRef.current = new Map(snapshot.guildPages ?? []);
+    setGuildBackgrounds(new Map(snapshot.guildBackgrounds ?? []));
+    setLeaderboardFlairs(new Map(snapshot.leaderboardFlairs ?? []));
+    setLeaderboardBackgrounds(new Map(snapshot.leaderboardBackgrounds ?? []));
+  }, [storedUsername]);
+
+  useEffect(() => {
+    const pageKey = getLeaderboardPageKey(mode, activeTab, page);
+
+    if (mode === "individual" || mode === "followed") {
+      const cached = leaderboardCacheRef.current.get(pageKey);
+      if (cached) {
+        setData(cached);
+      }
+      return;
+    }
+
+    const cachedGuildPage = guildLeaderboardCacheRef.current.get(pageKey);
+    if (cachedGuildPage) {
+      setguildData(cachedGuildPage);
+    }
+  }, [mode, activeTab, page]);
+
+  useEffect(() => {
+    saveLeaderboardSnapshot({
+      username: storedUsername,
+      leaderboardPages: Array.from(leaderboardCacheRef.current.entries()),
+      guildPages: Array.from(guildLeaderboardCacheRef.current.entries()),
+      guildBackgrounds: Array.from(guildBackgrounds.entries()),
+      leaderboardFlairs: Array.from(leaderboardFlairs.entries()),
+      leaderboardBackgrounds: Array.from(leaderboardBackgrounds.entries()),
+    });
+  }, [storedUsername, data, guildData, guildBackgrounds, leaderboardFlairs, leaderboardBackgrounds]);
+
   const fetchLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
   {
-    setLoading(true);
+    const cacheKey = getLeaderboardPageKey("individual", tab, pageNum);
+    const cached = leaderboardCacheRef.current.get(cacheKey);
+
+    setLoading(!cached);
     setError(null);
+
+    if (cached) {
+      setData(cached);
+    }
+
     try
     {
       const response = await api.get<LeaderboardResponse>(
         `/api/leaderboard/${tab}?page=${pageNum}`
       );
+      leaderboardCacheRef.current.set(cacheKey, response.data);
       setData(response.data);
     }
     catch
@@ -128,6 +246,37 @@ const Leaderboard: React.FC = () =>
     }
   }, []);
 
+  const fetchFollowedLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
+  {
+    const cacheKey = getLeaderboardPageKey("followed", tab, pageNum);
+    const cached = leaderboardCacheRef.current.get(cacheKey);
+
+    setLoading(!cached);
+    setError(null);
+
+    if (cached) {
+      setData(cached);
+    }
+
+    try
+    {
+      const response = await api.get<LeaderboardResponse>(
+        `/api/leaderboard/followed/${tab}?page=${pageNum}`
+      );
+      leaderboardCacheRef.current.set(cacheKey, response.data);
+      setData(response.data);
+    }
+    catch
+    {
+      setError("Failed to load leaderboard. Please try again.");
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
+  /*
   const fetchFollowedLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
   {
     setLoading(true);
@@ -148,17 +297,27 @@ const Leaderboard: React.FC = () =>
       setLoading(false);
     }
   }, []);
+  */
 
   const fetchGuildLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
   {
-    setLoading(true);
+    const cacheKey = getLeaderboardPageKey("guild", tab, pageNum);
+    const cached = guildLeaderboardCacheRef.current.get(cacheKey);
+
+    setLoading(!cached);
     setError(null);
+
+    if (cached) {
+      setguildData(cached);
+    }
+
     try
     {
       
       const response = await api.get<GuildLeaderboardResponse>(
         `/api/leaderboard/guilds/${tab}?page=${pageNum}`
       );
+      guildLeaderboardCacheRef.current.set(cacheKey, response.data);
       setguildData(response.data);
     }
     catch
@@ -174,9 +333,12 @@ const Leaderboard: React.FC = () =>
   useEffect(() =>
   {
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
-    else if (mode === "followed") void fetchFollowedLeaderboard(activeTab, page);
-    else if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
-  }, [mode, activeTab, page, fetchLeaderboard, fetchFollowedLeaderboard, fetchGuildLeaderboard]);
+  }, [mode, activeTab, page, fetchLeaderboard]);
+
+  useEffect(() =>
+  {
+    if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
+  }, [mode, activeTab, page, fetchGuildLeaderboard]);
 
   const handleTabChange = (tab: Tab) =>
   {
@@ -412,19 +574,8 @@ const Leaderboard: React.FC = () =>
                 Individual
               </button>
               <button
-                onClick={() => { setMode("followed"); setPage(1); setData(null); }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  mode === "followed"
-                    ? "bg-gray-800 text-white shadow"
-                    : "bg-white text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                <UserCheck size={15} />
-                Followed
-              </button>
-              <button
-                onClick={() => { setMode("guild"); setPage(1); setData(null); }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                onClick={() => setMode("guild")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "guild"
                     ? "bg-gray-800 text-white shadow"
                     : "bg-white text-gray-600 hover:bg-gray-200"
@@ -434,7 +585,7 @@ const Leaderboard: React.FC = () =>
                 Guilds
               </button>
             </div>
-            
+
             {/*Find Yourself Button next to Weekly/Lifetime*/}
             <div className="flex items-center justify-between gap-10">
               <div className="relative flex items-center gap-2">
@@ -496,7 +647,7 @@ const Leaderboard: React.FC = () =>
                   <button
                     key={tab}
                     onClick={() => handleTabChange(tab)}
-                    className={`px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${
                       activeTab === tab
                         ? "bg-blue-600 text-white shadow"
                         : "bg-white text-gray-600 hover:bg-gray-200"
@@ -591,6 +742,21 @@ const Leaderboard: React.FC = () =>
                         const pfpUrl = entry.profilePicture
                           ? getProfilePictureUrlByItemName(entry.profilePicture)
                           : null;
+                        const usernameKey = entry.username.trim().toLowerCase();
+                        const visibleFlairs = Array.isArray(entry.flairNames)
+                          ? entry.flairNames.slice(0, 3)
+                          : (leaderboardFlairs.get(usernameKey) ?? []).slice(0, 3);
+                        const visibleBackgroundName = typeof entry.background === "string" && entry.background.trim().length > 0
+                          ? entry.background
+                          : (leaderboardBackgrounds.get(usernameKey) ?? null);
+                        const rowBackgroundUrl = visibleBackgroundName
+                          ? getBackgroundUrlByItemName(visibleBackgroundName)
+                          : null;
+                        const userRowStyle = !isFocusedUser && !isCurrentUser && rowBackgroundUrl ? {
+                          backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${rowBackgroundUrl})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        } : undefined;
 
                         const { symbol, color, size } = rankBadge(entry.rank);
 
@@ -612,6 +778,7 @@ const Leaderboard: React.FC = () =>
                                 ? "bg-blue-100"
                                 : "hover:bg-gray-200"
                             }`}
+                            style={userRowStyle}
                             ref={isFocusedUser ? focusedUserRef : (isCurrentUser ? userRef : null)}
                           >
                             {/* Rank */}
@@ -631,6 +798,8 @@ const Leaderboard: React.FC = () =>
                                       username: entry.username,
                                       firstName: entry.firstName,
                                       profilePicture: entry.profilePicture,
+                                      background: entry.background,
+                                      flairNames: visibleFlairs,
                                       exp: entry.exp,
                                       tab: activeTab,
                                     }
@@ -650,16 +819,30 @@ const Leaderboard: React.FC = () =>
                                     </div>
                                   )}
                                   <div className="min-w-0">
-                                    <p className={`leading-tight truncate transition-colors pb-1 group-hover:text-blue-600 ${isCurrentUser ? "font-semibold text-gray-800" : "text-gray-800"}`}>
-                                      {entry.firstName}
-                                    </p>
+                                    <div className="flex flex-wrap items-center gap-1 pb-1">
+                                      <p className={`leading-tight truncate transition-colors group-hover:text-blue-600 ${isCurrentUser ? "font-semibold text-gray-800" : "text-gray-800"}`}>
+                                        {entry.firstName}
+                                      </p>
+                                      {visibleFlairs.map((flairName) => {
+                                        const flairStyle = getFlairPresentation(flairName);
+                                        return (
+                                          <span
+                                            key={`${entry.username}-${flairName}`}
+                                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${flairStyle.className}`}
+                                          >
+                                            <span className="mr-1" aria-hidden="true">{flairStyle.emoji}</span>
+                                            <span>{flairName}</span>
+                                          </span>
+                                        );
+                                      })}
+                                      {isCurrentUser && (
+                                        <span className="shrink-0 rounded-full border border-blue-600 bg-blue-200 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                                          You
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="text-gray-500 text-sm truncate">@{entry.username}</p>
                                   </div>
-                                  {isCurrentUser && (
-                                      <span className="ml-1 shrink-0 text-xs bg-blue-200 border border-blue-600 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
-                                        You
-                                      </span>
-                                  )}
                                 </Link>
                               ) : (
                                 <div
@@ -678,16 +861,30 @@ const Leaderboard: React.FC = () =>
                                     </div>
                                   )}
                                   <div className="min-w-0">
-                                    <p className={`leading-tight truncate ${isCurrentUser ? "font-semibold text-gray-800" : "text-gray-800"}`}>
-                                      {entry.firstName}
-                                    </p>
+                                    <div className="flex flex-wrap items-center gap-1 pb-1">
+                                      <p className={`leading-tight truncate ${isCurrentUser ? "font-semibold text-gray-800" : "text-gray-800"}`}>
+                                        {entry.firstName}
+                                      </p>
+                                      {visibleFlairs.map((flairName) => {
+                                        const flairStyle = getFlairPresentation(flairName);
+                                        return (
+                                          <span
+                                            key={`${entry.username}-${flairName}`}
+                                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${flairStyle.className}`}
+                                          >
+                                            <span className="mr-1" aria-hidden="true">{flairStyle.emoji}</span>
+                                            <span>{flairName}</span>
+                                          </span>
+                                        );
+                                      })}
+                                      {isCurrentUser && (
+                                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                                          You
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="text-gray-400 text-xs truncate">@{entry.username}</p>
                                   </div>
-                                  {isCurrentUser && (
-                                    <span className="ml-1 shrink-0 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
-                                      You
-                                    </span>
-                                  )}
                                 </div>
                               )}
                             </td>
@@ -771,6 +968,13 @@ const Leaderboard: React.FC = () =>
                           ? getProfilePictureUrlByItemName(entry.guildPicture)
                           : null;
 
+                        const guildBgUrl = typeof entry.id === "number" ? (guildBackgrounds.get(entry.id as number) ?? null) : null;
+                        const guildRowStyle = !isCurrentUserGuild && guildBgUrl ? {
+                          backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${guildBgUrl})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        } : undefined;
+
                         const { symbol, color, size } = rankBadge(entry.rank);
                         
                         
@@ -793,6 +997,7 @@ const Leaderboard: React.FC = () =>
                                 ? "bg-blue-100"
                                 : "hover:bg-gray-200"
                             }`}
+                            style={guildRowStyle}
                             ref={isCurrentUserGuild ? guildRef : null}
                           >
                             {/* Rank */}

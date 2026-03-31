@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { Coins, Inbox, Lock, LockOpen, Search, Shield, Trash2, UserPlus, UserRound, X, Compass } from "lucide-react";
+import { Check, Coins, Inbox, Lock, LockOpen, Search, Shield, Trash2, UserPlus, UserRound, X, Compass } from "lucide-react";
 import { Eye, ScrollText, Trophy } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -48,6 +48,8 @@ interface BrowseGuildItem {
   name: string;
   exp: number;
   guildPicture: string | null;
+  backgroundName: string | null;
+  profilePictureName: string | null;
 }
 
 interface UserSearchResult {
@@ -151,26 +153,57 @@ const getApiMessage = (error: unknown, fallback: string): string => {
   return message || error.message || fallback;
 };
 
+const GUILDS_CACHE_KEY = "guild_snapshot_v1";
+
+interface GuildPageCacheSnapshot {
+  userId: number | null;
+  savedAt: number;
+  guildId: number | null;
+  guild: GuildSummary | null;
+  guildMembers: GuildMember[];
+  memberCustomizations: Array<[number, MemberCustomizationData]>;
+  equippedItems: GuildUnlockItem[];
+  unlockedItems: GuildUnlockItem[];
+  guildStoreItems: StoreItem[];
+}
+
+const loadGuildsSnapshot = (): GuildPageCacheSnapshot | null => {
+  try {
+    const raw = localStorage.getItem(GUILDS_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as GuildPageCacheSnapshot;
+  } catch {
+    return null;
+  }
+};
+
+const saveGuildsSnapshot = (snapshot: GuildPageCacheSnapshot): void => {
+  try {
+    localStorage.setItem(GUILDS_CACHE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // ignore quota errors
+  }
+};
+
 const GuildsPage: React.FC = () => {
+  const { guildId: guildIdParam } = useParams<{ guildId: string }>();
   const navigate = useNavigate();
-  const { id: guildIdParam } = useParams<{ id?: string }>();
   const userId = useMemo(() => getStoredUserId(), []);
   const storedUsername = useMemo(() => getStoredUsername(), []);
-  const routeGuildId = useMemo(() => {
-    if (!guildIdParam) {
-      return null;
-    }
-
-    const parsed = Number.parseInt(guildIdParam, 10);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }, [guildIdParam]);
+  const hasLoadedOnceRef = useRef(false);
+  const isFetchingRef = useRef(false);
 
   const [tab, setTab] = useState<GuildTab>("overview");
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTab("overview");
+  }, [guildIdParam]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [guildId, setGuildId] = useState<number | null>(null);
+  const [myGuildId, setMyGuildId] = useState<number | null>(null);
   const [guild, setGuild] = useState<GuildSummary | null>(null);
   const [guildMembers, setGuildMembers] = useState<GuildMember[]>([]);
   const [memberCustomizations, setMemberCustomizations] = useState<Map<number, MemberCustomizationData>>(new Map());
@@ -192,7 +225,6 @@ const GuildsPage: React.FC = () => {
   const [browseGuilds, setBrowseGuilds] = useState<BrowseGuildItem[]>([]);
   const [browseLoading, setBrowseLoading] = useState(false);
   const [browseError, setBrowseError] = useState<string | null>(null);
-  const [browseGuildThemes, setBrowseGuildThemes] = useState<Map<number, InviteGuildTheme>>(new Map());
   const [inviteOwnerUsernames, setInviteOwnerUsernames] = useState<Map<number, string>>(new Map());
   const [inviteGuildThemes, setInviteGuildThemes] = useState<Map<number, InviteGuildTheme>>(new Map());
 
@@ -202,6 +234,22 @@ const GuildsPage: React.FC = () => {
   const [kickTargetMember, setKickTargetMember] = useState<{ id: number; username: string } | null>(null);
   const [followedUsernames, setFollowedUsernames] = useState<Set<string>>(new Set());
   const [followActionUsername, setFollowActionUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const snapshot = loadGuildsSnapshot();
+    if (!snapshot || snapshot.userId !== userId) return;
+
+    setGuildId(snapshot.guildId);
+    setMyGuildId(snapshot.guildId);
+    setGuild(snapshot.guild);
+    setGuildMembers(snapshot.guildMembers);
+    setMemberCustomizations(new Map(snapshot.memberCustomizations));
+    setEquippedItems(snapshot.equippedItems);
+    setUnlockedItems(snapshot.unlockedItems);
+    setGuildStoreItems(snapshot.guildStoreItems);
+    hasLoadedOnceRef.current = true;
+    setIsLoading(false);
+  }, [userId]);
 
   const myMembership = useMemo(() => {
     if (!userId) {
@@ -214,6 +262,7 @@ const GuildsPage: React.FC = () => {
   const myRole: GuildRole | null = myMembership?.ROLE || null;
   const canModerate = myRole === "Owner" || myRole === "Officer";
   const isOwner = myRole === "Owner";
+  const isViewingOtherGuild = !!guildIdParam && !myMembership;
 
   const getMemberMetricValue = useCallback((member: GuildMember, metric: GuildCharterSort): number => {
     const customization = memberCustomizations.get(member.ID);
@@ -458,24 +507,14 @@ const GuildsPage: React.FC = () => {
         rankedGuilds.map(async (browseGuild) => {
           try {
             const guildResponse = await api.get<GuildInfoResponse>(`/api/guilds/${browseGuild.id}`);
-            if (!toBoolean(guildResponse.data.guild?.IS_OPEN)) {
-              return null;
-            }
-
-            const guildEquippedItems = guildResponse.data.equippedItems || [];
-            const profilePictureName = guildEquippedItems.find((item) => item.TYPE === "profile_picture")?.NAME ?? null;
-            const backgroundName = guildEquippedItems.find((item) => item.TYPE === "background")?.NAME ?? null;
-            const flairNames = guildEquippedItems
-              .filter((item) => item.TYPE === "flair")
-              .map((item) => item.NAME);
-
+            if (!toBoolean(guildResponse.data.guild?.IS_OPEN)) return null;
+            const equipped = guildResponse.data.equippedItems || [];
+            const bg = equipped.find((item) => item.TYPE === "background") ?? null;
+            const pfp = equipped.find((item) => item.TYPE === "profile_picture") ?? null;
             return {
-              guild: browseGuild,
-              theme: {
-                profilePictureName,
-                backgroundName,
-                flairNames,
-              },
+              ...browseGuild,
+              backgroundName: bg ? bg.NAME : null,
+              profilePictureName: pfp ? pfp.NAME : null,
             };
           } catch {
             return null;
@@ -483,15 +522,10 @@ const GuildsPage: React.FC = () => {
         })
       );
 
-      const openGuilds = openGuildChecks.filter((entry): entry is { guild: BrowseGuildItem; theme: InviteGuildTheme } => entry !== null);
-      const themeMap = new Map<number, InviteGuildTheme>(openGuilds.map((entry) => [entry.guild.id, entry.theme]));
-
-      setBrowseGuilds(openGuilds.map((entry) => entry.guild));
-      setBrowseGuildThemes(themeMap);
+      setBrowseGuilds(openGuildChecks.filter((guild): guild is BrowseGuildItem => guild !== null));
     } catch (requestError) {
       setBrowseError(getApiMessage(requestError, "Failed to load guilds."));
       setBrowseGuilds([]);
-      setBrowseGuildThemes(new Map());
     } finally {
       setBrowseLoading(false);
     }
@@ -502,6 +536,7 @@ const GuildsPage: React.FC = () => {
     const resolvedGuildId = typeof response.data.guildId === "number" ? response.data.guildId : null;
 
     setGuildId(resolvedGuildId);
+    setMyGuildId(resolvedGuildId);
 
     if (resolvedGuildId) {
       await refreshGuild(resolvedGuildId);
@@ -520,37 +555,35 @@ const GuildsPage: React.FC = () => {
     let cancelled = false;
 
     const initialize = async () => {
-      setIsLoading(true);
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
+      if (!hasLoadedOnceRef.current) {
+        setIsLoading(true);
+      }
       setError(null);
 
       try {
-        if (guildIdParam && routeGuildId === null) {
-          throw new Error("Invalid guild id in URL.");
-        }
+        await Promise.all([
+          refreshInvites(),
+          refreshGuildStoreItems(),
+          refreshMyGuild(),
+        ]);
 
-        if (routeGuildId) {
-          await Promise.all([
-            refreshInvites(),
-            refreshGuildStoreItems(),
-            refreshGuild(routeGuildId),
-          ]);
-          if (!cancelled) {
-            setGuildId(routeGuildId);
-            setTab("overview");
-          }
-        } else {
-          await Promise.all([
-            refreshInvites(),
-            refreshGuildStoreItems(),
-            refreshMyGuild(),
-          ]);
+        const linkedGuildId = guildIdParam ? parseInt(guildIdParam, 10) : NaN;
+        if (!isNaN(linkedGuildId) && linkedGuildId > 0) {
+          await refreshGuild(linkedGuildId);
+          setGuildId(linkedGuildId);
+          setTab("overview");
         }
       } catch (requestError) {
         if (!cancelled) {
           setError(getApiMessage(requestError, "Failed to load guild data."));
         }
       } finally {
+        isFetchingRef.current = false;
         if (!cancelled) {
+          hasLoadedOnceRef.current = true;
           setIsLoading(false);
         }
       }
@@ -561,7 +594,23 @@ const GuildsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [guildIdParam, refreshGuild, refreshGuildStoreItems, refreshInvites, refreshMyGuild, routeGuildId]);
+  }, [refreshGuildStoreItems, refreshInvites, refreshMyGuild, refreshGuild, guildIdParam]);
+
+  useEffect(() => {
+    if (!guild) return;
+    if (isViewingOtherGuild) return;
+    saveGuildsSnapshot({
+      userId,
+      savedAt: Date.now(),
+      guildId,
+      guild,
+      guildMembers,
+      memberCustomizations: [...memberCustomizations.entries()],
+      equippedItems,
+      unlockedItems,
+      guildStoreItems,
+    });
+  }, [userId, guildId, guild, guildMembers, memberCustomizations, equippedItems, unlockedItems, guildStoreItems, isViewingOtherGuild]);
 
   useEffect(() => {
     if (!guildId || !canModerate) {
@@ -1053,6 +1102,10 @@ const GuildsPage: React.FC = () => {
                 key={tabOption.key}
                 type="button"
                 onClick={() => {
+                  if (tabOption.key === "overview" && guildIdParam) {
+                    navigate("/guilds");
+                    return;
+                  }
                   setTab(tabOption.key as GuildTab);
                   if (tabOption.key === "browse") {
                     void refreshBrowseGuilds();
@@ -1149,7 +1202,7 @@ const GuildsPage: React.FC = () => {
                 <>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
+                      <div className="flex min-w-0 flex-1 flex-col gap-3">
                         <div className="flex items-center gap-3">
                           {equippedProfilePictureUrl ? (
                             <img
@@ -1164,12 +1217,55 @@ const GuildsPage: React.FC = () => {
                           )}
                           <h2 className="text-2xl font-bold text-gray-900">{guild.NAME}</h2>
                         </div>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Your role: <span className="font-semibold">{formatRoleLabel(myRole || undefined)}</span>
-                        </p>
-                        <p className="mt-1 text-sm text-gray-600">
-                          Join requests are currently: <span className="font-semibold">{currentGuildOpen ? "Open" : "Closed"}</span>
-                        </p>
+                        <div className="space-y-1">
+                          {!isViewingOtherGuild && (
+                            <p className="text-sm text-gray-600">
+                              Your role: <span className="font-semibold">{formatRoleLabel(myRole || undefined)}</span>
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-600">
+                            Join requests are currently: <span className="font-semibold">{currentGuildOpen ? "Open" : "Closed"}</span>
+                          </p>
+                        </div>
+
+                        {isViewingOtherGuild && (
+                          <div className="flex flex-col gap-3">
+                            <p className="text-sm text-gray-600">You are not a member of this guild.</p>
+                            <div className="flex flex-wrap gap-2">
+                              {currentGuildOpen && (
+                                <button
+                                  type="button"
+                                  disabled={isSubmitting}
+                                  onClick={async () => {
+                                    setIsSubmitting(true);
+                                    setError(null);
+                                    setNotice(null);
+                                    try {
+                                      await api.post(`/api/guilds/${guildId}/request`);
+                                      setNotice("Join request sent!");
+                                    } catch (requestError) {
+                                      setError(getApiMessage(requestError, "Failed to send join request."));
+                                    } finally {
+                                      setIsSubmitting(false);
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-600 disabled:opacity-50"
+                                >
+                                  <UserPlus size={16} aria-hidden="true" />
+                                  {isSubmitting ? "Sending..." : "Send Join Request"}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => navigate("/guilds")}
+                                className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 font-semibold text-gray-800 hover:bg-gray-200"
+                              >
+                                <Shield size={16} aria-hidden="true" />
+                                Back to My Guild
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1192,83 +1288,82 @@ const GuildsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Member-only actions: Only show if user is a member of the guild */}
-                    {myMembership ? (
+                    {!isViewingOtherGuild && (
                       <div className="mt-5 flex flex-wrap items-end gap-3">
-                        <div>
-                          <label className="text-sm font-semibold text-gray-700">Contribute Coins</label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={contributionAmount}
-                            onChange={(event) => setContributionAmount(Number(event.target.value || 1))}
-                            className="mt-1 block w-40 rounded-lg border border-gray-300 px-3 py-2"
-                          />
-                        </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700">Contribute Coins</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={contributionAmount}
+                          onChange={(event) => setContributionAmount(Number(event.target.value || 1))}
+                          className="mt-1 block w-40 rounded-lg border border-gray-300 px-3 py-2"
+                        />
+                      </div>
 
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => void handleContribute()}
+                        className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-600 disabled:opacity-50"
+                      >
+                        <Coins size={16} aria-hidden="true" />
+                        {isSubmitting ? "Submitting..." : "Contribute"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {}}
+                        className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-2 font-semibold text-blue-800 hover:bg-blue-200"
+                        title="Guild leaderboard view is coming soon"
+                      >
+                        <Trophy size={16} aria-hidden="true" />
+                        View Guild on Leaderboard
+                      </button>
+
+                      {canModerate && (
                         <button
                           type="button"
                           disabled={isSubmitting}
-                          onClick={() => void handleContribute()}
-                          className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-600 disabled:opacity-50"
+                          onClick={() => void handleToggleOpen(!currentGuildOpen)}
+                          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-semibold disabled:opacity-50 ${
+                            currentGuildOpen
+                              ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                              : "bg-rose-100 text-rose-800 hover:bg-rose-200"
+                          }`}
                         >
-                          <Coins size={16} aria-hidden="true" />
-                          {isSubmitting ? "Submitting..." : "Contribute"}
+                          {currentGuildOpen ? <LockOpen size={16} aria-hidden="true" /> : <Lock size={16} aria-hidden="true" />}
+                          {currentGuildOpen ? "Status: Open" : "Status: Closed"}
                         </button>
+                      )}
 
+                      {!isOwner && myMembership && (
                         <button
                           type="button"
-                          onClick={() => {}}
-                          className="inline-flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-2 font-semibold text-blue-800 hover:bg-blue-200"
-                          title="Guild leaderboard view is coming soon"
+                          disabled={isSubmitting}
+                          onClick={() => void handleLeaveGuild()}
+                          className="ml-auto rounded-lg bg-red-100 px-4 py-2 font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50"
                         >
-                          <Trophy size={16} aria-hidden="true" />
-                          View Guild on Leaderboard
+                          Leave Guild
                         </button>
+                      )}
 
-                        {canModerate && (
-                          <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => void handleToggleOpen(!currentGuildOpen)}
-                            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-semibold disabled:opacity-50 ${
-                              currentGuildOpen
-                                ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                : "bg-rose-100 text-rose-800 hover:bg-rose-200"
-                            }`}
-                          >
-                            {currentGuildOpen ? <LockOpen size={16} aria-hidden="true" /> : <Lock size={16} aria-hidden="true" />}
-                            {currentGuildOpen ? "Status: Open" : "Status: Closed"}
-                          </button>
-                        )}
-
-                        {!isOwner && (
-                          <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => void handleLeaveGuild()}
-                            className="ml-auto rounded-lg bg-red-100 px-4 py-2 font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50"
-                          >
-                            Leave Guild
-                          </button>
-                        )}
-
-                        {isOwner && (
-                          <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => {
-                              setDeleteConfirmationInput("");
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="ml-auto inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-                          >
-                            <Trash2 size={16} aria-hidden="true" />
-                            Delete Guild
-                          </button>
-                        )}
+                      {isOwner && (
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => {
+                            setDeleteConfirmationInput("");
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="ml-auto inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                          Delete Guild
+                        </button>
+                      )}
                       </div>
-                    ) : null}
+                    )}
 
                     <div className="mt-6 rounded-xl border border-yellow-200 bg-gradient-to-br from-yellow-50 via-white to-amber-50 p-5 shadow-sm">
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1752,16 +1847,18 @@ const GuildsPage: React.FC = () => {
                             type="button"
                             disabled={isSubmitting}
                             onClick={() => void handleResolveInvite(invite.GUILD_ID, "accept")}
-                            className="rounded-md bg-yellow-500 px-3 py-1 text-sm font-semibold text-black hover:bg-yellow-600 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-md bg-yellow-500 px-3 py-1 text-sm font-semibold text-black hover:bg-yellow-600 disabled:opacity-50"
                           >
+                            <Check size={14} aria-hidden="true" />
                             Accept
                           </button>
                           <button
                             type="button"
                             disabled={isSubmitting}
                             onClick={() => void handleResolveInvite(invite.GUILD_ID, "reject")}
-                            className="rounded-md bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-md bg-red-100 px-3 py-1 text-sm font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50"
                           >
+                            <X size={14} aria-hidden="true" />
                             Reject
                           </button>
                         </div>
@@ -1847,105 +1944,81 @@ const GuildsPage: React.FC = () => {
                 {!browseLoading && browseGuilds.length > 0 && (
                   <div className="mt-4 space-y-3">
                     {browseGuilds.map((g) => {
-                      const theme = browseGuildThemes.get(g.id);
-                      const browseBackgroundUrl = theme?.backgroundName ? getBackgroundUrlByItemName(theme.backgroundName) : null;
-                      const browseProfilePictureUrl = theme?.profilePictureName ? getProfilePictureUrlByItemName(theme.profilePictureName) : null;
-                      const isCurrentGuild = guildId === g.id;
-                      const isMyGuildCard = isCurrentGuild && Boolean(myMembership);
-
+                      const cardBgUrl = g.backgroundName ? getBackgroundUrlByItemName(g.backgroundName) : null;
+                      const cardPfpUrl = g.profilePictureName ? getProfilePictureUrlByItemName(g.profilePictureName) : null;
+                      const cardStyle = cardBgUrl ? {
+                          backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${cardBgUrl})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        } : undefined;
                       return (
-                        <div
-                          key={g.id}
-                          className="rounded-lg border border-gray-200 bg-white p-4"
-                          style={browseBackgroundUrl ? {
-                            backgroundImage: `linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url(${browseBackgroundUrl})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          } : undefined}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex min-w-0 flex-1 items-start gap-3">
-                              {browseProfilePictureUrl ? (
-                                <img
-                                  src={browseProfilePictureUrl}
-                                  alt={`${g.name} profile`}
-                                  className="h-11 w-11 rounded-full border border-gray-200 bg-white object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-sm font-bold text-gray-700">
-                                  {g.name.trim().charAt(0).toUpperCase() || "G"}
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <h3 className="truncate text-lg font-semibold text-gray-900">{g.name}</h3>
-                                <p className="mt-1 text-sm text-gray-600">Rank: #{g.rank}</p>
-                                {theme && theme.flairNames.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-1">
-                                    {theme.flairNames.slice(0, 3).map((flairName) => {
-                                      const flairStyle = getFlairPresentation(flairName);
-                                      return (
-                                        <span
-                                          key={`${g.id}-${flairName}`}
-                                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${flairStyle.className}`}
-                                        >
-                                          <span className="mr-1" aria-hidden="true">{flairStyle.emoji}</span>
-                                          <span>{flairName}</span>
-                                        </span>
-                                      );
-                                    })}
-                                  </div>
-                                )}
+                      <div key={g.id} className="rounded-lg border border-gray-200 bg-white overflow-hidden" style={cardStyle}>
+                        <div className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            {cardPfpUrl ? (
+                              <img src={cardPfpUrl} alt={`${g.name} icon`} className="h-10 w-10 rounded-full object-cover border border-gray-200 bg-white shrink-0" />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-sm font-bold shrink-0">
+                                {g.name.slice(0, 2).toUpperCase()}
                               </div>
-                            </div>
-                            <div className="ml-4 text-right">
-                              <p className="text-sm font-semibold text-gray-900">{toNumber(g.exp)} XP</p>
+                            )}
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{g.name}</h3>
+                              <p className="text-sm text-gray-600">Rank: #{g.rank}</p>
                             </div>
                           </div>
-
-                          <div className="mt-3 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setError(null);
-                                setNotice(null);
-                                navigate(`/guilds/${g.id}`);
-                              }}
-                              className={`inline-flex items-center gap-1 rounded-md px-3 py-1 text-sm font-semibold disabled:opacity-50 ${
-                                isCurrentGuild
-                                  ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                  : "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                              }`}
-                            >
-                              {isMyGuildCard ? <Shield size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-                              {isMyGuildCard ? "My Guild" : "View Guild"}
-                            </button>
-
-                            {!isCurrentGuild && (
-                              <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={async () => {
-                                  setIsSubmitting(true);
-                                  setError(null);
-                                  setNotice(null);
-                                  try {
-                                    await api.post(`/api/guilds/${g.id}/request`);
-                                    setNotice("Join request sent!");
-                                  } catch (requestError) {
-                                    setError(getApiMessage(requestError, "Failed to send join request."));
-                                  } finally {
-                                    setIsSubmitting(false);
-                                  }
-                                }}
-                                className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700 hover:bg-blue-200 disabled:opacity-50"
-                              >
-                                <Lock size={14} aria-hidden="true" />
-                                Request to Join
-                              </button>
-                            )}
+                          <div className="ml-4 text-right">
+                            <p className="text-sm font-semibold text-gray-900">{toNumber(g.exp)} XP</p>
                           </div>
                         </div>
-                      );
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (myGuildId === g.id) {
+                                navigate("/guilds");
+                              } else {
+                                navigate(`/guild/${g.id}`);
+                              }
+                            }}
+                            className={`inline-flex items-center gap-1 rounded-md px-3 py-1 text-sm font-semibold disabled:opacity-50 ${
+                              myGuildId === g.id
+                                ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                            }`}
+                          >
+                            {myGuildId === g.id ? <Shield size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+                            {myGuildId === g.id ? "My Guild" : "View Guild"}
+                          </button>
+
+                          {myGuildId !== g.id && (
+                            <button
+                              type="button"
+                              disabled={isSubmitting}
+                              onClick={async () => {
+                                setIsSubmitting(true);
+                                setError(null);
+                                setNotice(null);
+                                try {
+                                  await api.post(`/api/guilds/${g.id}/request`);
+                                  setNotice("Join request sent!");
+                                } catch (requestError) {
+                                  setError(getApiMessage(requestError, "Failed to send join request."));
+                                } finally {
+                                  setIsSubmitting(false);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+                            >
+                              <Lock size={14} aria-hidden="true" />
+                              Request to Join
+                            </button>
+                          )}
+                        </div>
+                        </div>
+                      </div>
+                    );
                     })}
                   </div>
                 )}
