@@ -276,6 +276,29 @@ const Leaderboard: React.FC = () =>
     }
   }, []);
 
+  /*
+  const fetchFollowedLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
+  {
+    setLoading(true);
+    setError(null);
+    try
+    {
+      const response = await api.get<LeaderboardResponse>(
+        `/api/leaderboard/followed/${tab}?page=${pageNum}`
+      );
+      setData(response.data);
+    }
+    catch
+    {
+      setError("Failed to load leaderboard. Please try again.");
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+  */
+
   const fetchGuildLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
   {
     const cacheKey = getLeaderboardPageKey("guild", tab, pageNum);
@@ -310,134 +333,12 @@ const Leaderboard: React.FC = () =>
   useEffect(() =>
   {
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
-    else if (mode === "followed") void fetchFollowedLeaderboard(activeTab, page);
-    else if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
-  }, [mode, activeTab, page, fetchLeaderboard, fetchFollowedLeaderboard, fetchGuildLeaderboard]);
+  }, [mode, activeTab, page, fetchLeaderboard]);
 
-  useEffect(() => {
-    if (!guildData) return;
-    const entriesToFetch = guildData.leaderboard
-      .map((entry) => Number(entry.id))
-      .filter((entryId) => Number.isInteger(entryId) && entryId > 0)
-      .filter((entryId) => !guildBackgrounds.has(entryId) && !pendingGuildBackgroundsRef.current.has(entryId));
-
-    if (entriesToFetch.length === 0) return;
-
-    entriesToFetch.forEach((entryId) => pendingGuildBackgroundsRef.current.add(entryId));
-
-    let cancelled = false;
-    void Promise.all(
-      entriesToFetch.map(async (entryId) => {
-        try {
-          const response = await api.get<GuildInfoResponse>(`/api/guilds/${entryId}`);
-          const bgItem = (response.data.equippedItems || []).find((item) => item.TYPE === "background");
-          const bgUrl = bgItem ? getBackgroundUrlByItemName(bgItem.NAME) : null;
-          return [entryId, bgUrl] as [number, string | null];
-        } catch {
-          return [entryId, null] as [number, string | null];
-        }
-      })
-    ).then((results) => {
-      if (!cancelled) {
-        setGuildBackgrounds((prev) => {
-          const next = new Map(prev);
-          results.forEach(([entryId, backgroundName]) => {
-            next.set(entryId, backgroundName);
-          });
-          return next;
-        });
-      }
-    }).finally(() => {
-      entriesToFetch.forEach((entryId) => pendingGuildBackgroundsRef.current.delete(entryId));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [guildData, guildBackgrounds]);
-
-  useEffect(() => {
-    if ((mode !== "individual" && mode !== "followed") || !data) {
-      return;
-    }
-
-    const entriesNeedingFallback = data.leaderboard
-      .map((entry) => ({
-        entry,
-        usernameKey: entry.username.trim().toLowerCase(),
-        resolvedUserId: Number(entry.userId ?? entry.id ?? entry.ID),
-      }))
-      .filter(({ entry, usernameKey }) => {
-        const needsFlairs = !Array.isArray(entry.flairNames) && !leaderboardFlairs.has(usernameKey);
-        const needsBackground = typeof entry.background === "undefined" && !leaderboardBackgrounds.has(usernameKey);
-        return (needsFlairs || needsBackground) && !pendingUserCosmeticsRef.current.has(usernameKey);
-      });
-
-    if (entriesNeedingFallback.length === 0) {
-      return;
-    }
-
-    entriesNeedingFallback.forEach(({ usernameKey }) => pendingUserCosmeticsRef.current.add(usernameKey));
-
-    let cancelled = false;
-
-    void Promise.all(
-      entriesNeedingFallback.map(async ({ entry, resolvedUserId, usernameKey }) => {
-        try {
-          let targetUserId = Number.isInteger(resolvedUserId) && resolvedUserId > 0 ? resolvedUserId : null;
-
-          if (!targetUserId) {
-            const searchResponse = await api.get<UserSearchResponse>(`/api/users/search?username=${encodeURIComponent(entry.username)}&page=1`);
-            const matchedUser = (searchResponse.data.users || []).find(
-              (candidate) => candidate.USERNAME.trim().toLowerCase() === entry.username.trim().toLowerCase()
-            );
-            targetUserId = matchedUser?.ID ?? null;
-          }
-
-          if (!targetUserId) {
-            return [usernameKey, [] as string[], null] as const;
-          }
-
-          const response = await api.get<UserInfoResponse>(`/api/users/${targetUserId}`);
-          const backgroundItem = (response.data.equippedItems || []).find((item) => item.TYPE === "background");
-          const flairNames = (response.data.equippedItems || [])
-            .filter((item) => item.TYPE === "flair")
-            .map((item) => item.NAME)
-            .filter((name): name is string => typeof name === "string" && name.trim().length > 0);
-          return [usernameKey, flairNames, backgroundItem?.NAME ?? null] as const;
-        } catch {
-          return [entry.username.trim().toLowerCase(), [] as string[], null] as const;
-        }
-      })
-    ).then((results) => {
-      if (!cancelled) {
-        setLeaderboardFlairs((prev) => {
-          const next = new Map(prev);
-          results.forEach(([key, flairNames]) => {
-            if (typeof key === "string" && key.length > 0) {
-              next.set(key, flairNames);
-            }
-          });
-          return next;
-        });
-        setLeaderboardBackgrounds((prev) => {
-          const next = new Map(prev);
-          results.forEach(([key, , backgroundName]) => {
-            if (typeof key === "string" && key.length > 0) {
-              next.set(key, backgroundName);
-            }
-          });
-          return next;
-        });
-      }
-    }).finally(() => {
-      entriesNeedingFallback.forEach(({ usernameKey }) => pendingUserCosmeticsRef.current.delete(usernameKey));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [data, mode, leaderboardFlairs, leaderboardBackgrounds]);
+  useEffect(() =>
+  {
+    if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
+  }, [mode, activeTab, page, fetchGuildLeaderboard]);
 
   const handleTabChange = (tab: Tab) =>
   {
@@ -662,8 +563,8 @@ const Leaderboard: React.FC = () =>
             {/* Left: Individual / Guild */}
             <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
               <button
-                onClick={() => setMode("individual")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
+                onClick={() => { setMode("individual"); setPage(1); setData(null); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   mode === "individual"
                     ? "bg-gray-800 text-white shadow"
                     : "bg-white text-gray-600 hover:bg-gray-200"
@@ -673,18 +574,7 @@ const Leaderboard: React.FC = () =>
                 Individual
               </button>
               <button
-                onClick={() => { setMode("followed"); setPage(1); setData(null); }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
-                  mode === "followed"
-                    ? "bg-gray-800 text-white shadow"
-                    : "bg-white text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                <UserCheck size={15} />
-                Followed
-              </button>
-              <button
-                onClick={() => { setMode("guild"); setPage(1); setData(null); }}
+                onClick={() => setMode("guild")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "guild"
                     ? "bg-gray-800 text-white shadow"
@@ -695,7 +585,7 @@ const Leaderboard: React.FC = () =>
                 Guilds
               </button>
             </div>
-            
+
             {/*Find Yourself Button next to Weekly/Lifetime*/}
             <div className="flex items-center justify-between gap-10">
               <div className="relative flex items-center gap-2">
