@@ -15,6 +15,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./App.css";
 
 import AuthPage from "./pages/AuthPage";
+import GuildsPage from "./pages/GuildsPage";
 import DashboardPage from "./pages/DashboardPage";
 import TopicPage from "./pages/TopicPage";
 import MockTestPage from "./pages/MockTestPage";
@@ -27,9 +28,9 @@ import AccountPage from "./pages/AccountPage";
 import ProfessorApplyPage from "./pages/ProfessorApplyPage";
 import ProfessorDraftsPage from "./pages/ProfessorDraftsPage";
 import ProfilePage from "./pages/ProfilePage";
-import StorePage from "./pages/StorePage.tsx";
-import LeaderboardPage from "./pages/LeaderboardPage.tsx";
-import ProfessorStatisticsPage from "./pages/ProfessorStatisticsPage.tsx";
+import StorePage from "./pages/StorePage";
+import LeaderboardPage from "./pages/LeaderboardPage";
+import ProfessorStatisticsPage from "./pages/ProfessorStatisticsPage";
 
 
 function App() 
@@ -54,6 +55,8 @@ function App()
         <Route path="/professor-apply"            element={<ProfessorApplyPage />} />
         <Route path="/professor-drafts"           element={<ProfessorDraftsPage />} />
         <Route path="/leaderboard"                element={<LeaderboardPage />} />
+        <Route path="/guilds"                     element={<GuildsPage />} />
+        <Route path="/guilds/:id"                 element={<GuildsPage />} />
         <Route path="/professor-stats"            element={<ProfessorStatisticsPage />} />
       </Routes>
     </Router>
