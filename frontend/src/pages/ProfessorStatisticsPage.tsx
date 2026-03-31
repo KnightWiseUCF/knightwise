@@ -4,12 +4,16 @@ import React, { useCallback, useEffect, useState, useMemo, useRef } from "react"
 import api from "../api";
 import Layout from "../components/Layout";
 import { ALL_TOPICS} from "../utils/topicLabels"
-import { RawQuestion} from '../models';
+import { RawQuestion, HistoryEntry, HistoryResponse, ProgressData} from '../models';
+import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+import { formatSubcategoryLabel } from '../utils/topicLabels';
+
+import { isAxiosError } from "axios";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Key, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Pagination {
     page:               number;
@@ -64,6 +68,29 @@ interface CheckQuestion
 
 }
 
+interface PublishedQuestion {
+  id: number;
+  section: string;
+  category: string;
+  subcategory: string;
+  questionType: string;
+  authorExamId: string;
+  ownerId: number;
+}
+
+const topicCategoryMap: Record<string, string[]> = {
+  "Introductory Programming": ["Input/Output", "Branching", "Loops", "Variables"],
+  "Simple Data Structures": ["Arrays", "Linked Lists", "Strings"],
+  "Object Oriented Programming": ["Classes", "Methods"],
+  "Intermediate Data Structures": ["Trees", "Stacks"],
+  "Complex Data Structures": ["Heaps", "Tries"],
+  "Intermediate Programming": ["Bitwise Operators", "Dynamic Memory", "Algorithm Analysis", "Recursion", "Sorting"],
+};
+
+const defaultSubcategories = Object.values(topicCategoryMap).flat();
+
+type QuestionStatus = "Draft" | "Published";
+
 interface ProfessorQuestionItem {
   id: number;
   title: string;
@@ -72,35 +99,45 @@ interface ProfessorQuestionItem {
   type: string;  
 }
 
+interface DraftListResponse {
+  drafts?: RawQuestion[];
+}
+
 const ProfessorStatisticsPage: React.FC = () => 
 {
     const removeHtmlTags = /(<([^>]+)>)/gi;
 
     const scrollRef = useRef<HTMLInputElement | null>(null);
     // State to store the current scroll position
-    const [, setScrollPos] = useState(0);
+    const [scrollPos, setScrollPos] = useState(0);
 
+    const [topicQuestionList, setTopicQuestionList] = useState<TopicQuestionList>();
     const [questions, setQuestions] = useState<ProfessorQuestionItem[]>([]);
     const [questionsPagination, setQuestionsPagination] = useState<Pagination>();
 
+    const [publishedQuestions, setPublishedQuestions] = useState<PublishedQuestion[]>([]);
     const [checkQuestions, setCheckQuestions] = useState<CheckQuestion[]>([]);
 
     const [aggregateStats, setAggregateStats] = useState<AggregateStatsResponse>();
     const [questionsAggregateStats, setQuestionsAggregateStats] = useState<AggregateStatsByQuestionResponse[]>([]);
     const [topicStats, setTopicStats]   = useState<StatData | null>();
     const [questionStats, setQuestionStats] = useState<StatData>();
+    const [questionStatsReady, setQuestionsStatsReady] = useState<Boolean>();
 
     const [loading, setLoading]       = useState(false);
-    const [, setError]           = useState<string | null>(null);
+    const [error, setError]           = useState<string | null>(null);
 
     const [topicChoice, setTopicChoice] = useState<string>("All");
     const [topicChoice2, setTopicChoice2] = useState<string>("My Questions");
 
     const { equippedItems } = useUserCustomizationStore();
+    const { user } = useUserCustomizationStore();
 
     const [previewQuestion, setPreviewQuestion] = useState<RawQuestion | null>(null);
-    const [, setPreviewLoadingId] = useState<number | null>(null);
+    const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
     const [previewError, setPreviewError] = useState("");
+
+
 
     const fetchAggregateStats = useCallback( async () => 
     {
@@ -116,6 +153,8 @@ const ProfessorStatisticsPage: React.FC = () =>
             });
 
             setAggregateStats(response.data);
+            //console.log(response.data)
+
         }
         catch
         {
@@ -129,6 +168,8 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const fetchQuestionAggregateStats =  useCallback(async (checkQuestions: CheckQuestion[]) => 
     {   
+        //console.log('in fetch, checkquestions: ',checkQuestions);
+
         if (checkQuestions.length < 1)
             return;
 
@@ -138,7 +179,7 @@ const ProfessorStatisticsPage: React.FC = () =>
 
         try
         {
-            const temp: AggregateStatsByQuestionResponse[] = [];
+            let temp: AggregateStatsByQuestionResponse[] = [];
 
             for(let i = 0; i < checkQuestions.length; i++)
             {
@@ -151,6 +192,22 @@ const ProfessorStatisticsPage: React.FC = () =>
                 }
             }
 
+            /*
+            checkQuestions.map(async (question) => {
+                if(question.isChecked) {
+                    const response = await api.get<AggregateStatsByQuestionResponse>(`/api/stats/aggregate/${question.questionID}`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                    });
+                    temp.push(response.data);
+                    //temp.length++;
+                }
+            })
+            */
+
+            //console.log('responses: ',temp);
+            //console.log('responses[0]: ', temp[0]);
+            //console.log('responses.length: ', temp.length);
             setQuestionsAggregateStats(temp);
         }
         catch
@@ -179,22 +236,27 @@ const ProfessorStatisticsPage: React.FC = () =>
                 headers: { 'Authorization': `Bearer ${token}` },
             });
 
+            //console.log('response', response.data)
 
             setQuestionsPagination(response.data.pagination);
 
             
-            const converted: ProfessorQuestionItem[] = [];
+            let converted: ProfessorQuestionItem[] = [];
             
+            //console.log('topic choice2', topicChoice2)
             
             if(topicChoice2.toLowerCase() === "My Questions".toLowerCase())
             {
+                //console.log('in my question section...')
 
                 ALL_TOPICS.map((topic) => {
                     if(response.data.questions[topic] !== undefined && response.data.questions[topic] !== null)
                     {
+                        //console.log(topic)
 
                         for(let k = 0; k < response.data.questions[topic].length; k++)
                         {
+                            //console.log(response.data.questions[topic][k])
                             converted.push({
                                 id: response.data.questions[topic][k].ID,
                                 title: response.data.questions[topic][k].QUESTION_TEXT.replace(removeHtmlTags, ""),
@@ -202,10 +264,13 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 subcategory: response.data.questions[topic][k].SUBCATEGORY,
                                 type: response.data.questions[topic][k].TYPE
                             })
+                            //console.log(converted)
                         }
                     }
                 })
+                //console.log('converted', converted)
             } else {
+                //console.log('in generic topic section...')
 
                 for(let i = 0; i < response.data.questions[topicChoice2].length; i++) {
                 
@@ -216,10 +281,21 @@ const ProfessorStatisticsPage: React.FC = () =>
                         subcategory: response.data.questions[topicChoice2][i].SUBCATEGORY,
                         type: response.data.questions[topicChoice2][i].TYPE
                     })
+                    //console.log('converted', converted);
+
+
                 }   
             }
 
+
+            //console.log('converted outside of loops', converted);
+
             setQuestions(converted);
+            
+
+            //setAggregateStats(response.data);
+            //console.log(response.data)
+
         }
         catch
         {
@@ -233,21 +309,19 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     useEffect(() => {
         fetchAggregateStats();
-    }, [fetchAggregateStats])
+    }, [])
 
     useEffect(() => {
         fetchQuestionAggregateStats(checkQuestions);
         
-    }, [checkQuestions, questions, fetchQuestionAggregateStats])
+    }, [checkQuestions, questions])
 
     useEffect(() => {
         fetchQuestionList(questionsPagination?.page == undefined ? 1 : questionsPagination?.page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [topicChoice2])
 
     useEffect(() => {
         resolveTopicData('All');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [aggregateStats])
 
 
@@ -268,11 +342,16 @@ const ProfessorStatisticsPage: React.FC = () =>
         updateQuestionStats(questionsAggregateStats);
     }, [questionsAggregateStats]);
 
+    useEffect(() => {
+
+    }, [questionStats])
+
     useEffect(() =>
       {
         void userCustomizationStore.refresh();
       }, []);
 
+      
       const backgroundItem = useMemo(
         () => equippedItems.find((item) => item.TYPE === "background") || null,
         [equippedItems]
@@ -289,11 +368,15 @@ const ProfessorStatisticsPage: React.FC = () =>
         backgroundPosition: "center",
       } : undefined;
 
+
+
     const resolveTopicData = (topicChoice: string) => 
     {
 
+        //console.log(topicChoice)
+        //console.log(aggregateStats)
         if (topicChoice.toLowerCase() === "All".toLowerCase()){
-            const topicData: StatData = {
+            let topicData: StatData = {
                 medianAccuracy:     aggregateStats?.medianAccuracy == undefined ? 0 : aggregateStats?.medianAccuracy == null ? 0 : aggregateStats.medianAccuracy,
                 medianElapsedTime:  aggregateStats?.medianElapsedTime == undefined ? 0 : aggregateStats?.medianElapsedTime == null ? 0 : aggregateStats.medianElapsedTime,
                 responseCount:      aggregateStats?.responseCount == undefined ? 0 : aggregateStats?.responseCount == null ? 0 : aggregateStats.responseCount
@@ -306,7 +389,7 @@ const ProfessorStatisticsPage: React.FC = () =>
             ALL_TOPICS.map((topic) => {
                 if(topic.toLowerCase() === topicChoice.toLowerCase() && aggregateStats?.subcategoryBreakdown[topicChoice] != undefined)
                 {
-                    const topicData: StatData = {
+                    let topicData: StatData = {
                         medianAccuracy: aggregateStats?.subcategoryBreakdown[topicChoice]?.medianAccuracy == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.medianAccuracy == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].medianAccuracy,
                         medianElapsedTime: aggregateStats?.subcategoryBreakdown[topicChoice]?.medianElapsedTime == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.medianElapsedTime == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].medianElapsedTime,
                         responseCount: aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].responseCount,
@@ -323,7 +406,7 @@ const ProfessorStatisticsPage: React.FC = () =>
     };
 
     const updateCheckQuestions = (id: number, checked: boolean ) => {
-        const temp: CheckQuestion[] = [];
+        let temp: CheckQuestion[] = [];
         checkQuestions.map((checkQuestion) => (
             checkQuestion.questionID === id 
                 ?   temp.push({questionID: checkQuestion.questionID, isChecked: checked})
@@ -333,10 +416,16 @@ const ProfessorStatisticsPage: React.FC = () =>
         setCheckQuestions(temp);
     }
 
-    //question
     const updateQuestionStats = (questionsAggregateStats: AggregateStatsByQuestionResponse[]) => {
+        //console.log('question stats',questionsAggregateStats)
+        //console.log('question stats[0] ',questionsAggregateStats[0])
+        //console.log('question stats length ',questionsAggregateStats.length)
         setLoading(true)
-
+        /*
+        let questionsAggregateStats2: AggregateStatsByQuestionResponse[] = questionsAggregateStats;
+        console.log(questionsAggregateStats2)
+        console.log(questionsAggregateStats2.length)
+        */
 
         if (questionsAggregateStats.length < 1){
             setLoading(false)
@@ -348,11 +437,15 @@ const ProfessorStatisticsPage: React.FC = () =>
         let totalMedianAccuracy = 0;
         let totalQuestionsCompleted = 0;
 
+        //console.log('question agg stats' ,questionsAggregateStats)
+
         questionsAggregateStats.map((question) => {
             totalMedianAccuracy += question?.medianAccuracy == undefined || question?.medianAccuracy == null ? 0 : question?.medianAccuracy;
             totalMedianElapsedTime += question?.medianElapsedTime == undefined || question?.medianElapsedTime == null ? 0 : question?.medianElapsedTime;
             totalQuestionsCompleted += question?.responseCount == undefined || question?.responseCount == null ? 0 : question?.responseCount;
         })
+
+        //console.log('questions stats: ', 'medAcc', totalMedianAccuracy / length, 'medTime', totalMedianElapsedTime / length, 'questions', totalQuestionsCompleted)
 
         setQuestionStats({
             medianAccuracy: Math.round(totalMedianAccuracy*100 / length),
@@ -413,7 +506,6 @@ const ProfessorStatisticsPage: React.FC = () =>
         )
     }
 
-
     const getCheckedQuestions = (questionID: number) => {
         for (let i = 0; i < checkQuestions.length; i++)
         {
@@ -424,9 +516,11 @@ const ProfessorStatisticsPage: React.FC = () =>
     }
 
     const getQuestionStatisticsGrid = () => {
-        const length = checkQuestions.filter((question) => {return question.isChecked}).length
-        const moreThanOneChecked: boolean =  length > 1
-        const noneChecked: boolean = length < 1
+        //console.log('question stats ',questionStats)
+
+        let length = checkQuestions.filter((question) => {return question.isChecked}).length
+        let moreThanOneChecked: boolean =  length > 1
+        let noneChecked: boolean = length < 1
         
 
         return questionStats?.responseCount !== undefined && questionStats?.responseCount > 0 && !noneChecked ?
@@ -452,14 +546,14 @@ const ProfessorStatisticsPage: React.FC = () =>
         );
     }
 
-    //question
     const isSelected = (id: number) => {
+        console.log(checkQuestions.filter((question) => {return question.questionID === id}))
         return checkQuestions.filter((question) => {return question.questionID === id && question.isChecked}).length < 1 
             ?  false
             :  true;
     }
 
-    /* Might Come Back to later: Saving scroll position in checklist would make for nice polish {currently not working}
+    /* Might Come Back to later, would make for v nice polish
 
     // Effect to update scrollPos state when the user scrolls
     useEffect(() => {
@@ -601,7 +695,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                     style={backgroundStyle}
                 >
 
-                    {/*Header*/}
                     <div className="flex items-center gap-3 mb-6">
                         <div>
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Statistics</h1>
@@ -614,7 +707,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                         </div>
                     )}
 
-                    {/*Aggregate Stats*/}
                     {!loading && (
                     <div className="flex justify-between items-center w-full">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Topic Stats</h2>
@@ -624,7 +716,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 value={topicChoice}
                                 className="border border-gray-300 rounded-lg px-3 py-2 text-md text-gray-700 bg-gray-100"
                                 onChange={(event) => {
-                                    const topic: string = event.target.value as string;
+                                    let topic: string = event.target.value as string;
                                     setTopicChoice(topic);
                                     resolveTopicData(topic);
                                 }}>
@@ -641,6 +733,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                         <section className="rounded-xl border border-gray-200 bg-white p-5">
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Percentages</p>
+
                             {getPercentageGraphs()}
 
                         </section>
@@ -651,7 +744,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                     </div>
                     )}
 
-                    {/*Question Stats*/}
                     {!loading && (
                     <div className="flex justify-between items-center w-full">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Question Stats</h2>
@@ -660,7 +752,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                             value={topicChoice2}
                             className="border border-gray-300 rounded-lg px-3 py-2 text-md text-gray-700 bg-gray-100"
                             onChange={(event) => {
-                                const topic: string = event.target.value as string;
+                                let topic: string = event.target.value as string;
                                 setTopicChoice2(topic);
 
                             }}>
@@ -725,7 +817,12 @@ const ProfessorStatisticsPage: React.FC = () =>
                                         <button
                                             disabled={questionsPagination.page <= 1}
                                             onClick={() => {
+
+                                                //let pagination: Pagination = questionsPagination;
+                                                //pagination.page--;
+                                                //setQuestionsPagination(pagination);
                                                 fetchQuestionList(questionsPagination.page-1);
+                                                fetchAggregateStats();
                                             }}
                                             className= "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
@@ -738,7 +835,11 @@ const ProfessorStatisticsPage: React.FC = () =>
                                         <button
                                             disabled={questionsPagination.page >= questionsPagination.totalPages}
                                             onClick={() => {
+                                                //let pagination: Pagination = questionsPagination;
+                                                //pagination.page++;
+                                                //setQuestionsPagination(pagination);
                                                 fetchQuestionList(questionsPagination.page+1);
+                                                fetchAggregateStats();
                                             }}
                                             className= "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >

@@ -1,14 +1,14 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2026
-//  Author(s):     Dayton Hawk
+//  Year:          2025-2026
+//  Author(s):     Daniel Landsman
 //  File:          HistoryTable.tsx
-//  Description:   My Progress tab's Problem Statistics Viewer
+//  Description:   My Progress tab's Problem History table
 //
 //  Dependencies:  react
 //                 api instance
-//                 models (HistoryEntry, HistoryResponse, ProgressData)
+//                 models (RawQuestion, HistoryEntry, HistoryResponse)
 //                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
@@ -16,8 +16,76 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import api from "../api";
-import { HistoryEntry, HistoryResponse, ProgressData} from '../models';
+import { RawQuestion, HistoryEntry, HistoryResponse, ProgressData} from '../models';
 import { ALL_TOPICS} from "../utils/topicLabels"
+import { formatSubcategoryLabel } from '../utils/topicLabels';
+import { X, Check, SquareArrowOutUpRightIcon } from "lucide-react";
+import { ALL } from 'dns';
+
+/*
+export interface HistoryEntry
+{
+  datetime:       string;
+  topic:          string;
+  type:           string; // Question.TYPE (Multiple Choice, Programming, etc.)
+  isCorrect:      boolean;
+  problem_id:     number;
+  userAnswer:     string | null; // JSON with answer data
+  pointsEarned:   number | null;
+  pointsPossible: number | null;
+}
+
+export interface HistoryResponse
+{
+  history:      HistoryEntry[];
+  totalPages:   number;
+  currentPage:  number;
+}
+
+export interface RawQuestion
+{
+  ID:             number;
+  TYPE:           string;
+  SECTION:        string;
+  CATEGORY:       string;   //question type: mult choice etc
+  SUBCATEGORY:    string;   //question topic
+  AUTHOR_EXAM_ID: string;
+  POINTS_POSSIBLE: number;
+  QUESTION_TEXT:  string;
+  OWNER_ID:       number;
+  answers?:       Answer[];
+}
+
+export const ALL_TOPICS = [
+  "InputOutput", // Canonical name, display name is Input/Output
+  "Branching",
+  "Loops",
+  "Variables",
+  "Arrays",
+  "Linked Lists",
+  "Strings",
+  "Classes",
+  "Methods",
+  "Trees",
+  "Stacks",
+  "Heaps",
+  "Tries",
+  "Bitwise Operators",
+  "Dynamic Memory",
+  "Algorithm Analysis",
+  "Recursion",
+  "Sorting",
+] as const;
+
+*/
+
+const ALL_STATS = [
+    "Performance",
+    "Accuracy", //median
+    "Average Score", //median
+    "Average Elapsed Time", //median
+    "Completed Questions",
+]
 
 interface AggregateData
 {
@@ -32,6 +100,7 @@ const StatsViewer: React.FC = () => {
 
   const navigate = useNavigate();
   const   [history, setHistory]         = useState<HistoryEntry[]>([]);
+  //var allHistory: HistoryEntry[] = [];
   const [progressData, setProgressData] = useState<ProgressData>({});
   const [statViewerData, setStatViewerData] = useState<AggregateData>({
     Performance: 0, 
@@ -40,7 +109,7 @@ const StatsViewer: React.FC = () => {
     AvgElapsedTime:0, 
     NumQuestions: 0});
   const [topicChoice, setTopicChoice] = useState<string>("All");
-  const [, setTotalPages]   = useState<number>(1);
+  const [totalPages, setTotalPages]   = useState<number>(1);
   const [isLoading, setIsLoading]     = useState<boolean>(true);
 
   const nullOrNumToNum = (nullOrNum: number | null | undefined) => {
@@ -90,7 +159,7 @@ const StatsViewer: React.FC = () => {
       let totalTopicsAttempted = 0;
       ALL_TOPICS.map((entry) => {
         totalPerformance += progressData[entry] == null || progressData[entry] == undefined ? 0 : progressData[entry].metric;
-        if (progressData[entry] != null && progressData[entry] != undefined) totalTopicsAttempted++;
+        progressData[entry] == null || progressData[entry] == undefined ? null : totalTopicsAttempted++;
       })
       performance = totalPerformance / totalTopicsAttempted
     }
@@ -122,11 +191,39 @@ const StatsViewer: React.FC = () => {
 
   }
 
+  /*
+  const fetchHistory = useCallback(async (page: number) => {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await api.get<HistoryResponse>("api/progress/history", 
+      {
+        headers: { 'Authorization': `Bearer ${token}` },
+        params: { page, limit: 10 },
+      });
+
+      setHistory(response.data.history);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage);
+    } 
+    catch 
+    {
+      console.error('Error fetching history');
+    }
+    finally
+    {
+      setIsLoading(false);
+    }
+  }, []);
+  */
+
+
   const fetchHistory = useCallback(async () => {
 
     setIsLoading(true);
     const token = localStorage.getItem('token');
-    const allHistory: HistoryEntry[] = [];
+    let allHistory: HistoryEntry[] = [];
 
     try {
       
@@ -177,6 +274,32 @@ const StatsViewer: React.FC = () => {
     }
   }, []);
 
+  const fetchProblem = async (entry: HistoryEntry) => {
+
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+
+    try 
+    {
+      const response = await api.get<RawQuestion>(`api/problems/${entry.problem_id}`, 
+      {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      //const problem = response.data;
+
+      return response.data;
+    }
+    catch
+    {
+      console.error('Error fetching problem');
+    }
+    finally
+    {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch user progress data
   const fetchProgressData = async () => {
     setIsLoading(true);
@@ -191,6 +314,7 @@ const StatsViewer: React.FC = () => {
         }
       });
 
+      //console.log(response.data.progress)
       setProgressData(response.data.progress);
     } 
     catch 
@@ -206,28 +330,55 @@ const StatsViewer: React.FC = () => {
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
-
-  }, [topicChoice, fetchHistory]);
+    //aggregateStats();
+  }, [topicChoice]);
 
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
-
-  }, [fetchHistory]);
+    //aggregateStats();
+  }, []);
 
   useEffect(() => {
+    
     aggregateStats(topicChoice);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [history, progressData, topicChoice]);
 
+  /*
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    // Fetch user progress data
+    const fetchProgressData = async () => {
+      try {
+        const response = await api.get<{ progress: ProgressData }>("api/progress/graph", 
+        {
+          headers: 
+          {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+
+        setProgressData(response.data.progress);
+      } 
+      catch 
+      {
+        console.error('Error fetching progress data');
+      }
+    };
+
+    fetchProgressData();
+  }, []);
+  */
+
   const generateStatsMessage = () => {
-    const seed: number = Math.round(((Math.random()*7)%7))
+    let seed: number = Math.round(((Math.random()*7)%7)+1)
     console.log(seed)
 
     if(statViewerData.NumQuestions === 0)
       return "No completed questions? Then I got nothing for you here!"
 
-      if(seed === 0 || seed === 1 || seed === 2 ||  seed === 3) //performance
+      if(seed === 1 || seed === 2 ||  seed === 3) //performance
         return statViewerData.Performance > 90 ? "Maybe you'll get an A on a real transcript card for all that work!" 
           : statViewerData.Performance > 70 ? "Performance looking good so far, keep up the good work!" 
           : statViewerData.Performance > 50 ? "Pretty close! Pro-Tip: Speed is key if you can get it right!"
@@ -265,11 +416,13 @@ const StatsViewer: React.FC = () => {
     }
     navigate(`/topic-practice/${encodeURIComponent(slug)}`);
   };
-
+    
 
   return (
     
     <div className="mb-10">
+
+      
 
       {/* Check for loading state */}
       {isLoading ? (
@@ -287,7 +440,7 @@ const StatsViewer: React.FC = () => {
             <select className='border border-gray-300 rounded-lg px-2 mb-4 py-2 text-md text-gray-700 bg-gray-100'
               value={topicChoice}
               onChange={(event) => {
-                const topic: string = event.target.value as string;
+                let topic: string = event.target.value as string;
                 setTopicChoice(topic);
               }}>
                 <option key='0' value="All">All</option>
