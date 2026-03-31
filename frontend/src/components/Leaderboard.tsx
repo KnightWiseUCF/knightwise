@@ -5,7 +5,7 @@ import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { getProfilePathForUser } from "../utils/profileRouting";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { Trophy, ChevronLeft, ChevronRight, Swords, Users } from "lucide-react";
+import { Trophy, ChevronLeft, ChevronRight, Swords, Users, UserCheck } from "lucide-react";
 
 interface LeaderboardEntry
 {
@@ -49,7 +49,7 @@ interface GuildLeaderboardResponse
 
 
 type Tab  = "weekly" | "lifetime";
-type Mode = "individual" | "guild";
+type Mode = "individual" | "followed" | "guild";
 
 interface LeaderboardNavigationState {
   focusLeaderboardUsername?: string;
@@ -128,6 +128,27 @@ const Leaderboard: React.FC = () =>
     }
   }, []);
 
+  const fetchFollowedLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
+  {
+    setLoading(true);
+    setError(null);
+    try
+    {
+      const response = await api.get<LeaderboardResponse>(
+        `/api/leaderboard/followed/${tab}?page=${pageNum}`
+      );
+      setData(response.data);
+    }
+    catch
+    {
+      setError("Failed to load leaderboard. Please try again.");
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
   const fetchGuildLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
   {
     setLoading(true);
@@ -153,12 +174,10 @@ const Leaderboard: React.FC = () =>
   useEffect(() =>
   {
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
-  }, [mode, activeTab, page, fetchLeaderboard]);
-
-  useEffect(() =>
-  {
-    if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
-  }, [mode, activeTab, page, fetchGuildLeaderboard]);
+    else if (mode === "followed") void fetchFollowedLeaderboard(activeTab, page);
+    else if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, activeTab, page, fetchLeaderboard, fetchFollowedLeaderboard, fetchGuildLeaderboard]);
 
   const handleTabChange = (tab: Tab) =>
   {
@@ -394,7 +413,18 @@ const Leaderboard: React.FC = () =>
                 Individual
               </button>
               <button
-                onClick={() => setMode("guild")}
+                onClick={() => { setMode("followed"); setPage(1); setData(null); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
+                  mode === "followed"
+                    ? "bg-gray-800 text-white shadow"
+                    : "bg-white text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <UserCheck size={15} />
+                Followed
+              </button>
+              <button
+                onClick={() => { setMode("guild"); setPage(1); setData(null); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "guild"
                     ? "bg-gray-800 text-white shadow"
@@ -425,7 +455,7 @@ const Leaderboard: React.FC = () =>
                 <button
                   type="button"
                   onClick={handleUserSearch}
-                  className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-black"
+                  className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-black whitespace-nowrap"
                 >
                   Find User
                 </button>
@@ -456,9 +486,9 @@ const Leaderboard: React.FC = () =>
               <button 
                 onClick={async () => {scrollToUser()}}
                 
-                className="px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize bg-blue-600 text-white shadow"
+                className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors capitalize bg-blue-600 text-white shadow whitespace-nowrap"
               >
-                {mode === "individual" ? "Find Yourself" : "Find Your Guild"}
+                {mode === "guild" ? "Find Your Guild" : "Find Yourself"}
               </button>
 
               {/* Right: Weekly / Lifetime */}
@@ -467,7 +497,7 @@ const Leaderboard: React.FC = () =>
                   <button
                     key={tab}
                     onClick={() => handleTabChange(tab)}
-                    className={`px-4 py-2 rounded-lg text-md font-semibold transition-colors capitalize ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${
                       activeTab === tab
                         ? "bg-blue-600 text-white shadow"
                         : "bg-white text-gray-600 hover:bg-gray-200"
@@ -482,7 +512,7 @@ const Leaderboard: React.FC = () =>
           </div>
 
           {/* Your rank banner*/}
-          {((mode === "individual") && data) ? (
+          {((mode === "individual" || mode === "followed") && data) ? (
             <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
               <Trophy className="text-blue-400 shrink-0" size={32} />
               <div>
@@ -519,18 +549,18 @@ const Leaderboard: React.FC = () =>
           )}
 
           {/* Loading state */}
-          {mode === "individual" && loading && (
+          {(mode === "individual" || mode === "followed") && loading && (
             <div className="text-center py-16 text-gray-400 text-sm">Loading...</div>
           )}
 
           {/* Error state */}
-          {mode === "individual" && error && !loading && (
+          {(mode === "individual" || mode === "followed") && error && !loading && (
             <div className="text-center py-8 text-red-500 text-sm">{error}</div>
           )}
 
           
           {/* Table */}
-          {mode === "individual" && !loading && (data ? (
+          {(mode === "individual" || mode === "followed") && !loading && (data ? (
             <>
               <div className="w-full flex justify-center items-center">
                 <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
