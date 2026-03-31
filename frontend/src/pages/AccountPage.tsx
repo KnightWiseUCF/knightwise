@@ -30,7 +30,6 @@ const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [statusRetrieved, setStatusRetrieved] = useState(false);
   const [isSharingStats, setIsSharingStats] = useState(false);
   const { user, isLoading, error } = useUserCustomizationStore();
 
@@ -56,19 +55,16 @@ const AccountPage: React.FC = () => {
 
   const getUserOptInStatus = useCallback(async (id: number) => {
     setLoading(true);
-    setStatusRetrieved(false);
 
     try
     { 
       const response = await api.get<UserInfoResponse>(`/api/users/${id}`);
       //console.log(response.data.user.IS_SHARING_STATS)
       setIsSharingStats(response.data.user.IS_SHARING_STATS)
-      setStatusRetrieved(true);
     }
     catch
     {
       console.error("Failed to update opt-in status");
-      parseError = true;
     }
     finally
     {

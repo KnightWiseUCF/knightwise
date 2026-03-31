@@ -40,7 +40,7 @@ const StatsViewer: React.FC = () => {
     AvgElapsedTime:0, 
     NumQuestions: 0});
   const [topicChoice, setTopicChoice] = useState<string>("All");
-  const [totalPages, setTotalPages]   = useState<number>(1);
+  const [, setTotalPages]   = useState<number>(1);
   const [isLoading, setIsLoading]     = useState<boolean>(true);
 
   const nullOrNumToNum = (nullOrNum: number | null | undefined) => {
@@ -90,7 +90,7 @@ const StatsViewer: React.FC = () => {
       let totalTopicsAttempted = 0;
       ALL_TOPICS.map((entry) => {
         totalPerformance += progressData[entry] == null || progressData[entry] == undefined ? 0 : progressData[entry].metric;
-        progressData[entry] == null || progressData[entry] == undefined ? null : totalTopicsAttempted++;
+        if (progressData[entry] != null && progressData[entry] != undefined) totalTopicsAttempted++;
       })
       performance = totalPerformance / totalTopicsAttempted
     }
@@ -126,7 +126,7 @@ const StatsViewer: React.FC = () => {
 
     setIsLoading(true);
     const token = localStorage.getItem('token');
-    let allHistory: HistoryEntry[] = [];
+    const allHistory: HistoryEntry[] = [];
 
     try {
       
@@ -207,21 +207,21 @@ const StatsViewer: React.FC = () => {
     fetchProgressData();
     fetchHistory();
 
-  }, [topicChoice]);
+  }, [topicChoice, fetchHistory]);
 
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
 
-  }, []);
+  }, [fetchHistory]);
 
   useEffect(() => {
-    
     aggregateStats(topicChoice);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [history, progressData, topicChoice]);
 
   const generateStatsMessage = () => {
-    let seed: number = Math.round(((Math.random()*7)%7))
+    const seed: number = Math.round(((Math.random()*7)%7))
     console.log(seed)
 
     if(statViewerData.NumQuestions === 0)
@@ -287,7 +287,7 @@ const StatsViewer: React.FC = () => {
             <select className='border border-gray-300 rounded-lg px-2 mb-4 py-2 text-md text-gray-700 bg-gray-100'
               value={topicChoice}
               onChange={(event) => {
-                let topic: string = event.target.value as string;
+                const topic: string = event.target.value as string;
                 setTopicChoice(topic);
               }}>
                 <option key='0' value="All">All</option>

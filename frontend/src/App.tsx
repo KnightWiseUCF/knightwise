@@ -30,6 +30,7 @@ import ProfilePage from "./pages/ProfilePage";
 import StorePage from "./pages/StorePage.tsx";
 import LeaderboardPage from "./pages/LeaderboardPage.tsx";
 import ProfessorStatisticsPage from "./pages/ProfessorStatisticsPage.tsx";
+import GuildsPage from "./pages/GuildsPage";
 
 
 function App() 
@@ -55,6 +56,7 @@ function App()
         <Route path="/professor-drafts"           element={<ProfessorDraftsPage />} />
         <Route path="/leaderboard"                element={<LeaderboardPage />} />
         <Route path="/professor-stats"            element={<ProfessorStatisticsPage />} />
+        <Route path="/guilds"                     element={<GuildsPage />} />
       </Routes>
     </Router>
   );

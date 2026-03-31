@@ -128,28 +128,6 @@ const Leaderboard: React.FC = () =>
     }
   }, []);
 
-  const fetchFollowedLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
-  {
-    setLoading(true);
-    setError(null);
-    try
-    {
-      
-      const response = await api.get<LeaderboardResponse>(
-        `/api/leaderboard/followed/${tab}?page=${pageNum}`
-      );
-      setData(response.data);
-    }
-    catch
-    {
-      setError("Failed to load leaderboard. Please try again.");
-    }
-    finally
-    {
-      setLoading(false);
-    }
-  }, []);
-
   const fetchGuildLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
   {
     setLoading(true);
@@ -563,7 +541,7 @@ const Leaderboard: React.FC = () =>
 
           
           {/* Table */}
-          {mode === "individual" && !loading && data && (
+          {mode === "individual" && !loading && (data ? (
             <>
               <div className="w-full flex justify-center items-center">
                 <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
@@ -737,10 +715,11 @@ const Leaderboard: React.FC = () =>
                 </div>
               )}
             </>
-          ):<div className={data ? `text-center pt-16 text-gray-900 font-bold text-xl` : ''}>
+          ) : (
+            <div className={data ? `text-center pt-16 text-gray-900 font-bold text-xl` : ''}>
                 {data ? "Nobody's Here!" : null}
-            </div> 
-          }
+            </div>
+          ))}
 
           {/* Guild Leaderboard Table */}
           {mode === "guild" && !loading && guildData && (
