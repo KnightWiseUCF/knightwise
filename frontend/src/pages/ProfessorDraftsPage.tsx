@@ -22,7 +22,6 @@ interface QuestionDraft {
   section: string;
   category: string;
   subcategory: string;
-  pointsPossible: number;
   questionType: string;
   questionText: string;
   answers: DraftAnswer[];
@@ -69,14 +68,6 @@ const questionTypeOptions = [
   "Ranked Choice",
   "Drag and Drop",
 ];
-
-const POINT_VALUE_OPTIONS = [
-  { value: 2, label: "Easy", description: "2 points" },
-  { value: 5, label: "Medium", description: "5 points" },
-  { value: 10, label: "Hard", description: "10 points" },
-] as const;
-
-const DEFAULT_POINTS_POSSIBLE = POINT_VALUE_OPTIONS[0].value;
 
 const createEmptyAnswer = (index: number): DraftAnswer => ({
   id: crypto.randomUUID(),
@@ -167,21 +158,6 @@ const parseAnswerCorrectness = (value: unknown): boolean => {
   return false;
 };
 
-const normalizePointsPossible = (value: unknown, fallback: number = DEFAULT_POINTS_POSSIBLE): number => {
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (Number.isFinite(parsed) && POINT_VALUE_OPTIONS.some((option) => option.value === parsed)) {
-    return parsed;
-  }
-
-  return fallback;
-};
-
-const getPointsLabel = (value: unknown): string => {
-  const normalized = normalizePointsPossible(value);
-  const match = POINT_VALUE_OPTIONS.find((option) => option.value === normalized);
-  return match ? `${match.label} (${match.description})` : `${normalized} points`;
-};
-
 const buildDraftFromPublishedQuestion = (
   question: RawQuestion,
   existingDraft?: QuestionDraft
@@ -226,7 +202,6 @@ const buildDraftFromPublishedQuestion = (
     section: String(question.SECTION || ""),
     category: String(question.CATEGORY || ""),
     subcategory: String(question.SUBCATEGORY || ""),
-    pointsPossible: normalizePointsPossible(existingDraft?.pointsPossible ?? question.POINTS_POSSIBLE),
     questionType,
     questionText: String(question.QUESTION_TEXT || ""),
     answers,
@@ -278,7 +253,6 @@ const loadDrafts = (): QuestionDraft[] => {
           section?: unknown;
           category?: unknown;
           subcategory?: unknown;
-          pointsPossible?: unknown;
           questionType?: unknown;
           questionText?: unknown;
                   dropSections?: unknown;
@@ -308,7 +282,6 @@ const loadDrafts = (): QuestionDraft[] => {
           section: typeof typedItem.section === "string" ? typedItem.section : "",
           category: typeof typedItem.category === "string" ? typedItem.category : "",
           subcategory: typeof typedItem.subcategory === "string" ? typedItem.subcategory : "",
-          pointsPossible: normalizePointsPossible(typedItem.pointsPossible),
           questionType:
             typeof typedItem.questionType === "string" && questionTypeOptions.includes(typedItem.questionType)
               ? typedItem.questionType
@@ -344,7 +317,6 @@ const emptyForm = {
   section: "",
   category: "",
   subcategory: "",
-  pointsPossible: String(DEFAULT_POINTS_POSSIBLE),
   questionType: "Multiple Choice",
   questionText: "",
   answers: createDefaultAnswers(),
@@ -740,7 +712,7 @@ const ProfessorDraftsPage: React.FC = () => {
       section: draft.section || "General",
       category: draft.category || "General",
       subcategory: draft.subcategory || "General",
-      points_possible: draft.pointsPossible,
+      points_possible: 1,
       is_published: isPublished ? 1 : 0,
       question_text: draft.questionText,
       answer_text: filteredAnswers.map((answer) => answer.text.trim()),
@@ -832,12 +804,6 @@ const ProfessorDraftsPage: React.FC = () => {
       }
     }
 
-    const normalizedPointsPossible = normalizePointsPossible(form.pointsPossible, Number.NaN);
-    if (!Number.isFinite(normalizedPointsPossible) || normalizedPointsPossible <= 0) {
-      setError("Points possible must be one of: 2, 5, or 10.");
-      return;
-    }
-
     const now = new Date().toISOString();
 
     if (editingId) {
@@ -850,7 +816,6 @@ const ProfessorDraftsPage: React.FC = () => {
         section: form.section.trim(),
         category: form.category.trim(),
         subcategory: form.subcategory.trim(),
-        pointsPossible: normalizedPointsPossible,
         questionType: form.questionType,
         questionText: form.questionText.trim(),
         answers: form.answers.map((answer, index) => ({
@@ -883,7 +848,7 @@ const ProfessorDraftsPage: React.FC = () => {
           section: nextDraftState.section || "General",
           category: nextDraftState.category || "General",
           subcategory: nextDraftState.subcategory || "General",
-          points_possible: nextDraftState.pointsPossible,
+          points_possible: 1,
           question_text: nextDraftState.questionText,
           answer_text: filteredAnswers.map((answer) => answer.text.trim()),
           answer_correctness: filteredAnswers.map((answer) => ((nextDraftState.questionType === "Ranked Choice" || nextDraftState.questionType === "Drag and Drop") ? 1 : (answer.isCorrect ? 1 : 0))),
@@ -934,7 +899,6 @@ const ProfessorDraftsPage: React.FC = () => {
       section: form.section.trim(),
       category: form.category.trim(),
       subcategory: form.subcategory.trim(),
-      pointsPossible: normalizedPointsPossible,
       questionType: form.questionType,
       questionText: form.questionText.trim(),
       answers: form.answers.map((answer, index) => ({
@@ -995,7 +959,6 @@ const ProfessorDraftsPage: React.FC = () => {
       section: draft.section,
       category: draft.category,
       subcategory: draft.subcategory,
-      pointsPossible: String(draft.pointsPossible),
       questionType: draft.questionType,
       questionText: draft.questionText,
       answers: draft.answers.length > 0 ? draft.answers : createDefaultAnswers(),
@@ -1441,57 +1404,35 @@ const ProfessorDraftsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
-                <select
-                  name="category"
-                  value={form.category}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {availableCategories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Subcategory</label>
-                <select
-                  name="subcategory"
-                  value={form.subcategory}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  required
-                >
-                  <option value="">Select subcategory</option>
-                  {subcategoryOptions.map((subcategory) => (
-                    <option key={subcategory} value={subcategory}>
-                      {subcategory}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Points Possible</label>
-                <select
-                  name="pointsPossible"
-                  value={form.pointsPossible}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  required
-                >
-                  {POINT_VALUE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label} - {option.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <select
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                required
+              >
+                <option value="">Select category</option>
+                {availableCategories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="subcategory"
+                value={form.subcategory}
+                onChange={handleChange}
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                required
+              >
+                <option value="">Select subcategory</option>
+                {subcategoryOptions.map((subcategory) => (
+                  <option key={subcategory} value={subcategory}>
+                    {subcategory}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -1614,7 +1555,6 @@ const ProfessorDraftsPage: React.FC = () => {
                   <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-6 bg-white rounded-lg border border-gray-200">
                     <div className="flex flex-col sm:flex-row justify-between mb-2 text-sm sm:text-lg md:text-xl">
                       <p className="font-medium">Question 1 of 1</p>
-                      <p className="font-medium text-gray-600">{getPointsLabel(form.pointsPossible)}</p>
                     </div>
 
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
@@ -2015,7 +1955,6 @@ const ProfessorDraftsPage: React.FC = () => {
                     <p className="text-sm text-gray-600 mt-1">
                       {draft.category || "No category"} • {draft.subcategory || "No subcategory"}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">Difficulty: {getPointsLabel(draft.pointsPossible)}</p>
                     <p className="text-sm text-gray-600 mt-1">Type: {draft.questionType}</p>
                     <p className="text-sm text-gray-600 mt-1">Answers: {draft.answers.length}</p>
                     {draft.questionType === "Drag and Drop" && (

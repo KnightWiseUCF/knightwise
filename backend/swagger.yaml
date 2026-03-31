@@ -2744,9 +2744,6 @@ definitions:
         items:
           type: object
           properties:
-            userId:
-              type: integer
-              example: 42
             rank:
               type: integer
               example: 1
@@ -2764,15 +2761,6 @@ definitions:
               type: string
               example: "Octocat"
               nullable: true
-            background:
-              type: string
-              example: "Aurora"
-              nullable: true
-            flairNames:
-              type: array
-              items:
-                type: string
-              example: ["Go Knights", "I <3 C++"]
         description: "Page of users ranked by exp. Tied users share the same rank. PAGE_SIZES.LEADERBOARD users per page."
 
   GuildLeaderboardResponse:

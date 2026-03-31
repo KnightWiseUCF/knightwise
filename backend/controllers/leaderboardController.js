@@ -16,8 +16,6 @@
 const { asyncHandler } = require('../middleware/errorHandler');
 const { PAGE_SIZES } = require('../config/paginationConfig');
 
-const FLAIR_SEPARATOR = '|||';
-
 /**
  * Helper function, queries paginated guild leaderboard data for a given exp column
  * Returns a page of guilds ranked by exp
@@ -182,17 +180,7 @@ const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
         u.USERNAME,
         u.FIRSTNAME,
         u.${expCol} AS exp,
-        pfp.itemName AS profilePicture,
-        bg.itemName AS background,
-        (
-          SELECT GROUP_CONCAT(si.NAME ORDER BY si.NAME SEPARATOR '${FLAIR_SEPARATOR}')
-          FROM Purchase p2
-          JOIN StoreItem si ON si.ID = p2.ITEM_ID
-          WHERE p2.USER_ID = u.ID
-            AND p2.IS_EQUIPPED = 1
-            AND si.TYPE = 'flair'
-            AND si.IS_GUILD_ITEM = 0
-        ) AS flairNames
+        pfp.itemName AS profilePicture
       FROM User u
       LEFT JOIN (
         SELECT p.USER_ID, si.NAME as itemName
@@ -201,13 +189,6 @@ const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
         WHERE p.IS_EQUIPPED = 1 AND si.TYPE = 'profile_picture'
           AND si.IS_GUILD_ITEM = 0
       ) pfp ON pfp.USER_ID = u.ID
-      LEFT JOIN (
-        SELECT p.USER_ID, si.NAME as itemName
-        FROM Purchase p
-        JOIN StoreItem si ON si.ID = p.ITEM_ID
-        WHERE p.IS_EQUIPPED = 1 AND si.TYPE = 'background'
-          AND si.IS_GUILD_ITEM = 0
-      ) bg ON bg.USER_ID = u.ID
       ${whereClause}
     ) ranked
     ORDER BY \`rank\` ASC, USERNAME ASC
@@ -235,16 +216,11 @@ const getLeaderboard = async (db, userId, expCol, page, filterIds = null) =>
     page:       safePage,
     totalPages,
     leaderboard: rows.map(row => ({
-      userId:         row.ID,
       rank:           row.rank,
       username:       row.USERNAME,
       firstName:      row.FIRSTNAME,
       exp:            row.exp,
       profilePicture: row.profilePicture ?? null,
-      background:     row.background ?? null,
-      flairNames:     typeof row.flairNames === 'string' && row.flairNames.length > 0
-        ? row.flairNames.split(FLAIR_SEPARATOR).filter(Boolean)
-        : [],
     }))
   };
 };
