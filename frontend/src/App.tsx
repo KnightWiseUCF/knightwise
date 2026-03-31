@@ -57,6 +57,7 @@ function App()
         <Route path="/leaderboard"                element={<LeaderboardPage />} />
         <Route path="/guilds"                     element={<GuildsPage />} />
         <Route path="/guilds/:id"                 element={<GuildsPage />} />
+        <Route path="/guild/:guildId"             element={<GuildsPage />} />
         <Route path="/professor-stats"            element={<ProfessorStatisticsPage />} />
       </Routes>
     </Router>

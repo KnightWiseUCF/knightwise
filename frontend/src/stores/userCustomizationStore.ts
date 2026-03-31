@@ -186,7 +186,13 @@ const refresh = async (providedUserId?: number): Promise<void> => {
     return;
   }
 
-  const userId = resolveUserId(providedUserId);
+  let userId: number;
+  try {
+    userId = resolveUserId(providedUserId);
+  } catch {
+    setState({ isLoading: false, error: null, user: null, equippedItems: [], purchases: [] });
+    return;
+  }
 
   if (refreshInFlight && refreshInFlightUserId === userId) {
     return refreshInFlight;

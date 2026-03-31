@@ -3,13 +3,13 @@
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import api from "../api";
 import Layout from "../components/Layout";
-import { ALL_TOPICS} from "../utils/topicLabels"
+import { ALL_TOPICS, formatSubcategoryLabel} from "../utils/topicLabels"
 import { RawQuestion} from '../models';
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 
 interface Pagination {
     page:               number;
@@ -64,6 +64,31 @@ interface CheckQuestion
 
 }
 
+/* Preserved for potential future use
+interface PublishedQuestion {
+  id: number;
+  section: string;
+  category: string;
+  subcategory: string;
+  questionType: string;
+  authorExamId: string;
+  ownerId: number;
+}
+
+const topicCategoryMap: Record<string, string[]> = {
+  "Introductory Programming": ["Input/Output", "Branching", "Loops", "Variables"],
+  "Simple Data Structures": ["Arrays", "Linked Lists", "Strings"],
+  "Object Oriented Programming": ["Classes", "Methods"],
+  "Intermediate Data Structures": ["Trees", "Stacks"],
+  "Complex Data Structures": ["Heaps", "Tries"],
+  "Intermediate Programming": ["Bitwise Operators", "Dynamic Memory", "Algorithm Analysis", "Recursion", "Sorting"],
+};
+
+const defaultSubcategories = Object.values(topicCategoryMap).flat();
+
+type QuestionStatus = "Draft" | "Published";
+*/
+
 interface ProfessorQuestionItem {
   id: number;
   title: string;
@@ -91,16 +116,20 @@ const ProfessorStatisticsPage: React.FC = () =>
     const [questionStats, setQuestionStats] = useState<StatData>();
 
     const [loading, setLoading]       = useState(false);
+    const [statsLoading, setStatsLoading] = useState(false);
+    const [listLoading, setListLoading]  = useState(false);
     const [, setError]           = useState<string | null>(null);
 
     const [topicChoice, setTopicChoice] = useState<string>("All");
-    const [topicChoice2, setTopicChoice2] = useState<string>("My Questions");
+    const [topicChoice2, setTopicChoice2] = useState<string>("InputOutput");
 
     const { equippedItems } = useUserCustomizationStore();
 
     const [previewQuestion, setPreviewQuestion] = useState<RawQuestion | null>(null);
     const [, setPreviewLoadingId] = useState<number | null>(null);
     const [previewError, setPreviewError] = useState("");
+
+
 
     const fetchAggregateStats = useCallback( async () => 
     {
@@ -116,6 +145,8 @@ const ProfessorStatisticsPage: React.FC = () =>
             });
 
             setAggregateStats(response.data);
+            //console.log(response.data)
+
         }
         catch
         {
@@ -129,10 +160,12 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const fetchQuestionAggregateStats =  useCallback(async (checkQuestions: CheckQuestion[]) => 
     {   
+        //console.log('in fetch, checkquestions: ',checkQuestions);
+
         if (checkQuestions.length < 1)
             return;
 
-        setLoading(true);
+        setStatsLoading(true);
         setError(null);
         const token = localStorage.getItem('token');
 
@@ -151,6 +184,22 @@ const ProfessorStatisticsPage: React.FC = () =>
                 }
             }
 
+            /*
+            checkQuestions.map(async (question) => {
+                if(question.isChecked) {
+                    const response = await api.get<AggregateStatsByQuestionResponse>(`/api/stats/aggregate/${question.questionID}`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                    });
+                    temp.push(response.data);
+                    //temp.length++;
+                }
+            })
+            */
+
+            //console.log('responses: ',temp);
+            //console.log('responses[0]: ', temp[0]);
+            //console.log('responses.length: ', temp.length);
             setQuestionsAggregateStats(temp);
         }
         catch
@@ -159,14 +208,13 @@ const ProfessorStatisticsPage: React.FC = () =>
         }
         finally
         {
-            setLoading(false);
-            
+            setStatsLoading(false);
         }
     }, []);
 
     const fetchQuestionList = (async (page: number) => {
 
-        setLoading(true);
+        setListLoading(true);
         setError(null);
         const token = localStorage.getItem('token');
 
@@ -179,22 +227,27 @@ const ProfessorStatisticsPage: React.FC = () =>
                 headers: { 'Authorization': `Bearer ${token}` },
             });
 
+            //console.log('response', response.data)
 
             setQuestionsPagination(response.data.pagination);
 
             
             const converted: ProfessorQuestionItem[] = [];
             
+            //console.log('topic choice2', topicChoice2)
             
             if(topicChoice2.toLowerCase() === "My Questions".toLowerCase())
             {
+                //console.log('in my question section...')
 
                 ALL_TOPICS.map((topic) => {
                     if(response.data.questions[topic] !== undefined && response.data.questions[topic] !== null)
                     {
+                        //console.log(topic)
 
                         for(let k = 0; k < response.data.questions[topic].length; k++)
                         {
+                            //console.log(response.data.questions[topic][k])
                             converted.push({
                                 id: response.data.questions[topic][k].ID,
                                 title: response.data.questions[topic][k].QUESTION_TEXT.replace(removeHtmlTags, ""),
@@ -202,10 +255,13 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 subcategory: response.data.questions[topic][k].SUBCATEGORY,
                                 type: response.data.questions[topic][k].TYPE
                             })
+                            //console.log(converted)
                         }
                     }
                 })
+                //console.log('converted', converted)
             } else {
+                //console.log('in generic topic section...')
 
                 for(let i = 0; i < response.data.questions[topicChoice2].length; i++) {
                 
@@ -216,10 +272,21 @@ const ProfessorStatisticsPage: React.FC = () =>
                         subcategory: response.data.questions[topicChoice2][i].SUBCATEGORY,
                         type: response.data.questions[topicChoice2][i].TYPE
                     })
+                    //console.log('converted', converted);
+
+
                 }   
             }
 
+
+            //console.log('converted outside of loops', converted);
+
             setQuestions(converted);
+            
+
+            //setAggregateStats(response.data);
+            //console.log(response.data)
+
         }
         catch
         {
@@ -227,18 +294,20 @@ const ProfessorStatisticsPage: React.FC = () =>
         }
         finally
         {
-            setLoading(false);
+            setListLoading(false);
         }
     });
 
     useEffect(() => {
         fetchAggregateStats();
-    }, [fetchAggregateStats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     useEffect(() => {
         fetchQuestionAggregateStats(checkQuestions);
         
-    }, [checkQuestions, questions, fetchQuestionAggregateStats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [checkQuestions, questions])
 
     useEffect(() => {
         fetchQuestionList(questionsPagination?.page == undefined ? 1 : questionsPagination?.page);
@@ -273,6 +342,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         void userCustomizationStore.refresh();
       }, []);
 
+      
       const backgroundItem = useMemo(
         () => equippedItems.find((item) => item.TYPE === "background") || null,
         [equippedItems]
@@ -289,9 +359,13 @@ const ProfessorStatisticsPage: React.FC = () =>
         backgroundPosition: "center",
       } : undefined;
 
+
+
     const resolveTopicData = (topicChoice: string) => 
     {
 
+        //console.log(topicChoice)
+        //console.log(aggregateStats)
         if (topicChoice.toLowerCase() === "All".toLowerCase()){
             const topicData: StatData = {
                 medianAccuracy:     aggregateStats?.medianAccuracy == undefined ? 0 : aggregateStats?.medianAccuracy == null ? 0 : aggregateStats.medianAccuracy,
@@ -333,13 +407,9 @@ const ProfessorStatisticsPage: React.FC = () =>
         setCheckQuestions(temp);
     }
 
-    //question
     const updateQuestionStats = (questionsAggregateStats: AggregateStatsByQuestionResponse[]) => {
-        setLoading(true)
-
-
         if (questionsAggregateStats.length < 1){
-            setLoading(false)
+            setQuestionStats({ medianAccuracy: 0, medianElapsedTime: 0, responseCount: 0 });
             return;
         }
         
@@ -348,20 +418,21 @@ const ProfessorStatisticsPage: React.FC = () =>
         let totalMedianAccuracy = 0;
         let totalQuestionsCompleted = 0;
 
+        //console.log('question agg stats' ,questionsAggregateStats)
+
         questionsAggregateStats.map((question) => {
             totalMedianAccuracy += question?.medianAccuracy == undefined || question?.medianAccuracy == null ? 0 : question?.medianAccuracy;
             totalMedianElapsedTime += question?.medianElapsedTime == undefined || question?.medianElapsedTime == null ? 0 : question?.medianElapsedTime;
             totalQuestionsCompleted += question?.responseCount == undefined || question?.responseCount == null ? 0 : question?.responseCount;
         })
 
+        //console.log('questions stats: ', 'medAcc', totalMedianAccuracy / length, 'medTime', totalMedianElapsedTime / length, 'questions', totalQuestionsCompleted)
+
         setQuestionStats({
             medianAccuracy: Math.round(totalMedianAccuracy*100 / length),
             medianElapsedTime: Math.round(totalMedianElapsedTime / length),
             responseCount: totalQuestionsCompleted
         })
-
-        setLoading(false)
-
     }
 
     const getPercentageGraphs = () => {
@@ -375,8 +446,8 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 ${topicStats?.medianAccuracy !== undefined ? (topicStats?.medianAccuracy > 0  ? "bg-blue-500" : "bg-gray-300") : "bg-gray-300"}`}
                                 style={{ height: `${Math.max(12, (topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats?.medianAccuracy*100*1.5 : 0)}%`
                                 }}
-                                title={`${topicChoice}: ${((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats?.medianAccuracy : 0)*100}% accuracy`}
-                            >{((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats?.medianAccuracy*100 + '%' : '')}</div>
+                                title={`${topicChoice}: ${Math.round(((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats.medianAccuracy : 0)*100)}% accuracy`}
+                            >{((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? Math.round(topicStats.medianAccuracy*100) + '%' : '')}</div>
                         </div>
                         <span className="text-[10px] text-gray-500 leading-none">Median Performance</span>
                     </div> 
@@ -400,19 +471,18 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const getStatisticsGrid = () => {
         return (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
+            <div className="mt-3 flex flex-wrap gap-3">
+                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
                     <p className="text-xs text-gray-500">Median Elapsed Time</p>
                     <p className="text-xl font-bold text-gray-900">{topicStats?.medianElapsedTime}s</p>
                 </div>
-                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
+                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
                     <p className="text-xs text-gray-500">Questions Completed</p>
                     <p className="text-xl font-bold text-gray-900">{topicStats?.responseCount}</p>
                 </div>
             </div>
         )
     }
-
 
     const getCheckedQuestions = (questionID: number) => {
         for (let i = 0; i < checkQuestions.length; i++)
@@ -424,6 +494,8 @@ const ProfessorStatisticsPage: React.FC = () =>
     }
 
     const getQuestionStatisticsGrid = () => {
+        //console.log('question stats ',questionStats)
+
         const length = checkQuestions.filter((question) => {return question.isChecked}).length
         const moreThanOneChecked: boolean =  length > 1
         const noneChecked: boolean = length < 1
@@ -431,16 +503,16 @@ const ProfessorStatisticsPage: React.FC = () =>
 
         return questionStats?.responseCount !== undefined && questionStats?.responseCount > 0 && !noneChecked ?
         (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
+            <div className="mt-3 flex flex-wrap gap-3">
+                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
                     <p className="text-xs text-gray-500">{moreThanOneChecked ? 'Average Median Elapsed Time' : 'Median Elapsed Time'}</p>
                     <p className="text-xl font-bold text-gray-900">{questionStats?.medianElapsedTime}s</p>
                 </div>
-                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
+                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
                     <p className="text-xs text-gray-500">Total Questions Completed</p>
                     <p className="text-xl font-bold text-gray-900">{questionStats?.responseCount}</p>
                 </div>
-                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
+                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
                     <p className="text-xs text-gray-500">{moreThanOneChecked ? 'Average Median Performance' : 'Median Perfomance'}</p>
                     <p className="text-xl font-bold text-gray-900">{questionStats?.medianAccuracy == undefined ? 0 : questionStats?.medianAccuracy}%</p>
                 </div>
@@ -452,14 +524,14 @@ const ProfessorStatisticsPage: React.FC = () =>
         );
     }
 
-    //question
     const isSelected = (id: number) => {
+        console.log(checkQuestions.filter((question) => {return question.questionID === id}))
         return checkQuestions.filter((question) => {return question.questionID === id && question.isChecked}).length < 1 
             ?  false
             :  true;
     }
 
-    /* Might Come Back to later: Saving scroll position in checklist would make for nice polish {currently not working}
+    /* Might Come Back to later, would make for v nice polish
 
     // Effect to update scrollPos state when the user scrolls
     useEffect(() => {
@@ -601,7 +673,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                     style={backgroundStyle}
                 >
 
-                    {/*Header*/}
                     <div className="flex items-center gap-3 mb-6">
                         <div>
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Statistics</h1>
@@ -614,7 +685,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                         </div>
                     )}
 
-                    {/*Aggregate Stats*/}
                     {!loading && (
                     <div className="flex justify-between items-center w-full">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Topic Stats</h2>
@@ -641,6 +711,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                         <section className="rounded-xl border border-gray-200 bg-white p-5">
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Percentages</p>
+
                             {getPercentageGraphs()}
 
                         </section>
@@ -651,7 +722,6 @@ const ProfessorStatisticsPage: React.FC = () =>
                     </div>
                     )}
 
-                    {/*Question Stats*/}
                     {!loading && (
                     <div className="flex justify-between items-center w-full">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Question Stats</h2>
@@ -666,7 +736,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                             }}>
                             <option key='0' value="My Questions">My Questions</option>
                             {ALL_TOPICS.map((topic, index) => (
-                                <option key={index+1} value={topic}>{topic}</option>
+                                <option key={index+1} value={topic}>{formatSubcategoryLabel(topic)}</option>
                             ))};
                         </select>
                     </div>
@@ -675,45 +745,48 @@ const ProfessorStatisticsPage: React.FC = () =>
                     {!loading && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                         <section className="rounded-xl border border-gray-200 bg-white p-5">
-                            <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Statistics</p>
+                            <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">{statsLoading ? 'Updating...' : 'Statistics'}</p>
                             {getQuestionStatisticsGrid()}
                         </section>
                         <section className={`rounded-xl border border-gray-200 bg-white pr-1 p-5 ${questionsPagination?.totalPages !== undefined && questionsPagination?.totalPages > 1 ? `max-h-120` : `max-h-100`}`}>
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Question Select</p>
-                            <div className="w-full h-full max-h-85 overflow-auto pr-4 mb-3 border-y border-gray-300">
-                            {questions.map((question) => (
+                            <div className={`w-full h-full max-h-85 overflow-auto pr-4 mb-3 border-y border-gray-300 transition-opacity ${listLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                    {questions.map((question) => (
                                 <div key={question.id} className={`flex mt-2 mb-2 gap-3 rounded-lg items-center justify-between px-4 py-3 
                                     ${isSelected(question.id) ?  `border bg-amber-100 border-amber-400` : `border bg-gray-50 border-gray-300`}`}>
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="min-w-0">
-                                            <p className="text-sm sm:text-base text-gray-900 truncate pb-1 hover:cursor-pointer"
-                                                onClick={() => handlePreviewQuestion(question.id)}
-                                            >
+                                            <p className="text-sm sm:text-base text-gray-900 truncate pb-1">
                                                 {question.title}
                                             </p>
-                                            <p className="text-xs text-gray-500 truncate hover:cursor-pointer"
-                                                onClick={() => handlePreviewQuestion(question.id)}
-                                            >
+                                            <p className="text-xs text-gray-500 truncate">
                                                 #{question.id} • {question.category} / {question.subcategory}
                                             </p>
-                                            <p className="text-xs text-gray-500 truncate hover:cursor-pointer"
-                                                onClick={() => handlePreviewQuestion(question.id)}
-                                            >
+                                            <p className="text-xs text-gray-500 truncate">
                                                 Type: {question.type}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <input className="mr-2 w-5 h-5 min-w-5 min-h-5 hover:cursor-pointer accent-amber-500 rounded-lg p-3" 
-                                        type="checkbox"
-                                        checked={getCheckedQuestions(question.id)}
-                                        ref={scrollRef}
-                                        onChange={(e) => {
-                                            updateCheckQuestions(question.id, e.target.checked)
-                                            setScrollPos(scrollRef.current?scrollY : 0)
-                                        }}
-                                    >
-                                    </input>
+                                    <div className="flex shrink-0 flex-col items-center gap-2">
+                                      <button
+                                        type="button"
+                                        title="Preview question"
+                                        onClick={() => handlePreviewQuestion(question.id)}
+                                        className="p-1.5 rounded-md text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                                      >
+                                        <Eye size={16} />
+                                      </button>
+                                      <input className="w-5 h-5 min-w-5 min-h-5 hover:cursor-pointer accent-amber-500 rounded-lg" 
+                                          type="checkbox"
+                                          checked={getCheckedQuestions(question.id)}
+                                          ref={scrollRef}
+                                          onChange={(e) => {
+                                              updateCheckQuestions(question.id, e.target.checked)
+                                              setScrollPos(scrollRef.current?scrollY : 0)
+                                          }}
+                                      />
+                                    </div>
                                 </div>
                             ))}
                             
@@ -762,8 +835,8 @@ const ProfessorStatisticsPage: React.FC = () =>
                     </div>
                 )}
                 {previewQuestion && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                        <div className="w-full max-w-3xl rounded-xl bg-white shadow-lg">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPreviewQuestion(null)}>
+                        <div className="w-full max-w-3xl rounded-xl bg-white shadow-lg" onClick={(event) => event.stopPropagation()}>
                             <div className="flex items-center justify-between border-b border-blue-200 bg-blue-50 px-5 py-4 rounded-xl">
                                 <div>
                                     <h2 className="text-lg font-semibold text-blue-900">Question Preview</h2>

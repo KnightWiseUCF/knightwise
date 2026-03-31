@@ -17,9 +17,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import api from "../api";
 import { RawQuestion, HistoryEntry, HistoryResponse } from '../models';
 import { formatSubcategoryLabel } from '../utils/topicLabels';
-import correctAnswerImg from '../assets/correctAnswer.png';
-import incorrectAnswerImg from '../assets/incorrectAnswer.png';
-import viewProblemImg from '../assets/viewProblem.png';
+import { X, Check, SquareArrowOutUpRightIcon } from "lucide-react";
 
 const HistoryTable: React.FC = () => {
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
@@ -121,17 +119,17 @@ const HistoryTable: React.FC = () => {
 
   return (
     <div className="m-1">
-      <h2 className="text-2xl font-semibold text-center mb-4">Problem History</h2>
+      <h2 className="text-2xl font-semibold mb-4">Problem History</h2>
 
       {/* Check for loading state */}
-      {isLoading ? (
+      {isLoading && history.length === 0 ? (
         <p className="text-center text-gray-500">Loading history...</p>
       ) : history.length === 0 ? (
-        <p className="text-center">No history yet—but every expert starts somewhere!</p>
+        <p className="text-center">No history yet, but every expert starts somewhere!</p>
       ) : (
-        <div className="overflow-hidden rounded-lg shadow-lg">
+        <div className={`overflow-hidden rounded-lg shadow-lg transition-opacity ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
           <table className="min-w-full table-auto">
-            <thead className="bg-[#333333] text-white">
+            <thead className="bg-gray-800 text-white">
               <tr>
                 <th className="px-4 py-2">Date</th>
                 <th className="px-4 py-2">Topic</th>
@@ -142,8 +140,8 @@ const HistoryTable: React.FC = () => {
             </thead>
             <tbody>
               {history.map((entry, index) => (
-                <tr key={index} className={index % 2 === 0 ? 'bg-[#EEEEEE]' : 'bg-[#BBBBBB]'}>
-                  <td className="px-4 py-2 text-center whitespace-nowrap">{new Date(entry.datetime).toLocaleString(undefined, {
+                <tr key={index} className={'bg-white border-b border-gray-200 text-left text-gray-700 text-sm uppercase tracking-wide'}>
+                  <td className="px-4 py-4 text-center whitespace-nowrap">{new Date(entry.datetime).toLocaleString(undefined, {
                     year:   'numeric',
                     month:  'numeric',
                     day:    'numeric',
@@ -153,23 +151,18 @@ const HistoryTable: React.FC = () => {
                   </td>
                   <td className="px-4 py-2 text-center">{formatSubcategoryLabel(entry.topic)}</td>
                   <td className="px-4 py-2 text-center whitespace-nowrap">{entry.type ?? '—'}</td>
-                  <td className="px-4 py-2 text-center">
-                    <img
-                      src={entry.isCorrect ? correctAnswerImg : incorrectAnswerImg}
-                      alt={entry.isCorrect ? '✅' : '❌'}
-                      className="w-6 h-6 inline-block"
-                    />
+                  <td className="px-4 py-2 flex justify-center items-center">
+                    <div className={entry.isCorrect ? "flex justify-center items-center rounded-lg py-1 px-2 border border-green-500 bg-green-100 " : "flex justify-center items-center rounded-lg py-1 px-2 border bg-red-100 border-red-500"}>
+                      {entry.isCorrect ? <span className='pr-2'>Correct</span> : <span className='pr-2'>Incorrect</span>}
+                      {entry.isCorrect ? <Check size={24} strokeWidth={2.5}/> : <X size={24}  strokeWidth={2.5}/>}
+                    </div>
                   </td>
                   <td className="px-4 py-2 text-center">
                     <button
-                      className="focus:outline-none hover:opacity-80 hover:scale-110"
+                      className="rounded-lg py-2 px-3 focus:outline-none hover:scale-110 hover:bg-gray-300"
                       onClick={() => fetchProblem(entry)}
                     >
-                      <img
-                        src={viewProblemImg}
-                        alt="View problem"
-                        className="w-6 h-6 inline-block"
-                      />
+                        <SquareArrowOutUpRightIcon size={24} strokeWidth={2.5}/>
                     </button>
                   </td>
                 </tr>
@@ -191,7 +184,7 @@ const HistoryTable: React.FC = () => {
 
         {/* Check for loading state */}
         <span className="text-lg">
-          {isLoading ? 'Loading...' : `Page ${currentPage} of ${totalPages}`}
+          {isLoading ? `Loading page ${currentPage}...` : `Page ${currentPage} of ${totalPages}`}
         </span>
         <button
           disabled={isLoading || currentPage === totalPages}

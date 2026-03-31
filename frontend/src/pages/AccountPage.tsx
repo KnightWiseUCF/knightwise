@@ -26,6 +26,11 @@ interface UserInfoResponse {
   };
 }
 
+interface StatsOptInResponse {
+  message: string;
+  optIn:   boolean;
+}
+
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteSuccess, setDeleteSuccess] = useState(false);
@@ -57,14 +62,13 @@ const AccountPage: React.FC = () => {
     setLoading(true);
 
     try
-    { 
+    {
       const response = await api.get<UserInfoResponse>(`/api/users/${id}`);
-      //console.log(response.data.user.IS_SHARING_STATS)
-      setIsSharingStats(response.data.user.IS_SHARING_STATS)
+      setIsSharingStats(response.data.user.IS_SHARING_STATS);
     }
     catch
     {
-      console.error("Failed to update opt-in status");
+      console.error("Failed to get opt-in status");
     }
     finally
     {
@@ -74,7 +78,20 @@ const AccountPage: React.FC = () => {
 
   const isProfessor = localStorage.getItem("account_type") === "professor";
   const userId = user?.ID || userData?.id;
-  //console.log(userId);
+
+  const updateOptInStatus = useCallback(async (optIn: boolean) => {
+    try
+    {
+      await api.put<StatsOptInResponse>(`/api/users/${userId}/stats-opt-in`, {
+        id:    userId,
+        optIn,
+      });
+    }
+    catch
+    {
+      console.error("Failed to update opt-in status");
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
@@ -167,48 +184,68 @@ const AccountPage: React.FC = () => {
                   <span className="text-gray-800">{userName}</span>
                 </div>
               )}
-              <div className="flex">
-                <label className="font-semibold text-gray-600 min-w-[120px]">
-                  Coins:
-                </label>
-                <span className="text-gray-800">{user?.COINS ?? "-"}</span>
-              </div>
-              <div className="flex">
-                <label className="font-semibold text-gray-600 min-w-[120px]">
-                  Lifetime EXP:
-                </label>
-                <span className="text-gray-800">{user?.LIFETIME_EXP ?? "-"}</span>
-              </div>
-              <div className="flex">
-                <label className="font-semibold text-gray-600 min-w-[120px]">
-                  Weekly EXP:
-                </label>
-                <span className="text-gray-800">{user?.WEEKLY_EXP ?? "-"}</span>
-              </div>
-              <div className="flex">
-                <label className="font-semibold text-gray-600 min-w-[120px]">
-                  Daily EXP:
-                </label>
-                <span className="text-gray-800">{user?.DAILY_EXP ?? "-"}</span>
-              </div>
+              {!isProfessor && (
+                <>
+                  <div className="flex">
+                    <label className="font-semibold text-gray-600 min-w-[120px]">
+                      Coins:
+                    </label>
+                    <span className="text-gray-800">{user?.COINS ?? "-"}</span>
+                  </div>
+                  <div className="flex">
+                    <label className="font-semibold text-gray-600 min-w-[120px]">
+                      Lifetime EXP:
+                    </label>
+                    <span className="text-gray-800">{user?.LIFETIME_EXP ?? "-"}</span>
+                  </div>
+                  <div className="flex">
+                    <label className="font-semibold text-gray-600 min-w-[120px]">
+                      Weekly EXP:
+                    </label>
+                    <span className="text-gray-800">{user?.WEEKLY_EXP ?? "-"}</span>
+                  </div>
+                  <div className="flex">
+                    <label className="font-semibold text-gray-600 min-w-[120px]">
+                      Daily EXP:
+                    </label>
+                    <span className="text-gray-800">{user?.DAILY_EXP ?? "-"}</span>
+                  </div>
+                </>
+              )}
               {!userEmail && !userName && !fullName && (
                 <p className="text-gray-500">No user information available</p>
               )}
             </div>
           </section>
 
-          {/* Statistics Sharing Toggle */}
+          {/* Privacy */}
           {!loading && !isProfessor && (
-          <div className="p-6 flex justify-start items-center accent-amber-500">
-            <input className="mr-4 w-5 h-5" 
-              type="checkbox"
-              defaultChecked={isSharingStats}
-              onChange={() => {setIsSharingStats(!isSharingStats)
-                console.log(isSharingStats, "=>", !isSharingStats)}
-              }>
-            </input>            
-            <span className="font-semibold text-gray-600">Opt-in to Statistics Sharing:</span>
-          </div>
+            <section className="p-6 border-t border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Privacy</h2>
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-700">Statistics Sharing</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Allow your performance statistics to be visible to professors and used for course analytics.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-amber-500"
+                    checked={isSharingStats}
+                    onChange={() => {
+                      const next = !isSharingStats;
+                      setIsSharingStats(next);
+                      void updateOptInStatus(next);
+                    }}
+                  />
+                  <span className="text-sm font-medium text-gray-600">
+                    {isSharingStats ? "Enabled" : "Disabled"}
+                  </span>
+                </label>
+              </div>
+            </section>
           )}
 
           {/* Delete Account */}

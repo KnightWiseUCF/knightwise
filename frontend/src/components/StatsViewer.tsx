@@ -1,14 +1,14 @@
 ////////////////////////////////////////////////////////////////
 //
 //  Project:       KnightWise
-//  Year:          2026
-//  Author(s):     Dayton Hawk
+//  Year:          2025-2026
+//  Author(s):     Daniel Landsman
 //  File:          HistoryTable.tsx
-//  Description:   My Progress tab's Problem Statistics Viewer
+//  Description:   My Progress tab's Problem History table
 //
 //  Dependencies:  react
 //                 api instance
-//                 models (HistoryEntry, HistoryResponse, ProgressData)
+//                 models (RawQuestion, HistoryEntry, HistoryResponse)
 //                 topicLabels
 //
 ////////////////////////////////////////////////////////////////
@@ -18,6 +18,63 @@ import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { HistoryEntry, HistoryResponse, ProgressData} from '../models';
 import { ALL_TOPICS} from "../utils/topicLabels"
+
+/*
+export interface HistoryEntry
+{
+  datetime:       string;
+  topic:          string;
+  type:           string; // Question.TYPE (Multiple Choice, Programming, etc.)
+  isCorrect:      boolean;
+  problem_id:     number;
+  userAnswer:     string | null; // JSON with answer data
+  pointsEarned:   number | null;
+  pointsPossible: number | null;
+}
+
+export interface HistoryResponse
+{
+  history:      HistoryEntry[];
+  totalPages:   number;
+  currentPage:  number;
+}
+
+export interface RawQuestion
+{
+  ID:             number;
+  TYPE:           string;
+  SECTION:        string;
+  CATEGORY:       string;   //question type: mult choice etc
+  SUBCATEGORY:    string;   //question topic
+  AUTHOR_EXAM_ID: string;
+  POINTS_POSSIBLE: number;
+  QUESTION_TEXT:  string;
+  OWNER_ID:       number;
+  answers?:       Answer[];
+}
+
+export const ALL_TOPICS = [
+  "InputOutput", // Canonical name, display name is Input/Output
+  "Branching",
+  "Loops",
+  "Variables",
+  "Arrays",
+  "Linked Lists",
+  "Strings",
+  "Classes",
+  "Methods",
+  "Trees",
+  "Stacks",
+  "Heaps",
+  "Tries",
+  "Bitwise Operators",
+  "Dynamic Memory",
+  "Algorithm Analysis",
+  "Recursion",
+  "Sorting",
+] as const;
+
+*/
 
 interface AggregateData
 {
@@ -32,6 +89,7 @@ const StatsViewer: React.FC = () => {
 
   const navigate = useNavigate();
   const   [history, setHistory]         = useState<HistoryEntry[]>([]);
+  //var allHistory: HistoryEntry[] = [];
   const [progressData, setProgressData] = useState<ProgressData>({});
   const [statViewerData, setStatViewerData] = useState<AggregateData>({
     Performance: 0, 
@@ -122,6 +180,34 @@ const StatsViewer: React.FC = () => {
 
   }
 
+  /*
+  const fetchHistory = useCallback(async (page: number) => {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await api.get<HistoryResponse>("api/progress/history", 
+      {
+        headers: { 'Authorization': `Bearer ${token}` },
+        params: { page, limit: 10 },
+      });
+
+      setHistory(response.data.history);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage);
+    } 
+    catch 
+    {
+      console.error('Error fetching history');
+    }
+    finally
+    {
+      setIsLoading(false);
+    }
+  }, []);
+  */
+
+
   const fetchHistory = useCallback(async () => {
 
     setIsLoading(true);
@@ -191,6 +277,7 @@ const StatsViewer: React.FC = () => {
         }
       });
 
+      //console.log(response.data.progress)
       setProgressData(response.data.progress);
     } 
     catch 
@@ -206,28 +293,57 @@ const StatsViewer: React.FC = () => {
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
-
-  }, [topicChoice, fetchHistory]);
+    //aggregateStats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicChoice]);
 
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
-
-  }, [fetchHistory]);
+    //aggregateStats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     aggregateStats(topicChoice);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [history, progressData, topicChoice]);
 
+  /*
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    // Fetch user progress data
+    const fetchProgressData = async () => {
+      try {
+        const response = await api.get<{ progress: ProgressData }>("api/progress/graph", 
+        {
+          headers: 
+          {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+
+        setProgressData(response.data.progress);
+      } 
+      catch 
+      {
+        console.error('Error fetching progress data');
+      }
+    };
+
+    fetchProgressData();
+  }, []);
+  */
+
   const generateStatsMessage = () => {
-    const seed: number = Math.round(((Math.random()*7)%7))
+    const seed: number = Math.round(((Math.random()*7)%7)+1)
     console.log(seed)
 
     if(statViewerData.NumQuestions === 0)
       return "No completed questions? Then I got nothing for you here!"
 
-      if(seed === 0 || seed === 1 || seed === 2 ||  seed === 3) //performance
+      if(seed === 1 || seed === 2 ||  seed === 3) //performance
         return statViewerData.Performance > 90 ? "Maybe you'll get an A on a real transcript card for all that work!" 
           : statViewerData.Performance > 70 ? "Performance looking good so far, keep up the good work!" 
           : statViewerData.Performance > 50 ? "Pretty close! Pro-Tip: Speed is key if you can get it right!"
@@ -265,11 +381,13 @@ const StatsViewer: React.FC = () => {
     }
     navigate(`/topic-practice/${encodeURIComponent(slug)}`);
   };
-
+    
 
   return (
     
     <div className="mb-10">
+
+      
 
       {/* Check for loading state */}
       {isLoading ? (
