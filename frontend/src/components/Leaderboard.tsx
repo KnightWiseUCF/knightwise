@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import api from "../api";
 import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
-import type { GuildInfoResponse, UserInfoResponse } from "../models";
 import { getFlairPresentation } from "../utils/flairPresentation";
 import { getProfilePathForUser } from "../utils/profileRouting";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
@@ -139,8 +138,6 @@ const Leaderboard: React.FC = () =>
   const [leaderboardBackgrounds, setLeaderboardBackgrounds] = useState<Map<string, string | null>>(new Map());
   const leaderboardCacheRef = useRef<Map<string, LeaderboardResponse>>(new Map());
   const guildLeaderboardCacheRef = useRef<Map<string, GuildLeaderboardResponse>>(new Map());
-  const pendingGuildBackgroundsRef = useRef<Set<number>>(new Set());
-  const pendingUserCosmeticsRef = useRef<Set<string>>(new Set());
   const hasHydratedSnapshotRef = useRef(false);
   const { equippedItems } = useUserCustomizationStore();
 
@@ -334,6 +331,11 @@ const Leaderboard: React.FC = () =>
   {
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
   }, [mode, activeTab, page, fetchLeaderboard]);
+
+  useEffect(() =>
+  {
+    if (mode === "followed") void fetchFollowedLeaderboard(activeTab, page);
+  }, [mode, activeTab, page, fetchFollowedLeaderboard]);
 
   useEffect(() =>
   {
@@ -574,7 +576,18 @@ const Leaderboard: React.FC = () =>
                 Individual
               </button>
               <button
-                onClick={() => setMode("guild")}
+                onClick={() => { setMode("followed"); setPage(1); setData(null); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  mode === "followed"
+                    ? "bg-gray-800 text-white shadow"
+                    : "bg-white text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <UserCheck size={15} />
+                Following
+              </button>
+              <button
+                onClick={() => { setMode("guild"); setPage(1); setData(null); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
                   mode === "guild"
                     ? "bg-gray-800 text-white shadow"
