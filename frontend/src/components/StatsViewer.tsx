@@ -126,48 +126,35 @@ const StatsViewer: React.FC = () => {
 
     setIsLoading(true);
     const token = localStorage.getItem('token');
-    const allHistory: HistoryEntry[] = [];
 
     try {
-      
-      const response = await api.get<HistoryResponse>("api/progress/history", 
+      const response = await api.get<HistoryResponse>("api/progress/history",
       {
           headers: { 'Authorization': `Bearer ${token}` },
           params: { page: 1, limit: 10 },
       });
 
-      response.data.history.map((entry) => {
-          allHistory.push(entry);
-      })
+      const totalPages = response.data.totalPages;
+      setTotalPages(totalPages);
 
-      setTotalPages(response.data.totalPages);
+      const remainingPages = Math.min(totalPages, 20);
+      const extraResponses = await Promise.all(
+        Array.from({ length: Math.max(0, remainingPages - 1) }, (_, i) =>
+          api.get<HistoryResponse>("api/progress/history", {
+            headers: { 'Authorization': `Bearer ${token}` },
+            params: { page: i + 2, limit: 10 },
+          }).catch(() => null)
+        )
+      );
 
-      for(let i = 2; i <= (response.data.totalPages < 20 ? response.data.totalPages : 20); i++)
-      {
-        try 
-        {
-          const response2 = await api.get<HistoryResponse>("api/progress/history", 
-          {
-              headers: { 'Authorization': `Bearer ${token}` },
-              params: { page: i, limit: 10 },
-          });
-
-          //setHistory(response.data.history);
-          response2.data.history.map((entry) => {
-              allHistory.push(entry);
-          })
-        }
-        catch 
-        {
-          console.error('Error fetching history');
-        }
+      const allHistory: HistoryEntry[] = [...response.data.history];
+      for (const r of extraResponses) {
+        if (r) allHistory.push(...r.data.history);
       }
 
-      //console.log(allHistory);
       setHistory(allHistory);
-
-    } 
-    catch 
+    }
+    catch
     {
       console.error('Error fetching history');
     }
@@ -179,7 +166,6 @@ const StatsViewer: React.FC = () => {
 
   // Fetch user progress data
   const fetchProgressData = async () => {
-    setIsLoading(true);
     const token = localStorage.getItem('token');
 
     try {
@@ -197,22 +183,11 @@ const StatsViewer: React.FC = () => {
     {
       console.error('Error fetching progress data');
     }
-    finally
-    {
-      setIsLoading(false)
-    }
   };
 
   useEffect(() => {
     fetchProgressData();
     fetchHistory();
-
-  }, [topicChoice, fetchHistory]);
-
-  useEffect(() => {
-    fetchProgressData();
-    fetchHistory();
-
   }, [fetchHistory]);
 
   useEffect(() => {
@@ -228,24 +203,29 @@ const StatsViewer: React.FC = () => {
       return "No completed questions? Then I got nothing for you here!"
 
       if(seed === 0 || seed === 1 || seed === 2 ||  seed === 3) //performance
-        return statViewerData.Performance > 90 ? "Maybe you'll get an A on a real transcript card for all that work!" 
-          : statViewerData.Performance > 70 ? "Performance looking good so far, keep up the good work!" 
-          : statViewerData.Performance > 50 ? "Pretty close! Pro-Tip: Speed is key if you can get it right!"
-          : statViewerData.Performance > 25 ? "Keep on Practicing this topic! You got this!"
-          : "This seems like a struggle area. Keep practicing!"
+        return statViewerData.Performance > 90 ? "That's some A-level work! Keep it up!" 
+          : statViewerData.Performance > 70 ? "Looking good! Get some more practice in and you'll be golden." 
+          : statViewerData.Performance > 50 ? "Keep on going! Practice makes perfect. "
+          : statViewerData.Performance > 25
+            ? (topicChoice === "All"
+              ? "Keep practicing and your overall stats will climb!"
+              : "Keep on practicing this topic! You got this!")
+          : (topicChoice === "All"
+            ? "Some areas need more reps, but you can turn it around."
+            : "This topic needs more reps, but you can turn it around.");
       else if(seed === 4 ||  seed === 5) //questions completed
-        return statViewerData.NumQuestions > 9999 ? "I think that's enough knightWise for you...." 
+        return statViewerData.NumQuestions > 9999 ? "what." 
           : statViewerData.NumQuestions > 100 ? "Someone's been practicing! Remember to take breaks!" 
-          : statViewerData.NumQuestions > 50 ? "That's a lot of questions completed! Good job!"
-          : statViewerData.NumQuestions > 25 ? "Go you! Keep up the questions and soon you'll get this down!"
+          : statViewerData.NumQuestions > 50 ? "You've been working really hard! Good job!"
+          : statViewerData.NumQuestions > 25 ? "Go you! Keep up the questions and you got this!"
           : statViewerData.NumQuestions > 5 ?  "A few more questions wouldn't hurt. Unless you already know everything."
           : "So few questions, you've got some work to do!"
       else /*(seed === 6 || seed === 7)*/ //elapsed time
-        return statViewerData.AvgElapsedTime > 9000 ? "I bet you left your device running while on a question..." 
-          : statViewerData.AvgElapsedTime > 120 ? "Taking your time I see! See if you can go faster!" 
-          : statViewerData.AvgElapsedTime > 60 ? "Pretty good times! Quick with that knowledge!"
-          : statViewerData.AvgElapsedTime > 15 ? "You're a quick one to answer! I bet you destroy on Kahoot!"
-          : `So Fast! Either you're a CS wizz, rushing, or searching it up.`
+        return statViewerData.AvgElapsedTime > 9000 ? "I bet you fell asleep at your desk..."
+          : statViewerData.AvgElapsedTime > 120 ? "Taking your time I see... See if you can go faster!" 
+          : statViewerData.AvgElapsedTime > 60 ? "Hey, pretty good times! Quick with that knowledge!"
+          : statViewerData.AvgElapsedTime > 15 ? "You're quick to answer! I bet you're killer on Kahoot!"
+          : `So Fast! You're a real CS whiz!.`
   }
 
   const toCanonicalTopicSlug = (topic?: string): string | null => {
@@ -273,7 +253,9 @@ const StatsViewer: React.FC = () => {
 
       {/* Check for loading state */}
       {isLoading ? (
-        <p className="text-center text-gray-500">Loading history...</p>
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-500 shadow">
+          Loading statistics...
+        </div>
       ) : history.length === 0 ? (
         <p className="text-center">No history yet, but every expert starts somewhere!</p>
       ) : (
@@ -301,9 +283,9 @@ const StatsViewer: React.FC = () => {
         <div className="flex justify-between items-center min-h-60 w-full bg-white border-gray-300 p-4 gap-4 rounded-lg shadow">
 
           {/*Additional Messages*/}
-          <div className="flex grid grid-cols-1 w-1/4 h-50">
-            <div className="flex items-center rounded-xl border border-blue-200 bg-blue-50 h-30 px-4 py-2">
-              <p className="text-sm text-blue-500 font-medium tracking-wide">{generateStatsMessage()}</p>
+          <div className="flex w-1/4 h-50 flex-col gap-3">
+            <div className={`flex items-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 ${topicChoice !== 'All' ? 'h-30' : 'h-full'}`}>
+              <p className="text-base text-blue-500 font-medium tracking-wide text-center">{generateStatsMessage()}</p>
             </div>
             {topicChoice !== 'All' ?
             <button className="px-4 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200"

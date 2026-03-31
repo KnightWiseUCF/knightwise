@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import api from "../api";
@@ -44,6 +44,20 @@ interface DashboardHistoryResponse {
 const DAILY_GOAL_QUESTIONS = 10;
 const DAILY_GOAL_FIRE_MULTIPLIER = 2;
 const DAILY_GOAL_GOOUTSIDE_MULTIPLIER = 3;
+const DASHBOARD_MAX_HISTORY_PAGES = 20;
+const DASHBOARD_CACHE_KEY = "dashboard_snapshot_v1";
+
+interface DashboardCacheSnapshot {
+  userId: number | null;
+  savedAt: number;
+  history: HistoryEntry[];
+  mastery: Record<string, number>;
+  streakCount: number;
+  userRank: number | null;
+  weeklyExp: number | null;
+  coins: number | null;
+  lifetimeExp: number | null;
+}
 
 const toCanonicalTopicSlug = (topic?: string): string | null => {
   const value = String(topic || "").trim();
@@ -82,6 +96,32 @@ const toFiniteNumber = (value: unknown): number => {
   return 0;
 };
 
+const loadDashboardSnapshot = (): DashboardCacheSnapshot | null => {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as DashboardCacheSnapshot;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const saveDashboardSnapshot = (snapshot: DashboardCacheSnapshot): void => {
+  try {
+    localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Ignore cache write errors (quota/private mode).
+  }
+};
+
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { equippedItems } = useUserCustomizationStore();
@@ -93,9 +133,30 @@ const Dashboard: React.FC = () => {
   const [coins, setCoins] = useState<number | null>(null);
   const [lifetimeExp, setLifetimeExp] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const hasLoadedOnceRef = useRef(false);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     void userCustomizationStore.refresh();
+  }, []);
+
+  useEffect(() => {
+    const snapshot = loadDashboardSnapshot();
+    const currentUserId = getStoredUserId();
+    if (!snapshot || snapshot.userId !== currentUserId) {
+      return;
+    }
+
+    setHistory(Array.isArray(snapshot.history) ? snapshot.history : []);
+    setMastery(snapshot.mastery || {});
+    setStreakCount(Number(snapshot.streakCount || 0));
+    setUserRank(snapshot.userRank ?? null);
+    setWeeklyExp(snapshot.weeklyExp ?? null);
+    setCoins(snapshot.coins ?? null);
+    setLifetimeExp(snapshot.lifetimeExp ?? null);
+
+    hasLoadedOnceRef.current = true;
+    setIsLoading(false);
   }, []);
 
   const backgroundItem = useMemo(
@@ -115,72 +176,84 @@ const Dashboard: React.FC = () => {
   } : undefined;
 
   const fetchDashboardData = useCallback(async () => {
-    setIsLoading(true);
+    if (isFetchingRef.current) {
+      return;
+    }
 
-    const userId = getStoredUserId();
+    isFetchingRef.current = true;
+    if (!hasLoadedOnceRef.current) {
+      setIsLoading(true);
+    }
 
-    const historyPromise = (async () => {
-      const firstPageResponse = await api.get<DashboardHistoryResponse>("/api/progress/history", {
-        params: { page: 1 },
-      });
+    try {
+      const userId = getStoredUserId();
 
-      const firstPageHistory = Array.isArray(firstPageResponse.data.history)
-        ? firstPageResponse.data.history
-        : [];
+      const historyPromise = (async () => {
+        const firstPageResponse = await api.get<DashboardHistoryResponse>("/api/progress/history", {
+          params: { page: 1 },
+        });
 
-      const totalPages = Number(firstPageResponse.data.totalPages || 1);
-      if (totalPages <= 1) {
-        return firstPageHistory;
-      }
+        const firstPageHistory = Array.isArray(firstPageResponse.data.history)
+          ? firstPageResponse.data.history
+          : [];
 
-      const remainingPageRequests: Array<Promise<DashboardHistoryResponse>> = [];
-      for (let page = 2; page <= totalPages; page += 1) {
-        remainingPageRequests.push(
-          api.get<DashboardHistoryResponse>("/api/progress/history", { params: { page } }).then((response) => response.data)
+        const totalPages = Number(firstPageResponse.data.totalPages || 1);
+        const cappedPages = Math.min(Math.max(1, totalPages), DASHBOARD_MAX_HISTORY_PAGES);
+        if (cappedPages <= 1) {
+          return firstPageHistory;
+        }
+
+        const remainingPageRequests: Array<Promise<DashboardHistoryResponse>> = [];
+        for (let page = 2; page <= cappedPages; page += 1) {
+          remainingPageRequests.push(
+            api.get<DashboardHistoryResponse>("/api/progress/history", { params: { page } }).then((response) => response.data)
+          );
+        }
+
+        const remainingPages = await Promise.all(remainingPageRequests);
+        const remainingHistory = remainingPages.flatMap((pageData) =>
+          Array.isArray(pageData.history) ? pageData.history : []
         );
+
+        return [...firstPageHistory, ...remainingHistory];
+      })();
+
+      const messagePromise = api.get<MessageDataResponse>("/api/progress/messageData");
+      const leaderboardPromise = api.get<LeaderboardResponse>("/api/leaderboard/weekly?page=1");
+      const userPromise = userId ? api.get<UserInfoResponse>(`/api/users/${userId}`) : Promise.resolve(null);
+
+      const [messageResult, historyResult, leaderboardResult, userResult] = await Promise.allSettled([
+        messagePromise,
+        historyPromise,
+        leaderboardPromise,
+        userPromise,
+      ]);
+
+      if (messageResult.status === "fulfilled") {
+        setMastery(messageResult.value.data.mastery || {});
+        setStreakCount(Number(messageResult.value.data.streak || 0));
       }
 
-      const remainingPages = await Promise.all(remainingPageRequests);
-      const remainingHistory = remainingPages.flatMap((pageData) =>
-        Array.isArray(pageData.history) ? pageData.history : []
-      );
+      if (historyResult.status === "fulfilled") {
+        setHistory(Array.isArray(historyResult.value) ? historyResult.value : []);
+      } else {
+        setHistory([]);
+      }
 
-      return [...firstPageHistory, ...remainingHistory];
-    })();
+      if (leaderboardResult.status === "fulfilled") {
+        setUserRank(leaderboardResult.value.data.userRank ?? null);
+        setWeeklyExp(leaderboardResult.value.data.userExp ?? null);
+      }
 
-    const messagePromise = api.get<MessageDataResponse>("/api/progress/messageData");
-    const leaderboardPromise = api.get<LeaderboardResponse>("/api/leaderboard/weekly?page=1");
-    const userPromise = userId ? api.get<UserInfoResponse>(`/api/users/${userId}`) : Promise.resolve(null);
-
-    const [messageResult, historyResult, leaderboardResult, userResult] = await Promise.allSettled([
-      messagePromise,
-      historyPromise,
-      leaderboardPromise,
-      userPromise,
-    ]);
-
-    if (messageResult.status === "fulfilled") {
-      setMastery(messageResult.value.data.mastery || {});
-      setStreakCount(Number(messageResult.value.data.streak || 0));
+      if (userResult.status === "fulfilled" && userResult.value) {
+        setCoins(userResult.value.data.user.COINS ?? null);
+        setLifetimeExp(userResult.value.data.user.LIFETIME_EXP ?? null);
+      }
+    } finally {
+      hasLoadedOnceRef.current = true;
+      isFetchingRef.current = false;
+      setIsLoading(false);
     }
-
-    if (historyResult.status === "fulfilled") {
-      setHistory(Array.isArray(historyResult.value) ? historyResult.value : []);
-    } else {
-      setHistory([]);
-    }
-
-    if (leaderboardResult.status === "fulfilled") {
-      setUserRank(leaderboardResult.value.data.userRank ?? null);
-      setWeeklyExp(leaderboardResult.value.data.userExp ?? null);
-    }
-
-    if (userResult.status === "fulfilled" && userResult.value) {
-      setCoins(userResult.value.data.user.COINS ?? null);
-      setLifetimeExp(userResult.value.data.user.LIFETIME_EXP ?? null);
-    }
-
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -209,6 +282,24 @@ const Dashboard: React.FC = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [fetchDashboardData]);
+
+  useEffect(() => {
+    if (!hasLoadedOnceRef.current) {
+      return;
+    }
+
+    saveDashboardSnapshot({
+      userId: getStoredUserId(),
+      savedAt: Date.now(),
+      history,
+      mastery,
+      streakCount,
+      userRank,
+      weeklyExp,
+      coins,
+      lifetimeExp,
+    });
+  }, [history, mastery, streakCount, userRank, weeklyExp, coins, lifetimeExp]);
 
   const today = new Date();
   const todayKey = today.toDateString();
@@ -263,6 +354,16 @@ const Dashboard: React.FC = () => {
     : 0;
 
   const weeklyActivity = useMemo(() => {
+    const dayBuckets = new Map<string, { attempts: number; correct: number }>();
+
+    weeklyEntries.forEach((entry) => {
+      const key = new Date(entry.datetime).toDateString();
+      const current = dayBuckets.get(key) || { attempts: 0, correct: 0 };
+      current.attempts += 1;
+      current.correct += entry.isCorrect ? 1 : 0;
+      dayBuckets.set(key, current);
+    });
+
     const days: Array<{ key: string; label: string; attempts: number; correct: number }> = [];
 
     for (let index = 6; index >= 0; index -= 1) {
@@ -272,17 +373,13 @@ const Dashboard: React.FC = () => {
 
       const key = day.toDateString();
       const label = day.toLocaleDateString(undefined, { weekday: "short" });
-
-      const attemptsForDay = weeklyEntries.filter((entry) => {
-        const entryDate = new Date(entry.datetime);
-        return entryDate.toDateString() === key;
-      });
+      const bucket = dayBuckets.get(key);
 
       days.push({
         key,
         label,
-        attempts: attemptsForDay.length,
-        correct: attemptsForDay.filter((entry) => Boolean(entry.isCorrect)).length,
+        attempts: bucket?.attempts || 0,
+        correct: bucket?.correct || 0,
       });
     }
 

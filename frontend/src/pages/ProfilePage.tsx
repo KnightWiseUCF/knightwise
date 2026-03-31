@@ -24,6 +24,8 @@ interface LeaderboardProfileState {
     username?: string;
     firstName?: string;
     profilePicture?: string | null;
+    background?: string | null;
+    flairNames?: string[];
     exp?: number;
     tab?: "weekly" | "lifetime";
     equippedItems?: StoreItem[];
@@ -118,6 +120,21 @@ const ProfilePage: React.FC = () => {
   const routeProfilePictureName = isUsernameProfileRoute && stateUsernameMatchesRoute
     ? (leaderboardEntry?.profilePicture ?? null)
     : null;
+  const routeBackgroundName = isUsernameProfileRoute && stateUsernameMatchesRoute
+    ? (leaderboardEntry?.background ?? null)
+    : null;
+  const routeFlairNames = useMemo(
+    () => (
+      isUsernameProfileRoute
+      && stateUsernameMatchesRoute
+      && Array.isArray(leaderboardEntry?.flairNames)
+        ? leaderboardEntry.flairNames.filter(
+            (flairName): flairName is string => typeof flairName === "string" && flairName.trim().length > 0
+          )
+        : []
+    ),
+    [isUsernameProfileRoute, leaderboardEntry, stateUsernameMatchesRoute]
+  );
   const routeExp = isUsernameProfileRoute && stateUsernameMatchesRoute && typeof leaderboardEntry?.exp === "number"
     ? leaderboardEntry.exp
     : null;
@@ -373,13 +390,6 @@ const ProfilePage: React.FC = () => {
   }, [currentUserId, hasCurrentUserId, isInvalidProfileRoute, isReadOnlyProfile, isUsernameProfileRoute, profileUserId, routeUsername]);
 
   useEffect(() => {
-    if (isUsernameProfileRoute) {
-      setPublicProfile(null);
-      setPublicProfileLoading(false);
-      setPublicProfileError(null);
-      return;
-    }
-
     if (isInvalidProfileRoute) {
       setPublicProfile(null);
       setPublicProfileLoading(false);
@@ -395,6 +405,13 @@ const ProfilePage: React.FC = () => {
       return;
     }
 
+    if (resolvedProfileUserId === null) {
+      setPublicProfile(null);
+      setPublicProfileLoading(false);
+      setPublicProfileError(null);
+      return;
+    }
+
     let cancelled = false;
 
     const loadPublicProfile = async () => {
@@ -402,7 +419,7 @@ const ProfilePage: React.FC = () => {
       setPublicProfileError(null);
 
       try {
-        const response = await api.get<UserInfoResponse>(`/api/users/${profileUserId}`);
+        const response = await api.get<UserInfoResponse>(`/api/users/${resolvedProfileUserId}`);
         if (!cancelled) {
           setPublicProfile(response.data);
         }
@@ -424,7 +441,7 @@ const ProfilePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [isInvalidProfileRoute, isReadOnlyProfile, isUsernameProfileRoute, profileUserId]);
+  }, [isInvalidProfileRoute, isReadOnlyProfile, resolvedProfileUserId]);
 
   const loadStoreItems = async () => {
     setStoreLoading(true);
@@ -578,31 +595,33 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const activeUser = isUsernameProfileRoute
-    ? null
-    : isReadOnlyProfile
-      ? publicProfile?.user ?? null
-      : isInvalidProfileRoute
-        ? null
-        : user;
+  const activeUser = isReadOnlyProfile
+    ? publicProfile?.user ?? null
+    : isInvalidProfileRoute
+      ? null
+      : user;
   const activeEquippedItems = useMemo(() => {
-    if (isUsernameProfileRoute) {
-      return leaderboardEntry?.equippedItems ?? [];
-    } else if (isReadOnlyProfile) {
-      return publicProfile?.equippedItems ?? [];
+    if (isReadOnlyProfile) {
+      if (publicProfile?.equippedItems) {
+        return publicProfile.equippedItems;
+      }
+
+      if (isUsernameProfileRoute) {
+        return leaderboardEntry?.equippedItems ?? [];
+      }
+
+      return [];
     } else if (isInvalidProfileRoute) {
       return [];
     } else {
       return equippedItems;
     }
   }, [isUsernameProfileRoute, leaderboardEntry, isReadOnlyProfile, publicProfile, isInvalidProfileRoute, equippedItems]);
-  const activeLoading = isUsernameProfileRoute
-    ? false
-    : isReadOnlyProfile
-      ? publicProfileLoading
-      : isInvalidProfileRoute
-        ? false
-        : isLoading;
+  const activeLoading = isReadOnlyProfile
+    ? (publicProfileLoading || resolvedProfileUserIdLoading)
+    : isInvalidProfileRoute
+      ? false
+      : isLoading;
   const activeError = isReadOnlyProfile || isInvalidProfileRoute ? publicProfileError : error;
   const showStoreInventory = canAccessShop;
   const firstName = (activeUser?.FIRSTNAME || routeFirstName || (showStoreInventory ? userData?.firstName : "") || "").trim();
@@ -632,6 +651,13 @@ const ProfilePage: React.FC = () => {
   const followButtonDisabled = followActionLoading || resolvedProfileUserIdLoading || activeLoading;
   const inviteButtonDisabled = inviteActionLoading || resolvedProfileUserIdLoading || activeLoading;
   const flairItems = useMemo(() => activeEquippedItems.filter((item) => item.TYPE === "flair"), [activeEquippedItems]);
+  const visibleFlairNames = useMemo(() => {
+    const equippedFlairNames = flairItems
+      .map((item) => item.NAME)
+      .filter((flairName) => typeof flairName === "string" && flairName.trim().length > 0);
+
+    return equippedFlairNames.length > 0 ? equippedFlairNames : routeFlairNames;
+  }, [flairItems, routeFlairNames]);
   const profilePictureItem = useMemo(
     () => activeEquippedItems.find((item) => item.TYPE === "profile_picture") || null,
     [activeEquippedItems]
@@ -660,8 +686,18 @@ const ProfilePage: React.FC = () => {
     [profilePictureItem, routeProfilePictureName]
   );
   const backgroundUrl = useMemo(
-    () => (backgroundItem ? getBackgroundUrlByItemName(backgroundItem.NAME) : null),
-    [backgroundItem]
+    () => {
+      if (backgroundItem) {
+        return getBackgroundUrlByItemName(backgroundItem.NAME);
+      }
+
+      if (routeBackgroundName) {
+        return getBackgroundUrlByItemName(routeBackgroundName);
+      }
+
+      return null;
+    },
+    [backgroundItem, routeBackgroundName]
   );
   const initials = displayName
     .split(" ")
@@ -854,16 +890,16 @@ const ProfilePage: React.FC = () => {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-2xl font-semibold text-gray-900 leading-tight">{displayName}</p>
-                {flairItems.map((item) => {
-                  const flairStyle = getFlairPresentation(item.NAME);
+                {visibleFlairNames.map((flairName) => {
+                  const flairStyle = getFlairPresentation(flairName);
 
                   return (
                     <span
-                      key={item.ID}
+                      key={flairName}
                       className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${flairStyle.className}`}
                     >
                       <span className="mr-1" aria-hidden="true">{flairStyle.emoji}</span>
-                      <span>{item.NAME}</span>
+                      <span>{flairName}</span>
                     </span>
                   );
                 })}

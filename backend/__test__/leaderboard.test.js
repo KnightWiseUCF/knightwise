@@ -29,6 +29,7 @@ const { ITEM_TYPES } = require('../../shared/itemConfig');
 let token;
 let userId;
 let lbUserIds = [];
+let createdItemIds = [];
 
 // Leaderboard users to test against
 const LB_USERS = [
@@ -57,6 +58,13 @@ beforeAll(async () => {
     );
     lbUserIds.push(result.insertId);
   }
+
+  const flairItemId = await insertPurchase(
+    lbUserIds[0],
+    { type: ITEM_TYPES.FLAIR, name: 'Leaderboard Crown', cost: 0 },
+    true
+  );
+  createdItemIds.push(flairItemId);
 });
 
 beforeEach(async () => {
@@ -73,6 +81,13 @@ afterAll(async () => {
     `DELETE FROM User WHERE ID IN (${lbUserIds.map(() => '?').join(',')})`,
     lbUserIds
   );
+  if (createdItemIds.length > 0)
+  {
+    await pool.query(
+      `DELETE FROM StoreItem WHERE ID IN (${createdItemIds.map(() => '?').join(',')})`,
+      createdItemIds
+    );
+  }
   // Clean up test user
   await pool.query('DELETE FROM User WHERE EMAIL = ?', [TEST_USER.email]);
   try
@@ -102,7 +117,7 @@ describe('GET /api/leaderboard/weekly', () => {
     expect(Array.isArray(res.body.leaderboard)).toBe(true);
   });
 
-  test('200 - leaderboard entries have correct shape and no ID field', async () => {
+  test('200 - leaderboard entries have correct shape and expose user flair metadata', async () => {
     const res = await request(app)
       .get('/api/leaderboard/weekly')
       .set('Authorization', `Bearer ${token}`);
@@ -110,11 +125,28 @@ describe('GET /api/leaderboard/weekly', () => {
     expect(res.status).toBe(200);
     const entry = res.body.leaderboard[0];
     expect(entry).toHaveProperty('rank');
+    expect(entry).toHaveProperty('userId');
     expect(entry).toHaveProperty('username');
     expect(entry).toHaveProperty('firstName');
     expect(entry).toHaveProperty('exp');
     expect(entry).toHaveProperty('profilePicture');
+    expect(entry).toHaveProperty('background');
+    expect(entry).toHaveProperty('flairNames');
+    expect(Array.isArray(entry.flairNames)).toBe(true);
     expect(entry).not.toHaveProperty('ID');
+  });
+
+  test('200 - equipped flairs are returned for leaderboard users', async () => {
+    const res = await request(app)
+      .get('/api/leaderboard/weekly')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+
+    const userEntry = res.body.leaderboard.find(e => e.username === 'lb_user1');
+    expect(userEntry).toBeDefined();
+    expect(userEntry.userId).toBe(lbUserIds[0]);
+    expect(userEntry.flairNames).toContain('Leaderboard Crown');
   });
 
   test('200 - leaderboard is ordered by rank ascending', async () => {
@@ -211,6 +243,26 @@ describe('GET /api/leaderboard/weekly', () => {
     expect(userEntry.profilePicture).toBe('Test Avatar');
 
     // Cleanup
+    await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
+  });
+
+  test('200 - background is returned when user has one equipped', async () => {
+    const itemId = await insertPurchase(
+      userId,
+      { type: ITEM_TYPES.BACKGROUND, name: 'Test Banner', cost: 0 },
+      true
+    );
+
+    const res = await request(app)
+      .get('/api/leaderboard/weekly')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+
+    const userEntry = res.body.leaderboard.find(e => e.username === TEST_USER.username);
+    expect(userEntry).toBeDefined();
+    expect(userEntry.background).toBe('Test Banner');
+
     await pool.query('DELETE FROM StoreItem WHERE ID = ?', [itemId]);
   });
 

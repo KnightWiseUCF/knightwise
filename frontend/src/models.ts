@@ -53,11 +53,14 @@ export interface ApiMessageResponse
 //Leaderboard Types
 export interface LeaderboardT
 {
+  userId?:        number;
   rank:           number;
   username:       string;
   firstName:      string;
   exp:            number;
-  profilePicture: string;
+  profilePicture: string | null;
+  background:     string | null;
+  flairNames:     string[];
 }
 
 export interface LeaderboardResponse

@@ -30,6 +30,7 @@ const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [, setStatusRetrieved] = useState(false);
   const [isSharingStats, setIsSharingStats] = useState(false);
   const { user, isLoading, error } = useUserCustomizationStore();
 
@@ -55,12 +56,14 @@ const AccountPage: React.FC = () => {
 
   const getUserOptInStatus = useCallback(async (id: number) => {
     setLoading(true);
+    setStatusRetrieved(false);
 
     try
-    { 
+    {
       const response = await api.get<UserInfoResponse>(`/api/users/${id}`);
       //console.log(response.data.user.IS_SHARING_STATS)
       setIsSharingStats(response.data.user.IS_SHARING_STATS)
+      setStatusRetrieved(true);
     }
     catch
     {
@@ -199,16 +202,33 @@ const AccountPage: React.FC = () => {
 
           {/* Statistics Sharing Toggle */}
           {!loading && !isProfessor && (
-          <div className="p-6 flex justify-start items-center accent-amber-500">
-            <input className="mr-4 w-5 h-5" 
-              type="checkbox"
-              defaultChecked={isSharingStats}
-              onChange={() => {setIsSharingStats(!isSharingStats)
-                console.log(isSharingStats, "=>", !isSharingStats)}
-              }>
-            </input>            
-            <span className="font-semibold text-gray-600">Opt-in to Statistics Sharing:</span>
-          </div>
+            <section className="mb-10">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">
+                Privacy
+              </h2>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <label htmlFor="statistics-sharing" className="font-semibold text-gray-600 sm:min-w-[120px] sm:pt-1">
+                    Statistics Sharing
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="statistics-sharing" className="inline-flex items-center gap-3 text-gray-800">
+                      <input
+                        id="statistics-sharing"
+                        className="h-5 w-5 accent-amber-500"
+                        type="checkbox"
+                        checked={isSharingStats}
+                        onChange={() => setIsSharingStats((previousValue) => !previousValue)}
+                      />
+                      <span>Opt in to statistics sharing</span>
+                    </label>
+                    <p className="text-sm text-gray-500">
+                      Allow your statistics to appear anywhere shared stats are shown.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
           )}
 
           {/* Delete Account */}
