@@ -4,16 +4,12 @@ import React, { useCallback, useEffect, useState, useMemo, useRef } from "react"
 import api from "../api";
 import Layout from "../components/Layout";
 import { ALL_TOPICS} from "../utils/topicLabels"
-import { RawQuestion, HistoryEntry, HistoryResponse, ProgressData} from '../models';
-import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
+import { RawQuestion} from '../models';
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { formatSubcategoryLabel } from '../utils/topicLabels';
-
-import { isAxiosError } from "axios";
 import parse from "html-react-parser";
 import DOMPurify from "dompurify";
-import { Key, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Pagination {
     page:               number;
@@ -68,6 +64,7 @@ interface CheckQuestion
 
 }
 
+/* Preserved for potential future use
 interface PublishedQuestion {
   id: number;
   section: string;
@@ -90,6 +87,7 @@ const topicCategoryMap: Record<string, string[]> = {
 const defaultSubcategories = Object.values(topicCategoryMap).flat();
 
 type QuestionStatus = "Draft" | "Published";
+*/
 
 interface ProfessorQuestionItem {
   id: number;
@@ -99,42 +97,34 @@ interface ProfessorQuestionItem {
   type: string;  
 }
 
-interface DraftListResponse {
-  drafts?: RawQuestion[];
-}
-
 const ProfessorStatisticsPage: React.FC = () => 
 {
     const removeHtmlTags = /(<([^>]+)>)/gi;
 
     const scrollRef = useRef<HTMLInputElement | null>(null);
     // State to store the current scroll position
-    const [scrollPos, setScrollPos] = useState(0);
+    const [, setScrollPos] = useState(0);
 
-    const [topicQuestionList, setTopicQuestionList] = useState<TopicQuestionList>();
     const [questions, setQuestions] = useState<ProfessorQuestionItem[]>([]);
     const [questionsPagination, setQuestionsPagination] = useState<Pagination>();
 
-    const [publishedQuestions, setPublishedQuestions] = useState<PublishedQuestion[]>([]);
     const [checkQuestions, setCheckQuestions] = useState<CheckQuestion[]>([]);
 
     const [aggregateStats, setAggregateStats] = useState<AggregateStatsResponse>();
     const [questionsAggregateStats, setQuestionsAggregateStats] = useState<AggregateStatsByQuestionResponse[]>([]);
     const [topicStats, setTopicStats]   = useState<StatData | null>();
     const [questionStats, setQuestionStats] = useState<StatData>();
-    const [questionStatsReady, setQuestionsStatsReady] = useState<Boolean>();
 
     const [loading, setLoading]       = useState(false);
-    const [error, setError]           = useState<string | null>(null);
+    const [, setError]           = useState<string | null>(null);
 
     const [topicChoice, setTopicChoice] = useState<string>("All");
     const [topicChoice2, setTopicChoice2] = useState<string>("My Questions");
 
     const { equippedItems } = useUserCustomizationStore();
-    const { user } = useUserCustomizationStore();
 
     const [previewQuestion, setPreviewQuestion] = useState<RawQuestion | null>(null);
-    const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
+    const [, setPreviewLoadingId] = useState<number | null>(null);
     const [previewError, setPreviewError] = useState("");
 
 
@@ -179,7 +169,7 @@ const ProfessorStatisticsPage: React.FC = () =>
 
         try
         {
-            let temp: AggregateStatsByQuestionResponse[] = [];
+            const temp: AggregateStatsByQuestionResponse[] = [];
 
             for(let i = 0; i < checkQuestions.length; i++)
             {
@@ -241,7 +231,7 @@ const ProfessorStatisticsPage: React.FC = () =>
             setQuestionsPagination(response.data.pagination);
 
             
-            let converted: ProfessorQuestionItem[] = [];
+            const converted: ProfessorQuestionItem[] = [];
             
             //console.log('topic choice2', topicChoice2)
             
@@ -309,19 +299,23 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     useEffect(() => {
         fetchAggregateStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
         fetchQuestionAggregateStats(checkQuestions);
         
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [checkQuestions, questions])
 
     useEffect(() => {
         fetchQuestionList(questionsPagination?.page == undefined ? 1 : questionsPagination?.page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [topicChoice2])
 
     useEffect(() => {
         resolveTopicData('All');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [aggregateStats])
 
 
@@ -341,10 +335,6 @@ const ProfessorStatisticsPage: React.FC = () =>
     {
         updateQuestionStats(questionsAggregateStats);
     }, [questionsAggregateStats]);
-
-    useEffect(() => {
-
-    }, [questionStats])
 
     useEffect(() =>
       {
@@ -376,7 +366,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         //console.log(topicChoice)
         //console.log(aggregateStats)
         if (topicChoice.toLowerCase() === "All".toLowerCase()){
-            let topicData: StatData = {
+            const topicData: StatData = {
                 medianAccuracy:     aggregateStats?.medianAccuracy == undefined ? 0 : aggregateStats?.medianAccuracy == null ? 0 : aggregateStats.medianAccuracy,
                 medianElapsedTime:  aggregateStats?.medianElapsedTime == undefined ? 0 : aggregateStats?.medianElapsedTime == null ? 0 : aggregateStats.medianElapsedTime,
                 responseCount:      aggregateStats?.responseCount == undefined ? 0 : aggregateStats?.responseCount == null ? 0 : aggregateStats.responseCount
@@ -389,7 +379,7 @@ const ProfessorStatisticsPage: React.FC = () =>
             ALL_TOPICS.map((topic) => {
                 if(topic.toLowerCase() === topicChoice.toLowerCase() && aggregateStats?.subcategoryBreakdown[topicChoice] != undefined)
                 {
-                    let topicData: StatData = {
+                    const topicData: StatData = {
                         medianAccuracy: aggregateStats?.subcategoryBreakdown[topicChoice]?.medianAccuracy == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.medianAccuracy == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].medianAccuracy,
                         medianElapsedTime: aggregateStats?.subcategoryBreakdown[topicChoice]?.medianElapsedTime == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.medianElapsedTime == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].medianElapsedTime,
                         responseCount: aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].responseCount,
@@ -406,7 +396,7 @@ const ProfessorStatisticsPage: React.FC = () =>
     };
 
     const updateCheckQuestions = (id: number, checked: boolean ) => {
-        let temp: CheckQuestion[] = [];
+        const temp: CheckQuestion[] = [];
         checkQuestions.map((checkQuestion) => (
             checkQuestion.questionID === id 
                 ?   temp.push({questionID: checkQuestion.questionID, isChecked: checked})
@@ -518,9 +508,9 @@ const ProfessorStatisticsPage: React.FC = () =>
     const getQuestionStatisticsGrid = () => {
         //console.log('question stats ',questionStats)
 
-        let length = checkQuestions.filter((question) => {return question.isChecked}).length
-        let moreThanOneChecked: boolean =  length > 1
-        let noneChecked: boolean = length < 1
+        const length = checkQuestions.filter((question) => {return question.isChecked}).length
+        const moreThanOneChecked: boolean =  length > 1
+        const noneChecked: boolean = length < 1
         
 
         return questionStats?.responseCount !== undefined && questionStats?.responseCount > 0 && !noneChecked ?
@@ -716,7 +706,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 value={topicChoice}
                                 className="border border-gray-300 rounded-lg px-3 py-2 text-md text-gray-700 bg-gray-100"
                                 onChange={(event) => {
-                                    let topic: string = event.target.value as string;
+                                    const topic: string = event.target.value as string;
                                     setTopicChoice(topic);
                                     resolveTopicData(topic);
                                 }}>
@@ -752,7 +742,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                             value={topicChoice2}
                             className="border border-gray-300 rounded-lg px-3 py-2 text-md text-gray-700 bg-gray-100"
                             onChange={(event) => {
-                                let topic: string = event.target.value as string;
+                                const topic: string = event.target.value as string;
                                 setTopicChoice2(topic);
 
                             }}>

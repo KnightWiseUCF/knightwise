@@ -176,7 +176,6 @@ const Leaderboard: React.FC = () =>
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
     else if (mode === "followed") void fetchFollowedLeaderboard(activeTab, page);
     else if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, activeTab, page, fetchLeaderboard, fetchFollowedLeaderboard, fetchGuildLeaderboard]);
 
   const handleTabChange = (tab: Tab) =>
