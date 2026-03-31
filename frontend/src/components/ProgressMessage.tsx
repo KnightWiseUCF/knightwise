@@ -42,7 +42,7 @@ const ProgressMessage: React.FC<ProgressMessageProps> = ({ history, mastery, str
   const unattemptedTopic = unattemptedTopics.length > 0 ? unattemptedTopics[0] : null;
 
   return (
-    <div className="mt-1 mb-5 mx-auto w-full max-w-3xl bg-[#ffc904] text-gray-800 p-4 rounded-lg shadow-md text-left">
+    <div className="mt-1 mb-10 mx-auto w-full max-w-3xl bg-amber-100 text-amber-900 border border-amber-300 p-4 rounded-lg shadow-md text-left">
       {todayProblemCount > 0 ? (
         <span>
           Great work! You solved <strong>{todayProblemCount}</strong> problem

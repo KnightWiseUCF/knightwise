@@ -1,12 +1,3 @@
-/*
-import { lstat } from 'fs'
-import React, { FC, useState, useEffect, useMemo } from 'react'
-import { useNavigate } from "react-router-dom";
-import api from "../api";
-import { LeaderboardT, LeaderboardResponse  } from '../models';
-import { getProfilePictureUrlByItemName } from '../utils/storeCosmetics';
-*/
-
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import api from "../api";
@@ -36,6 +27,26 @@ interface LeaderboardResponse
   totalPages:  number;
   leaderboard: LeaderboardEntry[];
 }
+
+interface GuildLeaderboardEntry
+{
+  id?:            number | string | null;
+  rank:           number;
+  name:           string;
+  exp:            number;
+  guildPicture:   string | null;
+}
+
+interface GuildLeaderboardResponse
+{
+  guildRank:    number | null;
+  guildExp:     number | null;
+  guildId:      number | null;
+  page:         number;
+  totalPages:   number;
+  leaderboard:  GuildLeaderboardEntry[];
+}
+
 
 type Tab  = "weekly" | "lifetime";
 type Mode = "individual" | "guild";
@@ -68,6 +79,7 @@ const Leaderboard: React.FC = () =>
   const [searchUsername, setSearchUsername] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState<UserSearchResult[]>([]);
   const [searchSuggestionsLoading, setSearchSuggestionsLoading] = useState(false);
+  const [guildData, setguildData] = useState<GuildLeaderboardResponse | null>(null);
   const { equippedItems } = useUserCustomizationStore();
 
   const { user } = useUserCustomizationStore();
@@ -116,10 +128,37 @@ const Leaderboard: React.FC = () =>
     }
   }, []);
 
+  const fetchGuildLeaderboard = useCallback(async (tab: Tab, pageNum: number) =>
+  {
+    setLoading(true);
+    setError(null);
+    try
+    {
+      
+      const response = await api.get<GuildLeaderboardResponse>(
+        `/api/leaderboard/guilds/${tab}?page=${pageNum}`
+      );
+      setguildData(response.data);
+    }
+    catch
+    {
+      setError("Failed to load leaderboard. Please try again.");
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() =>
   {
     if (mode === "individual") void fetchLeaderboard(activeTab, page);
   }, [mode, activeTab, page, fetchLeaderboard]);
+
+  useEffect(() =>
+  {
+    if (mode === "guild") void fetchGuildLeaderboard(activeTab, page);
+  }, [mode, activeTab, page, fetchGuildLeaderboard]);
 
   const handleTabChange = (tab: Tab) =>
   {
@@ -149,6 +188,7 @@ const Leaderboard: React.FC = () =>
 
   const userRef = useRef<HTMLTableRowElement | null>(null);
   const focusedUserRef = useRef<HTMLTableRowElement | null>(null);
+  const guildRef = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     const navigationState = location.state as LeaderboardNavigationState | null;
@@ -230,11 +270,13 @@ const Leaderboard: React.FC = () =>
           for(let i = 1; i <= data?.totalPages && !userFound; i++) 
           {
             setError(null);
+
             try
             {
-              const response = await api.get<LeaderboardResponse>(
-                `/api/leaderboard/${activeTab}?page=${i}`
-              );
+              
+              const response = mode === "individual" 
+                ? await api.get<LeaderboardResponse>(`/api/leaderboard/${activeTab}?page=${i}`)
+                : await api.get<LeaderboardResponse>(`/api/leaderboard/followed/${activeTab}?page=${i}`)
 
               
               for(let k = 0; k < response.data.leaderboard.length && !userFound; k++) 
@@ -331,10 +373,8 @@ const Leaderboard: React.FC = () =>
           
           {/* Page header */}
           <div className="flex items-center gap-3 mb-6">
-            {/*<Trophy className="text-yellow-500" size={32} />*/}
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Leaderboard</h1>
-
             </div>
           </div>
 
@@ -441,19 +481,8 @@ const Leaderboard: React.FC = () =>
             </div>
           </div>
 
-          {/* Guild placeholder */}
-          {mode === "guild" && (
-            <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-              <Swords className="text-gray-300" size={56} />
-              <h2 className="text-xl font-bold text-gray-500">Guild Leaderboard Coming Soon</h2>
-              <p className="text-sm text-gray-400 max-w-sm">
-                Guilds haven't been implemented yet. Check back later to compete as a team!
-              </p>
-            </div>
-          )}
-
-          {/* Your rank banner */}
-          {mode === "individual" && data && (
+          {/* Your rank banner*/}
+          {((mode === "individual") && data) ? (
             <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
               <Trophy className="text-blue-400 shrink-0" size={32} />
               <div>
@@ -465,6 +494,23 @@ const Leaderboard: React.FC = () =>
                   {data.userExp !== null && (
                     <span className="ml-3 text-base font-normal text-blue-500">
                       {data.userExp.toLocaleString()} XP
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          ) : mode === "guild" && guildData && guildData.guildId !== null && (
+            <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+              <Trophy className="text-blue-400 shrink-0" size={32} />
+              <div>
+                <p className="text-sm text-blue-500 font-medium uppercase tracking-wide">
+                  Your Guild's {activeTab === "weekly" ? "Weekly" : "Lifetime"} Rank
+                </p>
+                <p className="text-xl font-bold text-blue-700">
+                  {guildData.guildRank !== null ? `${guildData.guildRank}${getRankOrdinal(guildData.guildRank)}` : "Unranked"}
+                  {guildData.guildExp !== null && (
+                    <span className="ml-3 text-base font-normal text-blue-500">
+                      {guildData.guildExp.toLocaleString()} XP
                     </span>
                   )}
                 </p>
@@ -484,7 +530,7 @@ const Leaderboard: React.FC = () =>
 
           
           {/* Table */}
-          {mode === "individual" && !loading && data && (
+          {mode === "individual" && !loading && (data ? (
             <>
               <div className="w-full flex justify-center items-center">
                 <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
@@ -622,7 +668,7 @@ const Leaderboard: React.FC = () =>
                               {entry.exp.toLocaleString()} XP
                             </td>
                           </tr>
-                        );
+                        )
                       })}
                     </tbody>
                   </table>
@@ -647,6 +693,186 @@ const Leaderboard: React.FC = () =>
                     </span>
                     <button
                       disabled={page >= data.totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                      className={backgroundUrl ? "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-white ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors" : 
+                        "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"}
+                    >
+                      Next
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className={data ? `text-center pt-16 text-gray-900 font-bold text-xl` : ''}>
+                {data ? "Nobody's Here!" : null}
+            </div>
+          ))}
+
+          {/* Guild Leaderboard Table */}
+          {mode === "guild" && !loading && guildData && (
+            <>
+              <div className="w-full flex justify-center items-center">
+                <div className="bg-white rounded-lg w-full border border-gray-200 py-4 max-h-190 shadow-md overflow-auto overscroll-contain
+                  [&::-webkit-scrollbar]:rounded-full
+                  [&::-webkit-scrollbar]:w-2 
+                  [&::-webkit-scrollbar-thumb]:bg-gray-400 
+                  [&::-webkit-scrollbar-thumb]:rounded-lg
+                  ">
+                  <table className="w-full text-sm py-12">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-left text-gray-500 text-sm uppercase tracking-wide">
+                        <th className="pb-3 pr-4 pl-10 w-16 text-center">Rank</th>
+                        <th className="pb-3 pl-5">Guild</th>
+                        <th className="pb-3 text-right pr-10">
+                          {activeTab === "weekly" ? "Weekly XP" : "Lifetime XP"}
+                        </th>
+                      </tr>
+                    </thead>
+                    
+                    <tbody>
+                      {guildData.leaderboard.map((entry) =>
+                      {
+                        const isCurrentUserGuild =
+                          guildData.guildId !== null &&
+                          guildData.guildId === entry.id;
+
+                        const guildPicUrl = entry.guildPicture
+                          ? getProfilePictureUrlByItemName(entry.guildPicture)
+                          : null;
+
+                        const { symbol, color, size } = rankBadge(entry.rank);
+                        
+                        
+                        const resolvedGuildId = Number(entry.id);
+                        const hasValidGuildId = Number.isInteger(resolvedGuildId) && resolvedGuildId > 0;
+                        const hasGuildName = typeof entry.name === "string" && entry.name.trim().length > 0;
+                        const encodedGuildName = hasGuildName ? encodeURIComponent(entry.name.trim()) : "";
+                        
+                        // TODO NOT SURE IF THISLL WORK
+                        const guildPath = hasValidGuildId
+                          ? `/guild/${resolvedGuildId}`
+                          : (hasGuildName ? `/guild/${encodedGuildName}` : (isCurrentUserGuild ? "/guild" : null));
+                          
+                          
+                        return (
+                          <tr
+                            key={`${entry.name}-${entry.rank}`}
+                            className={`border-b border-gray-100 transition-colors ${
+                              isCurrentUserGuild
+                                ? "bg-blue-100"
+                                : "hover:bg-gray-200"
+                            }`}
+                            ref={isCurrentUserGuild ? guildRef : null}
+                          >
+                            {/* Rank */}
+                            <td className="py-3 pl-10 pr-4 text-center">
+                              <span className={`font-bold ${color} ${size}`}>
+                                {symbol}
+                              </span>
+                            </td>
+
+                            {/* User */}
+                            <td className="py-4 pl-5 text-base">
+                            
+                              { guildPath ? (
+                                <Link
+                                  to={guildPath}
+                                  state={{
+                                    guildLeaderboardEntry: {
+                                      name: entry.name,
+                                      guildPicture: entry.guildPicture,
+                                      exp: entry.exp,
+                                      tab: activeTab,
+                                    }
+                                  } }
+                                  className="group inline-flex max-w-full items-center gap-3 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                  aria-label={`View the Guild ${entry.name}`}
+                                >
+                                  {guildPicUrl ? (
+                                    <img
+                                      src={guildPicUrl}
+                                      alt={entry.name}
+                                      className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-sm font-bold shrink-0">
+                                      {(entry.name?.[0] ?? "?").toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className={`leading-tight truncate transition-colors pb-1 group-hover:text-blue-600 ${isCurrentUserGuild ? "font-semibold text-gray-800" : "text-gray-800"}`}>
+                                      {entry.name}
+                                    </p>
+                                  </div>
+                                  {isCurrentUserGuild && (
+                                      <span className="ml-1 shrink-0 text-xs bg-blue-200 border border-blue-600 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
+                                        Your Guild
+                                      </span>
+                                  )}
+                                </Link>
+                              ) : (
+                                <div
+                                  className="inline-flex max-w-full items-center gap-3"
+                                  title="Profile unavailable"
+                                >
+                                  {guildPicUrl ? (
+                                    <img
+                                      src={guildPicUrl}
+                                      alt={entry.name}
+                                      className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-bold shrink-0">
+                                      {(entry.name?.[0] ?? "?").toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className={`leading-tight truncate ${isCurrentUserGuild ? "font-semibold text-gray-800" : "text-gray-800"}`}>
+                                      {entry.name}
+                                    </p>
+                                    <p className="text-gray-400 text-xs truncate">@{entry.name}</p>
+                                  </div>
+                                  {isCurrentUserGuild && (
+                                    <span className="ml-1 shrink-0 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
+                                      Your Guild
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* XP */}
+                            <td className="py-3 pr-10 text-right font-semibold text-gray-700 text-sm">
+                              {entry.exp.toLocaleString()} XP
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Pagination */}
+              {guildData.totalPages > 1 && (
+                <div className="flex w-full h-10 relative items-center justify-center">
+                  <div className="flex w-full gap-10 items-center justify-center absolute">
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => p - 1)}
+                      className={backgroundUrl ? "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-white ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors" : 
+                        "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"}
+                    >
+                      <ChevronLeft size={16} />
+                      Prev
+                    </button>
+                    <span className="text-sm text-gray-500">
+                      Page {guildData.page} of {guildData.totalPages}
+                    </span>
+                    <button
+                      disabled={page >= guildData.totalPages}
                       onClick={() => setPage((p) => p + 1)}
                       className={backgroundUrl ? "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-white ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors" : 
                         "flex gap-1 px-3 py-2 items-center rounded-lg text-sm text-gray-600 enabled:hover:bg-gray-200 ${} disabled:opacity-40 disabled:cursor-not-allowed transition-colors"}

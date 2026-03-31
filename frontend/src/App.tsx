@@ -28,8 +28,9 @@ import AccountPage from "./pages/AccountPage";
 import ProfessorApplyPage from "./pages/ProfessorApplyPage";
 import ProfessorDraftsPage from "./pages/ProfessorDraftsPage";
 import ProfilePage from "./pages/ProfilePage";
-import StorePage from "./pages/StorePage";
-import LeaderboardPage from "./pages/LeaderboardPage";
+import StorePage from "./pages/StorePage.tsx";
+import LeaderboardPage from "./pages/LeaderboardPage.tsx";
+import ProfessorStatisticsPage from "./pages/ProfessorStatisticsPage.tsx";
 
 
 function App() 
@@ -57,6 +58,8 @@ function App()
         <Route path="/guilds"                     element={<GuildsPage />} />
         <Route path="/guilds/:id"                 element={<GuildsPage />} />
         {/* <Route path="/professor-statistics"        element={<ProfessorStatisticsPage />} /> */}
+        <Route path="/professor-stats"            element={<ProfessorStatisticsPage />} />
+        <Route path="/guilds"                     element={<GuildsPage />} />
       </Routes>
     </Router>
   );
