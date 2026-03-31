@@ -4,10 +4,9 @@ import Graph from "../components/Graph";
 import HistoryTable from "../components/HistoryTable";
 import ProgressMessage from "../components/ProgressMessage";
 import api from "../api";
-import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
-import { Trophy, ChevronLeft, ChevronRight, Swords, Users } from "lucide-react";
+import { Trophy } from "lucide-react";
 import StatsViewer from "../components/StatsViewer";
 
 const MyProgressPage: React.FC = () => {
@@ -15,8 +14,6 @@ const MyProgressPage: React.FC = () => {
   const [mastery, setMastery] = useState<{ [topic: string]: number }>({});
   const [streakCount, setStreakCount] = useState<number>(0);
   const { equippedItems } = useUserCustomizationStore();
-  
-    const { user } = useUserCustomizationStore();
   
     useEffect(() =>
     {
@@ -73,7 +70,7 @@ const MyProgressPage: React.FC = () => {
           
           {/* Page header */}
           <div className="flex items-center gap-3 mb-6">
-            {/*<Trophy className="text-yellow-500" size={32} />*/}
+            <Trophy className="text-yellow-500" size={32} />
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">My Progress</h1>
 
