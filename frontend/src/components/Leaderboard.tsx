@@ -481,17 +481,6 @@ const Leaderboard: React.FC = () =>
             </div>
           </div>
 
-          {/* Guild placeholder */}
-          {mode === "guild" && (
-            <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-              <Swords className="text-gray-300" size={56} />
-              <h2 className="text-xl font-bold text-gray-500">Guild Leaderboard Coming Soon</h2>
-              <p className="text-sm text-gray-400 max-w-sm">
-                Guilds haven't been implemented yet. Check back later to compete as a team!
-              </p>
-            </div>
-          )}
-
           {/* Your rank banner*/}
           {((mode === "individual") && data) ? (
             <div className="mb-10 flex items-center gap-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
