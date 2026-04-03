@@ -11,13 +11,15 @@
 //                 mysql2 connection pool (server.js)
 //                 testHelpers
 //                 guildNames
+//                 jsonwebtoken
 //
 ////////////////////////////////////////////////////////////////
 
 const request = require('supertest');
 const { app, pool } = require('../../server');
-const { getAuthToken, verifyTestDatabase, insertGuild } = require('../testHelpers');
+const { getAuthToken, verifyTestDatabase, insertGuild, TEST_USER } = require('../testHelpers');
 const guildNames = require('../../config/guildNames');
+const jwt = require('jsonwebtoken');
 
 // Mock tiny word bank so we don't have to insert
 // hundreds of test guilds to exhaust all available names
@@ -27,6 +29,7 @@ jest.mock('../../config/guildNames', () => ({
 }));
 
 let token;
+let userId;
 let guildOwnerIds = [];
 
 // Guild owners are unique so we'll need 4 users
@@ -41,6 +44,12 @@ const GUILD_OWNERS = [
 beforeAll(async () => {
   await verifyTestDatabase(pool);
   token = await getAuthToken();
+
+  const [[{ ID }]] = await pool.query(
+    'SELECT ID FROM User WHERE USERNAME = ?',
+    [TEST_USER.username]
+  );
+  userId = ID;
 
   // Insert guild owners for test
   for (const u of GUILD_OWNERS)
@@ -112,6 +121,22 @@ describe('GET /api/guilds/name/generate', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Blazing Dragons');
+  });
+
+  test('200 - returns signed name token JWT with correct payload', async () => {
+    const res = await request(app)
+      .get('/api/guilds/name/generate')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+
+    // Verify token payload
+    expect(res.body).toHaveProperty('nameToken');
+    const decoded = jwt.verify(res.body.nameToken, process.env.JWT_SECRET);
+    expect(decoded.guildName).toBe(res.body.name);
+    expect(decoded).toHaveProperty('userId');
+    expect(decoded.userId).toBe(userId);
+    expect(decoded).toHaveProperty('exp');
   });
 
   test('503 - all guild name combinations are taken', async () => {

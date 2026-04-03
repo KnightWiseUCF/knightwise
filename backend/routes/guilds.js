@@ -16,6 +16,7 @@
 const express    = require('express');
 const router     = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const validateNameToken = require('../middleware/validateNameToken');
 
 const {
   generateGuildName,
@@ -45,10 +46,12 @@ router.get('/name/generate', authMiddleware, generateGuildName);
 
 /**
  * @route   POST /api/guilds
- * @desc    Create a new guild
+ * @desc    Create a new Guild for a user
+ *          Prevents arbitrary name choice by verifying a dedicated
+ *          name token created by GET /api/guilds/name/generate
  * @access  Protected
  */
-router.post('/', authMiddleware, createGuild);
+router.post('/', authMiddleware, validateNameToken, createGuild);
 
 //////////////////////////////////////////////////////////////////////////////////////
 //

@@ -39,6 +39,21 @@ const TEST_PROF = {
 };
 
 /**
+ * Fetches a valid Guild name through the name generation endpoint
+ * Use this for Guild tests that require a name token
+ *
+ * @param {string} token - User token to call generate endpoint with
+ * @returns {Promise<{ name: string, nameToken: string }>} Guild name and valid name token
+ */
+const getValidGuildName = async (token) => {
+  const res = await request(app)
+    .get('/api/guilds/name/generate')
+    .set('Authorization', `Bearer ${token}`);
+
+  return res.body;
+};
+
+/**
  * Inserts a Response row with the specified parameters
  * Use this for adding deterministic test data for analytics/stats tests
  * Does NOT trigger grading, currency awarding, or any other side effects
@@ -326,6 +341,7 @@ async function verifyTestDatabase(pool)
 module.exports = {
   TEST_USER,
   TEST_PROF,
+  getValidGuildName,
   insertResponse,
   insertUser,
   insertGuild,
