@@ -1789,7 +1789,7 @@ paths:
       - Admins
       summary: Create a Guild (admin)
       operationId: createGuildAdmin
-      description: Creates a Guild. Unlike the user-facing endpoint POST /api/guilds, this does not require a JWT name token, so a Guild can be created with an arbitrary name. An Owner ID also has to be specified, which much correspond to a valid user.
+      description: Creates a Guild. Unlike the user-facing endpoint POST /api/guilds, this does not require a JWT name token, so a Guild can be created with an arbitrary name. An Owner ID also has to be specified, which must correspond to a valid user.
       security:
         - BearerAuth: []
       parameters:
