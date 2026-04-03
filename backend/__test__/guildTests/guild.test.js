@@ -30,6 +30,7 @@ const {
         insertUser,
         insertGuildWithOwner,
         insertGuildMember,
+        getValidGuildName,
       } = require('../testHelpers');
 
 // Mock Discord webhook
@@ -68,18 +69,24 @@ afterAll(async () => {
 describe('POST /api/guilds', () => {
 
   test('201 - successfully creates guild and inserts owner as member', async () => {
+    // Get valid name and name token
+    const { name, nameToken } = await getValidGuildName(token);
     const res = await request(app)
       .post('/api/guilds')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Ancient Wolves' });
+      .send({ name, nameToken });
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty('guildId');
+    expect(res.body).toHaveProperty('name');
+    expect(res.body.name).toBe(name);
+    expect(res.body).toHaveProperty('message');
+    expect(res.body.message).toContain('successfully');
 
     // Verify guild row exists
     const [guilds] = await pool.query('SELECT * FROM Guild WHERE ID = ?', [res.body.guildId]);
     expect(guilds).toHaveLength(1);
-    expect(guilds[0].NAME).toBe('Ancient Wolves');
+    expect(guilds[0].NAME).toBe(name);
 
     // Verify owner member row exists
     const [members] = await pool.query(
@@ -90,11 +97,13 @@ describe('POST /api/guilds', () => {
     expect(members[0].ROLE).toBe('Owner');
   });
 
-  test('notifies Discord on guild creation', async () => {
+  test('201 - notifies Discord on guild creation', async () => {
+    // Get valid name and name token
+    const { name, nameToken } = await getValidGuildName(token);
     const res = await request(app)
       .post('/api/guilds')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Webhook Guild' });
+      .send({ name, nameToken });
 
     expect(res.status).toBe(201);
     expect(notifyUserEvent).toHaveBeenCalledTimes(1);
@@ -121,25 +130,69 @@ describe('POST /api/guilds', () => {
     expect(res.status).toBe(400);
   });
 
-  test('409 - user already in a guild', async () => {
-    const guildId = await insertGuildWithOwner(userId, { name: 'First Guild' });
+  test('400 - missing nameToken', async () => {
+    const res = await request(app)
+      .post('/api/guilds')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Ancient Wolves' }); // Can't give arbitrary names anymore!
+
+    expect(res.status).toBe(400);
+  });
+
+  test('401 - rejects tampered nameToken', async () => {
+    // Get valid name and name token
+    const { name, nameToken } = await getValidGuildName(token);
+
+    // Lets mess with the JWT a little bit
+    const badNameToken = nameToken.slice(0, -1) + 'x';
 
     const res = await request(app)
       .post('/api/guilds')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Second Guild' });
+      .send({ name, nameToken: badNameToken });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('400 - name does not match token payload', async () => {
+    // Get valid name and name token
+    const { name, nameToken } = await getValidGuildName(token);
+
+    const res = await request(app)
+      .post('/api/guilds')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Evil Name', nameToken });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('409 - user already in a guild', async () => {
+    await insertGuildWithOwner(userId, { name: 'First Guild' });
+
+    // Get valid name and name token for second guild
+    const { name, nameToken } = await getValidGuildName(token);
+    const res = await request(app)
+      .post('/api/guilds')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name, nameToken });
 
     expect(res.status).toBe(409);
   });
 
   test('409 - guild name already taken', async () => {
-    const otherId = await insertUser({ username: 'otherown', email: 'otherown@test.com' });
-    await insertGuildWithOwner(otherId, { name: 'Taken Name' });
+    // Get valid name and name token
+    const { name, nameToken } = await getValidGuildName(token);
 
+    // But wait, another user somehow gets that name first
+    // (technically a possible race condition)
+    const otherId = await insertUser({ username: 'otherown', email: 'otherown@test.com' });
+    await insertGuildWithOwner(otherId, { name });
+
+    // TEST_USER can't get the name now
     const res = await request(app)
       .post('/api/guilds')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Taken Name' });
+      .send({ name, nameToken });
 
     expect(res.status).toBe(409);
   });
