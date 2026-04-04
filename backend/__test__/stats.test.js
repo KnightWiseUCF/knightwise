@@ -269,6 +269,24 @@ describe('GET /api/stats/aggregate', () => {
     expect(res.status).toBe(401);
   });
 
+  test('200 - response shape includes medianPerformanceMetric', async () => {
+    const res = await request(app)
+        .get('/api/stats/aggregate')
+        .set('Authorization', `Bearer ${profToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('medianPerformanceMetric');
+  });
+
+  test('200 - median performance metric is within valid range', async () => {
+    const res = await request(app)
+        .get('/api/stats/aggregate')
+        .set('Authorization', `Bearer ${profToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.medianPerformanceMetric).toBeGreaterThanOrEqual(0);
+    expect(res.body.medianPerformanceMetric).toBeLessThanOrEqual(1);
+  });
 });
 
 // Test aggregate stats for a single question
@@ -342,6 +360,7 @@ describe('GET /api/stats/aggregate/:questionId', () => {
     expect(res.status).toBe(200);
     expect(res.body.medianAccuracy).toBeNull();
     expect(res.body.medianElapsedTime).toBeNull();
+    expect(res.body.medianPerformanceMetric).toBeNull();
     expect(res.body.responseCount).toBe(0);
 
     // Cleanup
@@ -409,5 +428,14 @@ describe('GET /api/stats/aggregate/:questionId', () => {
       .get(`/api/stats/aggregate/${questionId}`);
 
     expect(res.status).toBe(401);
+  });
+
+  test('200 - response shape includes medianPerformanceMetric', async () => {
+    const res = await request(app)
+        .get(`/api/stats/aggregate/${questionId}`)
+        .set('Authorization', `Bearer ${profToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('medianPerformanceMetric');
   });
 });
