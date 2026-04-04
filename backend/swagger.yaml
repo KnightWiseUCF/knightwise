@@ -633,7 +633,7 @@ paths:
       summary: Fetch aggregate stats across all opted-in users.
       operationId: getAggregateStats
       description: |
-        Returns median accuracy and median elapsed time across all responses from opted-in users.
+        Returns median accuracy, median elapsed time, and median performance metric (computed by AE) across all responses from opted-in users.
         - Also includes a per-subcategory breakdown of the same metrics.
         - Median is used rather than mean to reduce skew from outliers such as users who left their computer mid-question.
         - Returns nulls and an empty breakdown if no opted-in responses exist.
@@ -658,7 +658,7 @@ paths:
       summary: Fetch aggregate stats for a single question.
       operationId: getAggregateStatsByQuestion
       description: |
-        Returns median accuracy and median elapsed time for a single question, computed across all responses from opted-in users.
+        Returns median accuracy, median elapsed time, and median performance metric (computed by AE) for a single question, computed across all responses from opted-in users.
         - Returns nulls if no opted-in responses exist for the question.
       security:
         - BearerAuth: []
@@ -3123,6 +3123,11 @@ definitions:
         example: 60
         nullable: true
         description: Median elapsed time in seconds across opted-in responses with non-null times. Null if no data.
+      medianPerformanceMetric:
+        type: number
+        example: 0.6
+        nullable: true
+        description: Median "mastery" metric between 0 and 1 computed by the Analytics Engine (AE) across opted-in responses. Null if no data.
       responseCount:
         type: integer
         example: 120
@@ -3140,6 +3145,10 @@ definitions:
             medianElapsedTime:
               type: number
               example: 45
+              nullable: true
+            medianPerformanceMetric:
+              type: number
+              example: 0.55
               nullable: true
             responseCount:
               type: integer
@@ -3161,6 +3170,11 @@ definitions:
         example: 60
         nullable: true
         description: Median elapsed time in seconds across opted-in responses for this question. Null if no data.
+      medianPerformanceMetric:
+        type: number
+        example: 0.6
+        nullable: true
+        description: Median "mastery" metric between 0 and 1 computed by the Analytics Engine (AE) across opted-in responses. Null if no data.
       responseCount:
         type: integer
         example: 3
