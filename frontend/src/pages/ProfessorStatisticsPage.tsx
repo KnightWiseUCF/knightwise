@@ -1,4 +1,21 @@
-// For Professors to view the statistics on questions
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2026
+//  Author(s):     KnightWise Team
+//  File:          ProfessorStatisticsPage.tsx
+//  Description:   For Professors to view the statistics on 
+//                 questions.
+//
+//  Dependencies:  react
+//                 api instance
+//                 Layout component
+//                 topicLabels
+//                 models
+//                 storeCosmetics
+//                 userCustomizationStore
+//
+////////////////////////////////////////////////////////////////
 
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import api from "../api";
