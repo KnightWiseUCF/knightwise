@@ -15,15 +15,15 @@
 ////////////////////////////////////////////////////////////////
 
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-const { computeMedian } = require('../utils/analyticsModel');
+const { computeMedian, computePerformanceMetric } = require('../utils/analyticsModel');
 const { normalizeDBString } = require('../utils/validationUtils');
 
 /**
- * Helper function, computes median accuracy and median elapsed time
- * for a given set of responses
+ * Helper function, computes median accuracy, median elapsed time,
+ * and median AE performance metric for a given set of responses
  *
  * @param {Array} responses - Rows from Response JOIN User query
- * @returns {{ medianAccuracy: number|null, medianElapsedTime: number|null }}
+ * @returns {{ medianAccuracy: number|null, medianElapsedTime: number|null, medianPerformanceMetric: number|null }}
  */
 const computeAggregateStats = (responses) => {
   const accuracies   = responses.map(r => r.POINTS_POSSIBLE > 0
@@ -34,9 +34,17 @@ const computeAggregateStats = (responses) => {
     .filter(r => r.ELAPSED_TIME != null)
     .map(r => r.ELAPSED_TIME);
 
+  const performanceMetrics = responses.map(r => computePerformanceMetric({
+    normalizedScore: r.POINTS_POSSIBLE > 0 ? r.POINTS_EARNED / r.POINTS_POSSIBLE : 0,
+    elapsedTime:     r.ELAPSED_TIME ?? null,
+    subcategory:     normalizeDBString(r.SUBCATEGORY ?? ''),
+    type:            normalizeDBString(r.TYPE ?? ''),
+  }));
+
   return {
-    medianAccuracy:    computeMedian(accuracies),
-    medianElapsedTime: computeMedian(elapsedTimes),
+    medianAccuracy:           computeMedian(accuracies),
+    medianElapsedTime:        computeMedian(elapsedTimes),
+    medianPerformanceMetric:  computeMedian(performanceMetrics),
   };
 };
 
@@ -45,7 +53,7 @@ const computeAggregateStats = (responses) => {
  * computes aggregate stats per subcategory
  *
  * @param {Array} responses - Rows from Response JOIN User JOIN Question query
- * @returns {Object} Map of subcategory -> { medianAccuracy, medianElapsedTime, responseCount }
+ * @returns {Object} Map of subcategory -> { medianAccuracy, medianElapsedTime, medianPerformanceMetric, responseCount }
  */
 const computeSubcategoryBreakdown = (responses) => {
   const bySubcategory = {};
@@ -59,10 +67,11 @@ const computeSubcategoryBreakdown = (responses) => {
   const breakdown = {};
   for (const [sub, rows] of Object.entries(bySubcategory))
   {
-    const { medianAccuracy, medianElapsedTime } = computeAggregateStats(rows);
+    const { medianAccuracy, medianElapsedTime, medianPerformanceMetric } = computeAggregateStats(rows);
     breakdown[sub] = {
       medianAccuracy,
       medianElapsedTime,
+      medianPerformanceMetric,
       responseCount: rows.length,
     };
   }
@@ -82,7 +91,7 @@ const computeSubcategoryBreakdown = (responses) => {
  */
 const getAggregateStats = asyncHandler(async (req, res) => {
   const [responses] = await req.db.query(
-    `SELECT r.POINTS_EARNED, r.POINTS_POSSIBLE, r.ELAPSED_TIME, q.SUBCATEGORY
+    `SELECT r.POINTS_EARNED, r.POINTS_POSSIBLE, r.ELAPSED_TIME, q.SUBCATEGORY, q.TYPE
      FROM Response r
      JOIN User u     ON u.ID = r.USERID
      JOIN Question q ON q.ID = r.PROBLEM_ID
@@ -92,19 +101,21 @@ const getAggregateStats = asyncHandler(async (req, res) => {
   if (responses.length === 0)
   {
     return res.status(200).json({
-      medianAccuracy:       null,
-      medianElapsedTime:    null,
-      responseCount:        0,
-      subcategoryBreakdown: {},
+      medianAccuracy:           null,
+      medianElapsedTime:        null,
+      medianPerformanceMetric:  null,
+      responseCount:            0,
+      subcategoryBreakdown:     {},
     });
   }
 
-  const { medianAccuracy, medianElapsedTime } = computeAggregateStats(responses);
+  const { medianAccuracy, medianElapsedTime, medianPerformanceMetric } = computeAggregateStats(responses);
   const subcategoryBreakdown = computeSubcategoryBreakdown(responses);
 
   return res.status(200).json({
     medianAccuracy,
     medianElapsedTime,
+    medianPerformanceMetric,
     responseCount: responses.length,
     subcategoryBreakdown,
   });
@@ -141,9 +152,10 @@ const getAggregateStatsByQuestion = asyncHandler(async (req, res) => {
   }
 
   const [responses] = await req.db.query(
-    `SELECT r.POINTS_EARNED, r.POINTS_POSSIBLE, r.ELAPSED_TIME
+    `SELECT r.POINTS_EARNED, r.POINTS_POSSIBLE, r.ELAPSED_TIME, q.SUBCATEGORY, q.TYPE
      FROM Response r
      JOIN User u ON u.ID = r.USERID
+     JOIN Question q ON q.ID = r.PROBLEM_ID
      WHERE r.PROBLEM_ID = ? AND u.IS_SHARING_STATS = 1`,
     [questionId]
   );
@@ -152,18 +164,20 @@ const getAggregateStatsByQuestion = asyncHandler(async (req, res) => {
   {
     return res.status(200).json({
       questionId,
-      medianAccuracy:    null,
-      medianElapsedTime: null,
-      responseCount:     0,
+      medianAccuracy:           null,
+      medianElapsedTime:        null,
+      medianPerformanceMetric:  null,
+      responseCount:            0,
     });
   }
 
-  const { medianAccuracy, medianElapsedTime } = computeAggregateStats(responses);
+  const { medianAccuracy, medianElapsedTime, medianPerformanceMetric } = computeAggregateStats(responses);
 
   return res.status(200).json({
     questionId,
     medianAccuracy,
     medianElapsedTime,
+    medianPerformanceMetric,
     responseCount: responses.length,
   });
 });

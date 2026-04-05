@@ -1,4 +1,21 @@
-// For Professors to view the statistics on questions
+////////////////////////////////////////////////////////////////
+//
+//  Project:       KnightWise
+//  Year:          2026
+//  Author(s):     KnightWise Team
+//  File:          ProfessorStatisticsPage.tsx
+//  Description:   For Professors to view the statistics on 
+//                 questions.
+//
+//  Dependencies:  react
+//                 api instance
+//                 Layout component
+//                 topicLabels
+//                 models
+//                 storeCosmetics
+//                 userCustomizationStore
+//
+////////////////////////////////////////////////////////////////
 
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import api from "../api";
@@ -27,34 +44,38 @@ interface TopicQuestionList
 
 
 interface StatData {
-    medianAccuracy?:        number;
-    medianElapsedTime?:     number;
-    responseCount:          number;
+    medianAccuracy?:          number;
+    medianElapsedTime?:       number;
+    medianPerformanceMetric?: number;
+    responseCount:            number;
 }
 
 interface SubcategoryBreakdown
 {
     [key: string]: {
-        medianAccuracy?:        number | null;
-        medianElapsedTime?:     number | null;
-        responseCount:          number;
+        medianAccuracy?:          number | null;
+        medianElapsedTime?:       number | null;
+        medianPerformanceMetric?: number | null;
+        responseCount:            number;
     }
 }
 
 interface AggregateStatsResponse
 {
-    medianAccuracy?:        number | null;
-    medianElapsedTime?:     number | null;
-    responseCount:          number;
-    subcategoryBreakdown:   SubcategoryBreakdown;
+    medianAccuracy?:          number | null;
+    medianElapsedTime?:       number | null;
+    medianPerformanceMetric?: number | null;
+    responseCount:            number;
+    subcategoryBreakdown:     SubcategoryBreakdown;
 }
 
 interface AggregateStatsByQuestionResponse
 {
-    questionID:             number;
-    medianAccuracy?:        number | null;
-    medianElapsedTime?:     number | null;
-    responseCount:          number;
+    questionID:               number;
+    medianAccuracy?:          number | null;
+    medianElapsedTime?:       number | null;
+    medianPerformanceMetric?: number | null;
+    responseCount:            number;
 }
 
 interface CheckQuestion
@@ -368,21 +389,23 @@ const ProfessorStatisticsPage: React.FC = () =>
         //console.log(aggregateStats)
         if (topicChoice.toLowerCase() === "All".toLowerCase()){
             const topicData: StatData = {
-                medianAccuracy:     aggregateStats?.medianAccuracy == undefined ? 0 : aggregateStats?.medianAccuracy == null ? 0 : aggregateStats.medianAccuracy,
-                medianElapsedTime:  aggregateStats?.medianElapsedTime == undefined ? 0 : aggregateStats?.medianElapsedTime == null ? 0 : aggregateStats.medianElapsedTime,
-                responseCount:      aggregateStats?.responseCount == undefined ? 0 : aggregateStats?.responseCount == null ? 0 : aggregateStats.responseCount
+                medianAccuracy:           aggregateStats?.medianAccuracy == undefined ? 0 : aggregateStats?.medianAccuracy == null ? 0 : aggregateStats.medianAccuracy,
+                medianElapsedTime:        aggregateStats?.medianElapsedTime == undefined ? 0 : aggregateStats?.medianElapsedTime == null ? 0 : aggregateStats.medianElapsedTime,
+                medianPerformanceMetric:  aggregateStats?.medianPerformanceMetric ?? 0,
+                responseCount:            aggregateStats?.responseCount == undefined ? 0 : aggregateStats?.responseCount == null ? 0 : aggregateStats.responseCount
             };
             setTopicStats(topicData);
             
         }
         else {
-            setTopicStats({medianAccuracy: 0, medianElapsedTime: 0, responseCount: 0});
+            setTopicStats({medianAccuracy: 0, medianElapsedTime: 0, medianPerformanceMetric: 0, responseCount: 0});
             ALL_TOPICS.map((topic) => {
                 if(topic.toLowerCase() === topicChoice.toLowerCase() && aggregateStats?.subcategoryBreakdown[topicChoice] != undefined)
                 {
                     const topicData: StatData = {
                         medianAccuracy: aggregateStats?.subcategoryBreakdown[topicChoice]?.medianAccuracy == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.medianAccuracy == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].medianAccuracy,
                         medianElapsedTime: aggregateStats?.subcategoryBreakdown[topicChoice]?.medianElapsedTime == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.medianElapsedTime == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].medianElapsedTime,
+                        medianPerformanceMetric: aggregateStats?.subcategoryBreakdown[topicChoice]?.medianPerformanceMetric ?? 0,
                         responseCount: aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == undefined ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice]?.responseCount == null ? 0 : aggregateStats?.subcategoryBreakdown[topicChoice].responseCount,
                     };  
                     setTopicStats(topicData);
@@ -409,13 +432,14 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const updateQuestionStats = (questionsAggregateStats: AggregateStatsByQuestionResponse[]) => {
         if (questionsAggregateStats.length < 1){
-            setQuestionStats({ medianAccuracy: 0, medianElapsedTime: 0, responseCount: 0 });
+            setQuestionStats({ medianAccuracy: 0, medianElapsedTime: 0, medianPerformanceMetric: 0, responseCount: 0 });
             return;
         }
         
         const length = questionsAggregateStats.length;
         let totalMedianElapsedTime = 0;
         let totalMedianAccuracy = 0;
+        let totalMedianPerformanceMetric = 0;
         let totalQuestionsCompleted = 0;
 
         //console.log('question agg stats' ,questionsAggregateStats)
@@ -423,6 +447,7 @@ const ProfessorStatisticsPage: React.FC = () =>
         questionsAggregateStats.map((question) => {
             totalMedianAccuracy += question?.medianAccuracy == undefined || question?.medianAccuracy == null ? 0 : question?.medianAccuracy;
             totalMedianElapsedTime += question?.medianElapsedTime == undefined || question?.medianElapsedTime == null ? 0 : question?.medianElapsedTime;
+            totalMedianPerformanceMetric += question?.medianPerformanceMetric ?? 0;
             totalQuestionsCompleted += question?.responseCount == undefined || question?.responseCount == null ? 0 : question?.responseCount;
         })
 
@@ -431,17 +456,18 @@ const ProfessorStatisticsPage: React.FC = () =>
         setQuestionStats({
             medianAccuracy: Math.round(totalMedianAccuracy*100 / length),
             medianElapsedTime: Math.round(totalMedianElapsedTime / length),
+            medianPerformanceMetric: parseFloat((totalMedianPerformanceMetric / length).toFixed(4)),
             responseCount: totalQuestionsCompleted
         })
     }
 
     const getPercentageGraphs = () => {
-
+        const mastery = topicStats?.medianPerformanceMetric ?? 0;
         
             return (
                 <div className="flex items-end gap-2 h-30">
                     <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
-                        <div className="w-1/4 h-14 flex items-end">
+                        <div className="w-1/2 h-14 flex items-end">
                             <div className={`w-full rounded-t text-white text-center text-sm
                                 ${topicStats?.medianAccuracy !== undefined ? (topicStats?.medianAccuracy > 0  ? "bg-blue-500" : "bg-gray-300") : "bg-gray-300"}`}
                                 style={{ height: `${Math.max(12, (topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats?.medianAccuracy*100*1.5 : 0)}%`
@@ -449,8 +475,21 @@ const ProfessorStatisticsPage: React.FC = () =>
                                 title={`${topicChoice}: ${Math.round(((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats.medianAccuracy : 0)*100)}% accuracy`}
                             >{((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? Math.round(topicStats.medianAccuracy*100) + '%' : '')}</div>
                         </div>
-                        <span className="text-[10px] text-gray-500 leading-none">Median Performance</span>
+                        <span className="text-[10px] text-gray-500 leading-none">Median Accuracy</span>
                     </div> 
+                    <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
+                        <div className="w-1/2 h-14 flex items-end">
+                            <div
+                                className={`w-full rounded-t text-white text-center text-sm
+                                    ${mastery > 0 ? "bg-blue-500" : "bg-gray-300"}`}
+                                style={{ height: `${Math.max(12, (topicStats?.medianPerformanceMetric ?? 0) * 100 * 1.5)}%` }}
+                                title={`${topicChoice}: ${Math.round((topicStats?.medianPerformanceMetric ?? 0) * 100)}% mastery`}
+                            >
+                                {mastery > 0 ? Math.round(mastery * 100) + '%' : ''}
+                            </div>
+                        </div>
+                        <span className="text-[10px] text-gray-500 leading-none">Median Mastery</span>
+                    </div>
                     {/*
                     <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
                         <div className="w-1/2 h-14 flex items-end">
@@ -479,6 +518,14 @@ const ProfessorStatisticsPage: React.FC = () =>
                 <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
                     <p className="text-xs text-gray-500">Questions Completed</p>
                     <p className="text-xl font-bold text-gray-900">{topicStats?.responseCount}</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
+                    <p className="text-xs text-gray-500">Median Mastery</p>
+                    <p className="text-xl font-bold text-gray-900">
+                        {topicStats?.medianPerformanceMetric !== undefined
+                            ? Math.round(topicStats.medianPerformanceMetric * 100) + '%'
+                            : '—'}
+                    </p>
                 </div>
             </div>
         )
@@ -516,6 +563,16 @@ const ProfessorStatisticsPage: React.FC = () =>
                     <p className="text-xs text-gray-500">{moreThanOneChecked ? 'Average Median Performance' : 'Median Perfomance'}</p>
                     <p className="text-xl font-bold text-gray-900">{questionStats?.medianAccuracy == undefined ? 0 : questionStats?.medianAccuracy}%</p>
                 </div>
+                <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
+                    <p className="text-xs text-gray-500">
+                        {moreThanOneChecked ? 'Average Median Mastery' : 'Median Mastery'}
+                    </p>
+                    <p className="text-xl font-bold text-gray-900">
+                        {questionStats?.medianPerformanceMetric !== undefined
+                            ? Math.round((questionStats.medianPerformanceMetric) * 100) + '%'
+                            : '—'}
+                    </p>
+                </div>
             </div>
         ) : (
             <div className="mt-3 flex text-center justify-center py-10">
@@ -525,7 +582,7 @@ const ProfessorStatisticsPage: React.FC = () =>
     }
 
     const isSelected = (id: number) => {
-        console.log(checkQuestions.filter((question) => {return question.questionID === id}))
+        //console.log(checkQuestions.filter((question) => {return question.questionID === id}))
         return checkQuestions.filter((question) => {return question.questionID === id && question.isChecked}).length < 1 
             ?  false
             :  true;
