@@ -13,6 +13,7 @@
 //                 itemConfig
 //                 guildConfig
 //                 discordWebhook
+//                 jsonwebtoken
 //
 ////////////////////////////////////////////////////////////////
 
@@ -21,6 +22,7 @@ const guildNames = require('../config/guildNames');
 const { EQUIP_LIMITS } = require('../../shared/itemConfig');
 const { MAX_GUILD_SIZE } = require('../../shared/guildConfig');
 const { notifyUserEvent } = require('../services/discordWebhook');
+const jwt = require('jsonwebtoken');
 
 /**
  * Helper function, asserts that the requesting user is a member of the guild
@@ -116,6 +118,9 @@ const assertGuildExists = async (db, guildId, context) => {
  * @route   GET /api/guilds/name/generate
  * @desc    Generate a unique guild name in the form "[adjective] [plural noun]"
  *          Guaranteed to generate a name that isn't taken yet by a guild.
+ *          Signs a JWT name token that is checked in createGuild
+ *          to ensure users can't create a Guild with an arbitrary name
+ *          other than the ones produced by this endpoint.
  * @access  Protected
  *
  * @param {import('express').Request}  req - Express request object
@@ -163,14 +168,24 @@ const generateGuildName = asyncHandler(async (req, res) => {
 
   // Return a random name from the list
   const name = availableNames[Math.floor(Math.random() * availableNames.length)];
-  return res.status(200).json({ name });
+
+  // Sign name token
+  const token = jwt.sign(
+    { guildName: name, userId: req.user.id },
+    process.env.JWT_SECRET,
+    { expiresIn: '5m' }
+  );
+
+  return res.status(200).json({ name, nameToken: token });
 });
 
 /**
  * @route   POST /api/guilds
- * @desc    Create a new guild. Requesting user becomes Owner.
+ * @desc    Create a new Guild for a user. Requesting user becomes Owner.
  *          Atomically inserts Guild and GuildMember rows in a transaction.
  *          User must not already be in a guild or own one.
+ *          Prevents arbitrary name choice by verifying a dedicated
+ *          name token created by GET /api/guilds/name/generate
  * @access  Protected
  *
  * @param {import('express').Request}  req - Express request object
@@ -182,7 +197,7 @@ const generateGuildName = asyncHandler(async (req, res) => {
 const createGuild = asyncHandler(async (req, res) => {
   const context = 'createGuild';
   const userId  = req.user.id;
-  const { name } = req.body;
+  const name = req.guildName; // Verified by validateNameToken middleware
 
   if (!name || !name.trim())
   {
@@ -230,7 +245,7 @@ const createGuild = asyncHandler(async (req, res) => {
 
     // Notify Discord and return success
     notifyUserEvent(`Guild created: ${name} (ID ${guildId}) by user ${userId}`);
-    return res.status(201).json({ message: 'Guild created successfully', guildId });
+    return res.status(201).json({ message: 'Guild created successfully', guildId, name });
   }
   catch (err)
   {

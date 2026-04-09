@@ -15,11 +15,10 @@
 //                 bcryptjs
 //                 otp-generator
 //                 errorHandler
-//                 authMiddleware
-//                 requireRole
 //                 node-mailjet
 //                 discordWebhook service (notifyUserEvent)
 //                 itemConfig
+//                 validationUtils
 //
 ////////////////////////////////////////////////////////////////
 
@@ -29,11 +28,10 @@ const router = express.Router();
 
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const adminMiddleware = require("../middleware/adminMiddleware");
-const authMiddleware = require('../middleware/authMiddleware');
 const adminOrProf = require('../middleware/adminOrProf');
-const requireRole = require('../middleware/requireRole');
 const { notifyUserEvent } = require("../services/discordWebhook");
 const { ITEM_TYPES } = require('../../shared/itemConfig');
+const { parseUserId } = require('../utils/validationUtils');
 
 // Mailjet for sending professor verified email
 const Mailjet = require("node-mailjet");
@@ -754,6 +752,92 @@ router.delete('/store/items/:id', adminMiddleware, asyncHandler(async (req, res)
   notifyUserEvent(`Store item deleted: ${item.NAME} (ID ${itemId})`);
 
   return res.status(200).json({ message: 'Store item deleted successfully' });
+}));
+
+/**
+ * @route   POST /api/admin/guilds
+ * @desc    Create a Guild with an arbitrary name and specifiable owner ID.
+ * @access  Admin
+ * 
+ * @param {import('express').Request}  req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @throws  {AppError} 400                 - Missing name field or throwable by parseUserId
+ * @throws  {AppError} 404                 - Provided Owner user not found
+ * @throws  {AppError} 409                 - Guild name already taken or provided Owner already in a Guild
+ * @returns {Promise<void>}                - Sends HTTP/JSON confirming Guild creation
+ */
+router.post('/guilds', adminMiddleware, asyncHandler(async (req, res) => {
+  const context = 'admin:createGuild';
+  const { name, ownerId } = req.body;
+
+  // Verify Guild name is actually given and proposed owner is a positive integer
+  if (!name || !name.trim())
+  {
+    throw new AppError(`[${context}] Missing guild name`, 400, 'Guild name is required');
+  }
+  const validatedOwnerId = parseUserId(ownerId, context);
+
+  // Ensure a Guild doesn't already exist with this name
+  const [[existingGuild]] = await req.db.query(
+    'SELECT ID FROM Guild WHERE NAME = ?',
+    [name]
+  );
+  if (existingGuild)
+  {
+    throw new AppError(`[${context}] Guild name already taken: ${name}`, 409, 'Guild name is already taken');
+  }
+
+  // Ensure proposed owner ID corresponds to an existing user
+  const [[ownerExists]] = await req.db.query(
+    'SELECT ID FROM User WHERE ID = ?',
+    [validatedOwnerId]
+  );
+  if (!ownerExists)
+  {
+    throw new AppError(`[${context}] Owner not found: ${validatedOwnerId}`, 404, 'Owner user not found');
+  }
+
+  // User must not already be a Guild member
+  const [[existingMembership]] = await req.db.query(
+    'SELECT GUILD_ID FROM GuildMember WHERE USER_ID = ?',
+    [validatedOwnerId]
+  );
+  if (existingMembership)
+  {
+    throw new AppError(`[${context}] User ${validatedOwnerId} is already in a Guild`, 409, 'Cannot create Guild under an Owner already in a Guild.');
+  }
+
+  // Create Guild and establish owner atomically
+  const conn = await req.db.getConnection();
+  try
+  {
+    await conn.beginTransaction();
+
+    const [guildResult] = await conn.query(
+      'INSERT INTO Guild (NAME, OWNER_ID) VALUES (?, ?)',
+      [name.trim(), validatedOwnerId]
+    );
+    const guildId = guildResult.insertId;
+
+    await conn.query(
+      'INSERT INTO GuildMember (USER_ID, GUILD_ID, ROLE) VALUES (?, ?, ?)',
+      [validatedOwnerId, guildId, 'Owner']
+    );
+
+    await conn.commit();
+
+    notifyUserEvent(`Guild created by admin: ${name} (ID ${guildId}), Owner ID ${validatedOwnerId}`);
+    return res.status(201).json({ message: 'Guild created successfully', guildId });
+  }
+  catch (err)
+  {
+    await conn.rollback();
+    throw err;
+  }
+  finally
+  {
+    conn.release();
+  }
 }));
 
 module.exports = router;
