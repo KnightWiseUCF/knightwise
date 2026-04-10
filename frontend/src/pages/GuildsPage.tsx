@@ -217,6 +217,7 @@ const GuildsPage: React.FC = () => {
   const [invites, setInvites] = useState<GuildInvite[]>([]);
   const [nameSuggestion, setNameSuggestion] = useState("");
   const [createName, setCreateName] = useState("");
+  const [nameToken, setNameToken] = useState("");
   const [contributionAmount, setContributionAmount] = useState(100);
 
   const [searchInput, setSearchInput] = useState("");
@@ -701,15 +702,23 @@ const GuildsPage: React.FC = () => {
     setNotice(null);
 
     try {
-      const response = await api.get<{ name: string }>("/api/guilds/name/generate");
+      const response = await api.get<{ name: string; nameToken: string }>("/api/guilds/name/generate");
       setNameSuggestion(response.data.name || "");
       setCreateName(response.data.name || "");
+      setNameToken(response.data.nameToken || ""); // Set token to verify Guild name is from the generate endpoint
     } catch (requestError) {
       setError(getApiMessage(requestError, "Failed to generate guild name."));
     }
   };
 
   const handleCreateGuild = async () => {
+    // Check name token 
+    if (!nameToken)
+    {
+      setError("Please generate a Guild name first.");
+      return;
+    }
+
     const trimmedName = createName.trim();
     if (!trimmedName) {
       setError("Guild name is required.");
@@ -721,7 +730,7 @@ const GuildsPage: React.FC = () => {
     setNotice(null);
 
     try {
-      const response = await api.post<{ guildId: number; message: string }>("/api/guilds", { name: trimmedName });
+      const response = await api.post<{ guildId: number; name: string; message: string }>("/api/guilds", { name: trimmedName, nameToken });
       setNotice(response.data.message || "Guild created.");
       setGuildId(response.data.guildId);
       setTab("overview");

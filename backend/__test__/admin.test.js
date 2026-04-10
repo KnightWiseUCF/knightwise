@@ -19,7 +19,13 @@
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const { app, pool } = require("../server");
-const { TEST_USER, verifyTestDatabase, insertQuestion } = require("./testHelpers");
+const { TEST_USER,
+        verifyTestDatabase,
+        insertQuestion,
+        getAuthToken,
+        insertUser,
+        insertGuildWithOwner,
+      } = require("./testHelpers");
 const { ITEM_TYPES } = require('../../shared/itemConfig');
 
 // Mock Mailjet
@@ -379,5 +385,120 @@ describe("Admin Routes", () => {
         .send({ itemType: ITEM_TYPES.FLAIR, itemCost: 5.00, itemName: 'Test Flair' });
 
       expect(res.status).toBe(401);
+    });
+
+    // Test admin Guild creation (allows arbitrary Guild names and specified Owner ID)
+    describe('POST /api/admin/guilds', () => {
+
+      let userId;
+
+      beforeAll(async () => {
+        // create test user to own Guilds
+        userId = await insertUser({ username: 'guild_owner', email: 'guild_owner@test.com' });
+      });
+
+      afterEach(async () => {
+        await pool.query('DELETE FROM GuildMember');
+        await pool.query('DELETE FROM Guild');
+      });
+
+      afterAll(async () => {
+        await pool.query('DELETE FROM User WHERE ID = ?', [userId]);
+      });
+
+      test('201 - successfully creates guild and inserts owner as member', async () => {
+        const res = await request(app)
+          .post('/api/admin/guilds')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ name: 'Admin Guild', ownerId: userId });
+
+        expect(res.status).toBe(201);
+        expect(res.body).toHaveProperty('guildId');
+
+        // verify guild exists
+        const [guilds] = await pool.query('SELECT * FROM Guild WHERE ID = ?', [res.body.guildId]);
+        expect(guilds).toHaveLength(1);
+        expect(guilds[0].NAME).toBe('Admin Guild');
+
+        // verify owner membership
+        const [members] = await pool.query(
+          'SELECT ROLE FROM GuildMember WHERE USER_ID = ? AND GUILD_ID = ?',
+          [userId, res.body.guildId]
+        );
+        expect(members).toHaveLength(1);
+        expect(members[0].ROLE).toBe('Owner');
+      });
+
+      test('400 - missing guild name', async () => {
+        const res = await request(app)
+          .post('/api/admin/guilds')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ ownerId: userId });
+
+        expect(res.status).toBe(400);
+      });
+
+      test('400 - invalid owner ID', async () => {
+        const res = await request(app)
+          .post('/api/admin/guilds')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ name: 'Guild Invalid', ownerId: 'not-a-number' });
+
+        expect(res.status).toBe(400);
+      });
+
+      test('404 - owner does not exist', async () => {
+        const res = await request(app)
+          .post('/api/admin/guilds')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ name: 'Guild Unknown', ownerId: 999999 });
+
+        expect(res.status).toBe(404);
+      });
+
+      test('409 - owner already in a guild', async () => {
+        // create guild for other user
+        const otherId = await insertUser({ username: 'otheruser', email: 'otheruser@test.com' });
+        await insertGuildWithOwner(otherId, { name: 'Existing Guild' });
+
+        const res = await request(app)
+          .post('/api/admin/guilds')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ name: 'New Guild', ownerId: otherId });
+
+        expect(res.status).toBe(409);
+
+        // Cleanup
+        await pool.query(`DELETE FROM User WHERE ID = ${otherId}`);
+      });
+
+      test('409 - guild name already taken', async () => {
+        // create guild for other user
+        const user1 = await insertUser({ username: 'user1', email: 'user1@test.com' });
+        await insertGuildWithOwner(user1, { name: 'Duplicate Guild' });
+
+        const user2 = await insertUser({ username: 'user2', email: 'user2@test.com' });
+
+        const res = await request(app)
+          .post('/api/admin/guilds')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ name: 'Duplicate Guild', ownerId: user2 });
+
+        expect(res.status).toBe(409);
+
+        // Cleanup
+        await pool.query('DELETE FROM User WHERE ID IN (?, ?)', [user1, user2]);
+      });
+
+      test('401 - non-admin cannot create guild', async () => {
+        const nonAdminToken = await getAuthToken();
+
+        const res = await request(app)
+          .post('/api/admin/guilds')
+          .set('Authorization', `Bearer ${nonAdminToken}`)
+          .send({ name: 'Admin Only', ownerId: userId });
+
+        expect(res.status).toBe(401);
+      });
     });
 })
