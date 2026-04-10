@@ -9,6 +9,7 @@ import { useUserCustomizationStore, userCustomizationStore } from "../stores/use
 import { getBackgroundUrlByItemName, getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getFlairPresentation } from "../utils/flairPresentation";
 import { getProfilePathForUser } from "../utils/profileRouting";
+import { formatTenths, formatTenthsLocale } from "../utils/numberFormat";
 
 interface StoredUserData {
   id?: number;
@@ -974,23 +975,23 @@ const ProfilePage: React.FC = () => {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-lg border border-gray-200 bg-white p-4">
                   <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Coins</p>
-                  <p className="mt-2 text-3xl font-bold text-gray-900">{activeUser?.COINS ?? routeCoins ?? "-"}</p>
+                  <p className="mt-2 text-3xl font-bold text-gray-900">{formatTenths(activeUser?.COINS ?? routeCoins, "-")}</p>
                 </article>
                 <article className="rounded-lg border border-gray-200 bg-white p-4">
                   <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Lifetime EXP</p>
                   <p className="mt-2 text-3xl font-bold text-gray-900">
-                    {activeUser?.LIFETIME_EXP ?? routeLifetimeExp ?? (routeExpTab === "lifetime" && routeExp !== null ? routeExp : "-")}
+                    {formatTenths(activeUser?.LIFETIME_EXP ?? routeLifetimeExp ?? (routeExpTab === "lifetime" && routeExp !== null ? routeExp : null), "-")}
                   </p>
                 </article>
                 <article className="rounded-lg border border-gray-200 bg-white p-4">
                   <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Weekly EXP</p>
                   <p className="mt-2 text-3xl font-bold text-gray-900">
-                    {activeUser?.WEEKLY_EXP ?? routeWeeklyExp ?? (routeExpTab === "weekly" && routeExp !== null ? routeExp : "-")}
+                    {formatTenths(activeUser?.WEEKLY_EXP ?? routeWeeklyExp ?? (routeExpTab === "weekly" && routeExp !== null ? routeExp : null), "-")}
                   </p>
                 </article>
                 <article className="rounded-lg border border-gray-200 bg-white p-4">
                   <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Daily EXP</p>
-                  <p className="mt-2 text-3xl font-bold text-gray-900">{activeUser?.DAILY_EXP ?? routeDailyExp ?? "-"}</p>
+                  <p className="mt-2 text-3xl font-bold text-gray-900">{formatTenths(activeUser?.DAILY_EXP ?? routeDailyExp, "-")}</p>
                 </article>
               </div>
             </div>
@@ -1209,7 +1210,7 @@ const ProfilePage: React.FC = () => {
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{item.TYPE.replace("_", " ")}</p>
                     {renderItemPreview(item)}
                     <h3 className="text-lg font-semibold text-gray-900">{item.NAME}</h3>
-                    <p className="mt-2 text-gray-700">Cost: {item.COST} coins</p>
+                    <p className="mt-2 text-gray-700">Cost: {formatTenthsLocale(item.COST)} coins</p>
 
                     <button
                       type="button"

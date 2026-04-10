@@ -8,6 +8,7 @@ import api from "../api";
 import { getBackgroundUrlByItemName, getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getProfilePathForUser } from "../utils/profileRouting";
 import { getFlairPresentation } from "../utils/flairPresentation";
+import { formatTenthsLocale } from "../utils/numberFormat";
 import type {
   ApiMessageResponse,
   GuildInfoResponse,
@@ -1271,7 +1272,7 @@ const GuildsPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Coin Bank</p>
-                          <p className="font-semibold text-gray-900">{toNumber(guild.COINS).toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">{formatTenthsLocale(toNumber(guild.COINS))}</p>
                         </div>
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Members</p>
@@ -1279,11 +1280,11 @@ const GuildsPage: React.FC = () => {
                         </div>
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Weekly EXP</p>
-                          <p className="font-semibold text-gray-900">{toNumber(guild.WEEKLY_EXP).toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">{formatTenthsLocale(toNumber(guild.WEEKLY_EXP))}</p>
                         </div>
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Lifetime EXP</p>
-                          <p className="font-semibold text-gray-900">{toNumber(guild.LIFETIME_EXP).toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">{formatTenthsLocale(toNumber(guild.LIFETIME_EXP))}</p>
                         </div>
                       </div>
                     </div>
@@ -1383,7 +1384,7 @@ const GuildsPage: React.FC = () => {
                         </div>
                         <div className="rounded-lg border border-yellow-200 bg-white/80 p-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Coin Bank</p>
-                          <p className="mt-1 text-2xl font-bold text-gray-900">{coinBank.toLocaleString()}</p>
+                          <p className="mt-1 text-2xl font-bold text-gray-900">{formatTenthsLocale(coinBank)}</p>
                         </div>
                         <div className="rounded-lg border border-yellow-200 bg-white/80 p-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Progress To Next</p>
@@ -1449,7 +1450,7 @@ const GuildsPage: React.FC = () => {
                             </div>
                             {guildUnlockProgress.nextItem && guildUnlockProgress.nextThreshold !== null && (
                               <p className="mt-3 text-xs text-gray-700">
-                                Coin bank: {coinBank.toLocaleString()} / {guildUnlockProgress.nextThreshold.toLocaleString()} ({Math.max(0, guildUnlockProgress.nextThreshold - coinBank).toLocaleString()} coins remaining)
+                                Coin bank: {formatTenthsLocale(coinBank)} / {formatTenthsLocale(guildUnlockProgress.nextThreshold)} ({formatTenthsLocale(Math.max(0, guildUnlockProgress.nextThreshold - coinBank))} coins remaining)
                               </p>
                             )}
                           </div>
@@ -1546,7 +1547,7 @@ const GuildsPage: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                   <p className="text-xs text-gray-500">#{index + 1}</p>
-                                  <p className="text-xs text-gray-500">{metricLabel}: {metricValue.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-500">{metricLabel}: {formatTenthsLocale(metricValue)}</p>
                                 </div>
                               </div>
 
@@ -1969,7 +1970,7 @@ const GuildsPage: React.FC = () => {
                             </div>
                           </div>
                           <div className="ml-4 text-right">
-                            <p className="text-sm font-semibold text-gray-900">{toNumber(g.exp)} XP</p>
+                            <p className="text-sm font-semibold text-gray-900">{formatTenthsLocale(toNumber(g.exp))} XP</p>
                           </div>
                         </div>
                         <div className="mt-3 flex gap-2">

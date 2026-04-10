@@ -23,6 +23,7 @@ import { HistoryEntry, UserInfoResponse } from "../models";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { ALL_TOPICS, formatSubcategoryLabel } from "../utils/topicLabels";
+import { formatTenths } from "../utils/numberFormat";
 
 interface MessageDataResponse {
   history?: Array<{ datetime: string; topic: string }>;
@@ -319,6 +320,9 @@ const Dashboard: React.FC = () => {
   const lastTopicSlug = toCanonicalTopicSlug(lastAttempt?.topic);
   const lastTopicLabel = formatSubcategoryLabel(lastTopicSlug || lastAttempt?.topic);
   const weakTopicLabel = weakestTopics.length > 0 ? formatSubcategoryLabel(weakestTopics[0][0]) : null;
+  const lifetimeExpText = formatTenths(lifetimeExp ?? 0);
+  const coinsText = formatTenths(coins ?? 0);
+  const weeklyExpText = formatTenths(weeklyExp ?? 0);
 
   const handlePracticeTopic = (topic: string) => {
     const slug = toCanonicalTopicSlug(topic);
@@ -512,7 +516,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Lifetime XP</p>
-                <p className="text-2xl font-bold text-gray-900">{lifetimeExp ?? 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{lifetimeExpText}</p>
               </div>
             </div>
           </section>
@@ -526,10 +530,10 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Coins</p>
-                <p className="text-2xl font-bold text-gray-900">{coins ?? 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{coinsText}</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mt-3">Weekly XP: {weeklyExp ?? 0}</p>
+            <p className="text-sm text-gray-600 mt-3">Weekly XP: {weeklyExpText}</p>
           </section>
         </div>
         </div>

@@ -50,7 +50,17 @@ const getGuildLeaderboardData = async (db, userId, expCol, page) =>
         DENSE_RANK() OVER (ORDER BY g.${expCol} DESC) AS \`rank\`,
         g.NAME,
         g.${expCol} AS exp,
-        gi.itemName AS guildPicture
+        gi.itemName AS guildPicture,
+        bg.itemName AS background,
+        (
+          SELECT GROUP_CONCAT(si2.NAME ORDER BY si2.NAME SEPARATOR '${FLAIR_SEPARATOR}')
+          FROM GuildUnlock gu2
+          JOIN StoreItem si2 ON si2.ID = gu2.ITEM_ID
+          WHERE gu2.GUILD_ID = g.ID
+            AND gu2.IS_EQUIPPED = 1
+            AND si2.TYPE = 'flair'
+            AND si2.IS_GUILD_ITEM = 1
+        ) AS flairNames
       FROM Guild g
       LEFT JOIN (
         SELECT gu.GUILD_ID, si.NAME AS itemName
@@ -58,6 +68,12 @@ const getGuildLeaderboardData = async (db, userId, expCol, page) =>
         JOIN StoreItem si ON si.ID = gu.ITEM_ID
         WHERE gu.IS_EQUIPPED = 1 AND si.TYPE = 'profile_picture' AND si.IS_GUILD_ITEM = 1
       ) gi ON gi.GUILD_ID = g.ID
+      LEFT JOIN (
+        SELECT gu.GUILD_ID, si.NAME AS itemName
+        FROM GuildUnlock gu
+        JOIN StoreItem si ON si.ID = gu.ITEM_ID
+        WHERE gu.IS_EQUIPPED = 1 AND si.TYPE = 'background' AND si.IS_GUILD_ITEM = 1
+      ) bg ON bg.GUILD_ID = g.ID
     ) ranked
     ORDER BY \`rank\` ASC, NAME ASC
     LIMIT ? OFFSET ?`,
@@ -105,6 +121,10 @@ const getGuildLeaderboardData = async (db, userId, expCol, page) =>
       name:         row.NAME,
       exp:          row.exp,
       guildPicture: row.guildPicture ?? null,
+      background:   row.background ?? null,
+      flairNames:   typeof row.flairNames === 'string' && row.flairNames.length > 0
+        ? row.flairNames.split(FLAIR_SEPARATOR).filter(Boolean)
+        : [],
     }))
   };
 };

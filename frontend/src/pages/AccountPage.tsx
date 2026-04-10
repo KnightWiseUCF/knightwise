@@ -19,6 +19,7 @@ import DeleteAccount from "../components/DeleteAccount";
 import Layout from "../components/Layout";
 import api from "../api";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+import { formatTenths } from "../utils/numberFormat";
 
 interface UserInfoResponse {
   user: {
@@ -190,25 +191,25 @@ const AccountPage: React.FC = () => {
                     <label className="font-semibold text-gray-600 min-w-[120px]">
                       Coins:
                     </label>
-                    <span className="text-gray-800">{user?.COINS ?? "-"}</span>
+                    <span className="text-gray-800">{formatTenths(user?.COINS, "-")}</span>
                   </div>
                   <div className="flex">
                     <label className="font-semibold text-gray-600 min-w-[120px]">
                       Lifetime EXP:
                     </label>
-                    <span className="text-gray-800">{user?.LIFETIME_EXP ?? "-"}</span>
+                    <span className="text-gray-800">{formatTenths(user?.LIFETIME_EXP, "-")}</span>
                   </div>
                   <div className="flex">
                     <label className="font-semibold text-gray-600 min-w-[120px]">
                       Weekly EXP:
                     </label>
-                    <span className="text-gray-800">{user?.WEEKLY_EXP ?? "-"}</span>
+                    <span className="text-gray-800">{formatTenths(user?.WEEKLY_EXP, "-")}</span>
                   </div>
                   <div className="flex">
                     <label className="font-semibold text-gray-600 min-w-[120px]">
                       Daily EXP:
                     </label>
-                    <span className="text-gray-800">{user?.DAILY_EXP ?? "-"}</span>
+                    <span className="text-gray-800">{formatTenths(user?.DAILY_EXP, "-")}</span>
                   </div>
                 </>
               )}
