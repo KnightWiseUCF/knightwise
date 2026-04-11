@@ -262,6 +262,13 @@ const Dashboard: React.FC = () => {
     )
     : 0;
 
+  const weeklyAvgTime = useMemo(() => {
+    // We don't want to consider all the legacy untimed responses
+    const timedResponses = weeklyEntries.filter(e => toFiniteNumber(e.elapsedTime) > 0);
+    if (timedResponses.length === 0) return 0; // Let's not divide by 0
+    return Math.round(timedResponses.reduce((sum, e) => sum + toFiniteNumber(e.elapsedTime), 0) / timedResponses.length);
+  }, [weeklyEntries]);
+
   const weeklyActivity = useMemo(() => {
     const days: Array<{ key: string; label: string; attempts: number; correct: number }> = [];
 
@@ -438,7 +445,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <section className="rounded-xl border border-gray-200 bg-white p-5">
             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Weekly Performance</p>
-            <div className="mt-3 grid grid-cols-3 gap-3">
+            <div className="mt-3 grid grid-cols-4 gap-3">
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Attempts</p>
                 <p className="text-xl font-bold text-gray-900">{weeklyEntries.length}</p>
@@ -450,6 +457,12 @@ const Dashboard: React.FC = () => {
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Avg Score</p>
                 <p className="text-xl font-bold text-gray-900">{weeklyAverageScore}%</p>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
+                <p className="text-xs text-gray-500">Avg Time</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {weeklyAvgTime > 0 ? `${weeklyAvgTime}s` : "—"}
+                </p>
               </div>
             </div>
             <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
