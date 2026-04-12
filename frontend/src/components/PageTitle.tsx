@@ -4,8 +4,7 @@ import logo from "../assets/kw_logo.png";
 const taglines = [
   "Conquer your exams.",
   "['hip', 'hip'] Array!",
-  "Your path to success starts here.",
-  "Also try Terraria!",  
+  "Your path to success starts here."  
 ];
 
 const PageTitle: React.FC = () => {
