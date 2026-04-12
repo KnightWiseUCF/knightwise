@@ -73,6 +73,11 @@ interface FollowedLeaderboardResponse {
   leaderboard: FollowedLeaderboardEntry[];
 }
 
+interface GuildContributionResponse {
+  message: string;
+  newlyUnlocked?: Array<{ id: number; name: string; type: string }>;
+}
+
 const DELETE_CONFIRMATION_PHRASE = "YES DELETE NOW";
 
 const toNumber = (value: number | string | null | undefined): number => {
@@ -152,6 +157,10 @@ const getApiMessage = (error: unknown, fallback: string): string => {
       : "";
 
   return message || error.message || fallback;
+};
+
+const isStoreItemType = (value: string): value is StoreItem["TYPE"] => {
+  return value === "flair" || value === "profile_picture" || value === "background";
 };
 
 const GUILDS_CACHE_KEY = "guild_snapshot_v1";
@@ -235,6 +244,8 @@ const GuildsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState("");
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
+  const [unlockModalItems, setUnlockModalItems] = useState<StoreItem[]>([]);
   const [kickTargetMember, setKickTargetMember] = useState<{ id: number; username: string } | null>(null);
   const [followedUsernames, setFollowedUsernames] = useState<Set<string>>(new Set());
   const [followActionUsername, setFollowActionUsername] = useState<string | null>(null);
@@ -793,8 +804,44 @@ const GuildsPage: React.FC = () => {
     setNotice(null);
 
     try {
-      const response = await api.post<{ message: string }>(`/api/guilds/${guildId}/contribute`, { amount });
+      const response = await api.post<GuildContributionResponse>(`/api/guilds/${guildId}/contribute`, { amount });
       setNotice(response.data.message || "Contribution successful.");
+
+      const newlyUnlocked = Array.isArray(response.data.newlyUnlocked)
+        ? response.data.newlyUnlocked
+        : [];
+
+      if (newlyUnlocked.length > 0)
+      {
+        const storeItemsById = new Map(guildStoreItems.map((item) => [item.ID, item]));
+        const normalizedUnlockedItems = newlyUnlocked.flatMap((unlocked) => {
+          const matchedStoreItem = storeItemsById.get(unlocked.id);
+          if (matchedStoreItem)
+          {
+            return [matchedStoreItem];
+          }
+
+          if (!isStoreItemType(unlocked.type))
+          {
+            return [];
+          }
+
+          return [{
+            ID: unlocked.id,
+            TYPE: unlocked.type,
+            COST: "0",
+            NAME: unlocked.name,
+            IS_GUILD_ITEM: true,
+          }];
+        });
+
+        if (normalizedUnlockedItems.length > 0)
+        {
+          setUnlockModalItems(normalizedUnlockedItems);
+          setIsUnlockModalOpen(true);
+        }
+      }
+
       await refreshGuild(guildId);
       await refreshMyGuild();
     } catch (requestError) {
@@ -2079,6 +2126,59 @@ const GuildsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {isUnlockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
+            <div className="relative mb-4">
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {unlockModalItems.length > 1 ? "⭐ New Guild Items Unlocked! ⭐" : "⭐ New Guild Item Unlocked! ⭐"}
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Your contribution unlocked {unlockModalItems.length === 1 ? "a" : unlockModalItems.length} new guild item{unlockModalItems.length === 1 ? "" : "s"}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUnlockModalOpen(false);
+                  setUnlockModalItems([]);
+                }}
+                className="absolute right-0 top-0 rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Close unlock modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3">
+              {unlockModalItems.map((item) => (
+                <div key={item.ID} className="w-full max-w-sm rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  {renderGuildItemPreview(item)}
+                  <p className="font-semibold text-gray-900">{item.NAME}</p>
+                  <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">
+                    {item.TYPE.replace("_", " ")}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUnlockModalOpen(false);
+                  setUnlockModalItems([]);
+                }}
+                className="rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-600"
+              >
+                Nice!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
