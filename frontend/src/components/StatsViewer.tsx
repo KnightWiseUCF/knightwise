@@ -517,7 +517,7 @@ const StatsViewer: React.FC = () => {
               </div>
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
                   <p className="text-xs text-gray-500 mb-2">Average Time Per Problem</p>
-                  <p className="text-2xl font-bold text-gray-800 ">{statViewerData.AvgElapsedTime}</p>
+                  <p className="text-2xl font-bold text-gray-800 ">{statViewerData.AvgElapsedTime > 0 ? `${Math.round(statViewerData.AvgElapsedTime)}s` : "—"}</p>
               </div>
 
           </div>

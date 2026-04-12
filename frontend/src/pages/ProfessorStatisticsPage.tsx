@@ -585,7 +585,7 @@ const ProfessorStatisticsPage: React.FC = () =>
                     <p className="text-xl font-bold text-gray-900">{questionStats?.responseCount}</p>
                 </div>
                 <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
-                    <p className="text-xs text-gray-500">{moreThanOneChecked ? 'Average Median Performance' : 'Median Perfomance'}</p>
+                    <p className="text-xs text-gray-500">{moreThanOneChecked ? 'Average Median Accuracy' : 'Median Accuracy'}</p>
                     <p className="text-xl font-bold text-gray-900">{questionStats?.medianAccuracy == undefined ? 0 : questionStats?.medianAccuracy}%</p>
                 </div>
                 <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 min-w-[220px] flex-1">
