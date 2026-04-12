@@ -93,12 +93,21 @@ const toNumber = (value: number | string | null | undefined): number => {
   return 0;
 };
 
-const toBoolean = (value: boolean | number | null | undefined): boolean => {
+const toBoolean = (value: boolean | number | string | null | undefined): boolean => {
   if (typeof value === "boolean") {
     return value;
   }
 
-  return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "1" || normalized === "true";
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  return false;
 };
 
 const formatRoleLabel = (role: GuildRole | string | undefined): string => {
@@ -202,8 +211,7 @@ const GuildsPage: React.FC = () => {
   const storedUsername = useMemo(() => getStoredUsername(), []);
   const hasLoadedOnceRef = useRef(false);
   const isFetchingRef = useRef(false);
-  const browseRequestSeqRef = useRef(0);
-  const browseGuildMetaCacheRef = useRef<Map<number, { isOpen: boolean; backgroundName: string | null; profilePictureName: string | null }>>(new Map());
+  const isBrowseFetchingRef = useRef(false);
 
   const [tab, setTab] = useState<GuildTab>("overview");
   const [notice, setNotice] = useState<string | null>(null);
@@ -512,73 +520,93 @@ const GuildsPage: React.FC = () => {
   }, []);
 
   const refreshBrowseGuilds = useCallback(async () => {
-    const requestSeq = ++browseRequestSeqRef.current;
+    if (isBrowseFetchingRef.current) {
+      return;
+    }
+
+    isBrowseFetchingRef.current = true;
     setBrowseLoading(true);
     setBrowseError(null);
 
-    const fetchGuildMeta = async (guildIdToLoad: number, attempt = 0): Promise<{ isOpen: boolean; backgroundName: string | null; profilePictureName: string | null } | null> => {
-      try {
-        const guildResponse = await api.get<GuildInfoResponse>(`/api/guilds/${guildIdToLoad}`);
-        const equipped = guildResponse.data.equippedItems || [];
-        const bg = equipped.find((item) => item.TYPE === "background") ?? null;
-        const pfp = equipped.find((item) => item.TYPE === "profile_picture") ?? null;
-        return {
-          isOpen: toBoolean(guildResponse.data.guild?.IS_OPEN),
-          backgroundName: bg ? bg.NAME : null,
-          profilePictureName: pfp ? pfp.NAME : null,
-        };
-      } catch {
-        if (attempt < 1) {
-          return fetchGuildMeta(guildIdToLoad, attempt + 1);
-        }
-        return null;
-      }
-    };
-
     try {
-      const response = await api.get<GuildLeaderboardResponse>("/api/leaderboard/guilds/weekly?page=1");
-      const rankedGuilds = response.data.leaderboard as BrowseGuildItem[];
+      // Fetch first page to get total page count
+      const firstPageResponse = await api.get<GuildLeaderboardResponse>("/api/leaderboard/guilds/weekly?page=1");
+      const totalPages = Math.max(1, Number(firstPageResponse.data.totalPages || 1));
+      const allGuildEntries = [...(Array.isArray(firstPageResponse.data.leaderboard) ? firstPageResponse.data.leaderboard : [])];
 
-      const metaResults = await Promise.all(
-        rankedGuilds.map(async (browseGuild) => {
-          const fetchedMeta = await fetchGuildMeta(browseGuild.id);
-          if (fetchedMeta) {
-            browseGuildMetaCacheRef.current.set(browseGuild.id, fetchedMeta);
-            return { browseGuild, meta: fetchedMeta };
+      // Fetch remaining pages in parallel
+      if (totalPages > 1) {
+        const pageRequests: Array<Promise<GuildLeaderboardResponse>> = [];
+        for (let page = 2; page <= totalPages; page += 1) {
+          pageRequests.push(
+            api.get<GuildLeaderboardResponse>(`/api/leaderboard/guilds/weekly?page=${page}`).then((r) => r.data)
+          );
+        }
+
+        const pageResponses = await Promise.allSettled(pageRequests);
+        for (const result of pageResponses) {
+          if (result.status === "fulfilled" && Array.isArray(result.value.leaderboard)) {
+            allGuildEntries.push(...result.value.leaderboard);
           }
-
-          const cachedMeta = browseGuildMetaCacheRef.current.get(browseGuild.id) || null;
-          return { browseGuild, meta: cachedMeta };
-        })
-      );
-
-      if (requestSeq !== browseRequestSeqRef.current) {
-        return;
+        }
       }
 
-      const normalized = metaResults
-        .filter((entry) => entry.meta?.isOpen)
-        .map((entry) => ({
-          ...entry.browseGuild,
-          backgroundName: entry.meta?.backgroundName ?? null,
-          profilePictureName: entry.meta?.profilePictureName ?? null,
+      // Determine open status for each guild
+      // If the leaderboard provides isOpen, use it directly; otherwise fall back to per-guild check
+      console.debug("[Browse] allGuildEntries raw:", JSON.stringify(allGuildEntries.map(e => ({ id: e.id, name: e.name, isOpen: e.isOpen, isOpenType: typeof e.isOpen }))));
+      const resolvedEntries: Array<{ entry: typeof allGuildEntries[number]; isOpen: boolean }> = [];
+
+      const needsCheck: typeof allGuildEntries = [];
+      for (const entry of allGuildEntries) {
+        if (entry.isOpen !== undefined && entry.isOpen !== null) {
+          resolvedEntries.push({ entry, isOpen: toBoolean(entry.isOpen) });
+        } else {
+          needsCheck.push(entry);
+        }
+      }
+
+      if (needsCheck.length > 0) {
+        const checks = await Promise.allSettled(
+          needsCheck.map(async (entry) => {
+            const guildResponse = await api.get<GuildInfoResponse>(`/api/guilds/${entry.id}`);
+            return { entry, isOpen: toBoolean(guildResponse.data.guild?.IS_OPEN) };
+          })
+        );
+
+        for (const result of checks) {
+          if (result.status === "fulfilled") {
+            resolvedEntries.push(result.value);
+          }
+          // Failed checks are silently excluded (treated as closed)
+        }
+      }
+
+      const normalized = resolvedEntries
+        .filter((r) => r.isOpen)
+        .map((r) => ({
+          rank: r.entry.rank,
+          id: r.entry.id,
+          name: r.entry.name,
+          exp: toNumber(r.entry.exp),
+          guildPicture: r.entry.guildPicture,
+          backgroundName: r.entry.background ?? null,
+          profilePictureName: r.entry.guildPicture,
         }))
         .sort((left, right) => {
           if (left.rank !== right.rank) return left.rank - right.rank;
           return left.id - right.id;
         });
 
+      console.debug("[Browse] resolvedEntries:", resolvedEntries.map(r => ({ id: r.entry.id, name: r.entry.name, isOpen: r.isOpen })));
+      console.debug("[Browse] normalized (final):", normalized.length, "guilds");
+
       setBrowseGuilds(normalized);
     } catch (requestError) {
-      if (requestSeq !== browseRequestSeqRef.current) {
-        return;
-      }
       setBrowseError(getApiMessage(requestError, "Failed to load guilds."));
       setBrowseGuilds([]);
     } finally {
-      if (requestSeq === browseRequestSeqRef.current) {
-        setBrowseLoading(false);
-      }
+      isBrowseFetchingRef.current = false;
+      setBrowseLoading(false);
     }
   }, []);
 
