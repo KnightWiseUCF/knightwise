@@ -142,9 +142,12 @@ const ProfilePage: React.FC = () => {
   const routeBackgroundName = isUsernameProfileRoute && stateUsernameMatchesRoute
     ? (leaderboardEntry?.background ?? null)
     : null;
-  const routeFlairNames = isUsernameProfileRoute && stateUsernameMatchesRoute
-    ? (leaderboardEntry?.flairNames ?? [])
-    : [];
+  const routeFlairNames = useMemo(
+    () => (isUsernameProfileRoute && stateUsernameMatchesRoute
+      ? (leaderboardEntry?.flairNames ?? [])
+      : []),
+    [isUsernameProfileRoute, stateUsernameMatchesRoute, leaderboardEntry?.flairNames]
+  );
 
   const profileUserId = useMemo(() => {
     if (!userIdParam) {
