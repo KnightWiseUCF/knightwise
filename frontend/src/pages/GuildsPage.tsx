@@ -193,6 +193,8 @@ const GuildsPage: React.FC = () => {
   const storedUsername = useMemo(() => getStoredUsername(), []);
   const hasLoadedOnceRef = useRef(false);
   const isFetchingRef = useRef(false);
+  const browseRequestSeqRef = useRef(0);
+  const browseGuildMetaCacheRef = useRef<Map<number, { isOpen: boolean; backgroundName: string | null; profilePictureName: string | null }>>(new Map());
 
   const [tab, setTab] = useState<GuildTab>("overview");
   const [notice, setNotice] = useState<string | null>(null);
@@ -499,37 +501,73 @@ const GuildsPage: React.FC = () => {
   }, []);
 
   const refreshBrowseGuilds = useCallback(async () => {
+    const requestSeq = ++browseRequestSeqRef.current;
     setBrowseLoading(true);
     setBrowseError(null);
+
+    const fetchGuildMeta = async (guildIdToLoad: number, attempt = 0): Promise<{ isOpen: boolean; backgroundName: string | null; profilePictureName: string | null } | null> => {
+      try {
+        const guildResponse = await api.get<GuildInfoResponse>(`/api/guilds/${guildIdToLoad}`);
+        const equipped = guildResponse.data.equippedItems || [];
+        const bg = equipped.find((item) => item.TYPE === "background") ?? null;
+        const pfp = equipped.find((item) => item.TYPE === "profile_picture") ?? null;
+        return {
+          isOpen: toBoolean(guildResponse.data.guild?.IS_OPEN),
+          backgroundName: bg ? bg.NAME : null,
+          profilePictureName: pfp ? pfp.NAME : null,
+        };
+      } catch {
+        if (attempt < 1) {
+          return fetchGuildMeta(guildIdToLoad, attempt + 1);
+        }
+        return null;
+      }
+    };
+
     try {
       const response = await api.get<GuildLeaderboardResponse>("/api/leaderboard/guilds/weekly?page=1");
       const rankedGuilds = response.data.leaderboard as BrowseGuildItem[];
 
-      const openGuildChecks = await Promise.all(
+      const metaResults = await Promise.all(
         rankedGuilds.map(async (browseGuild) => {
-          try {
-            const guildResponse = await api.get<GuildInfoResponse>(`/api/guilds/${browseGuild.id}`);
-            if (!toBoolean(guildResponse.data.guild?.IS_OPEN)) return null;
-            const equipped = guildResponse.data.equippedItems || [];
-            const bg = equipped.find((item) => item.TYPE === "background") ?? null;
-            const pfp = equipped.find((item) => item.TYPE === "profile_picture") ?? null;
-            return {
-              ...browseGuild,
-              backgroundName: bg ? bg.NAME : null,
-              profilePictureName: pfp ? pfp.NAME : null,
-            };
-          } catch {
-            return null;
+          const fetchedMeta = await fetchGuildMeta(browseGuild.id);
+          if (fetchedMeta) {
+            browseGuildMetaCacheRef.current.set(browseGuild.id, fetchedMeta);
+            return { browseGuild, meta: fetchedMeta };
           }
+
+          const cachedMeta = browseGuildMetaCacheRef.current.get(browseGuild.id) || null;
+          return { browseGuild, meta: cachedMeta };
         })
       );
 
-      setBrowseGuilds(openGuildChecks.filter((guild): guild is BrowseGuildItem => guild !== null));
+      if (requestSeq !== browseRequestSeqRef.current) {
+        return;
+      }
+
+      const normalized = metaResults
+        .filter((entry) => entry.meta?.isOpen)
+        .map((entry) => ({
+          ...entry.browseGuild,
+          backgroundName: entry.meta?.backgroundName ?? null,
+          profilePictureName: entry.meta?.profilePictureName ?? null,
+        }))
+        .sort((left, right) => {
+          if (left.rank !== right.rank) return left.rank - right.rank;
+          return left.id - right.id;
+        });
+
+      setBrowseGuilds(normalized);
     } catch (requestError) {
+      if (requestSeq !== browseRequestSeqRef.current) {
+        return;
+      }
       setBrowseError(getApiMessage(requestError, "Failed to load guilds."));
       setBrowseGuilds([]);
     } finally {
-      setBrowseLoading(false);
+      if (requestSeq === browseRequestSeqRef.current) {
+        setBrowseLoading(false);
+      }
     }
   }, []);
 
@@ -1201,7 +1239,10 @@ const GuildsPage: React.FC = () => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => setTab("browse")}
+                      onClick={() => {
+                        setTab("browse");
+                        void refreshBrowseGuilds();
+                      }}
                       className="mt-4 rounded-lg bg-gray-900 px-4 py-2 font-semibold text-white hover:bg-black"
                     >
                       Open Browse
