@@ -21,7 +21,7 @@
 ////////////////////////////////////////////////////////////////
 
 // this page shows questions related to the chosen topic
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import MultipleChoice from "../components/MultipleChoice";
@@ -58,6 +58,7 @@ const TopicTestPage: React.FC = () => {
   const [passedTests, setPassedTests] = useState<number | null>(null);
   const [totalTests, setTotalTests] = useState<number | null>(null);
   const [progSubmitsRemaining, setProgSubmitsRemaining] = useState<number | null>(null);
+  const startTimeRef = useRef<number>(Date.now()); // Ref so we don't need to re-render on change
   const navigate = useNavigate();
   const programmingLanguageIds: Record<string, number> = {
     C: 50,
@@ -302,6 +303,9 @@ const TopicTestPage: React.FC = () => {
     if (!current || !hasAnswer || isSubmitting) return;
     setIsSubmitting(true);
 
+    // Stop timer (compute elapsed time in seconds)
+    const elapsedTime = Math.round((Date.now() - startTimeRef.current) / 1000);
+
     if (questionType === "programming") {
       setPointsEarned(null);
       setPointsPossible(null);
@@ -325,6 +329,7 @@ const TopicTestPage: React.FC = () => {
             code: programmingAnswer,
             languageId,
             isTestRun: false,
+            elapsedTime,
           },
           token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
         );
@@ -433,6 +438,7 @@ const TopicTestPage: React.FC = () => {
         userAnswer,
         category: String(current.CATEGORY || ""),
         topic: String(current.SUBCATEGORY || ""),
+        elapsedTime,
       };
 
       // Ensure payload can be JSON serialized
@@ -588,6 +594,8 @@ const TopicTestPage: React.FC = () => {
   })() : null;
 
   useEffect(() => {
+    // On question change, start the timer
+    startTimeRef.current = Date.now();
     if (questionType === "ranked_choice" && current?.options) {
       setSelectedOrder(current.options);
     } else if (questionType === "drag_and_drop") {

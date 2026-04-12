@@ -19,7 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import Layout from "../components/Layout";
 import MockTestInfo from "../components/MockTestInfo";
 import MockTestResult from "../components/MockTestResult";
@@ -177,6 +177,7 @@ const MockTestPage: React.FC = () => {
   const [passedTests, setPassedTests] = useState<number | null>(null);
   const [totalTests, setTotalTests] = useState<number | null>(null);
   const [progSubmitsRemaining, setProgSubmitsRemaining] = useState<number | null>(null);
+  const startTimeRef = useRef<number>(Date.now()); // Ref so we don't need to re-render on change
   const programmingLanguageIds: Record<string, number> = {
     C: 50,
     "C++": 54,
@@ -222,6 +223,8 @@ const MockTestPage: React.FC = () => {
   const questionType = current?.QUESTION_TYPE || 'multiple_choice';
 
   useEffect(() => {
+    // On question change, start the timer
+    startTimeRef.current = Date.now(); 
     if (questionType === "ranked_choice" && current?.options) {
       setSelectedOrder(current.options);
     } else if (questionType === "drag_and_drop") {
@@ -395,6 +398,7 @@ const MockTestPage: React.FC = () => {
       resetInteractionState();
       setTimeRemainingSeconds(clampTimeLimit(timeLimitMinutes) * 60);
       setCompletionReason("completed");
+      startTimeRef.current = Date.now(); // Reset timer on test start
       setStep("test");
     } catch (error) {
       console.error("Failed to prepare custom mock test", error);
@@ -422,6 +426,9 @@ const MockTestPage: React.FC = () => {
     // Disable submit button (prevents spam)
     setIsSubmitting(true);
 
+    // Stop timer (compute elapsed time in seconds)
+    const elapsedTime = Math.round((Date.now() - startTimeRef.current) / 1000);
+
     if (questionType === "programming") {
       const languageId = programmingLanguageIds[programmingLanguage];
       const token = localStorage.getItem("token");
@@ -444,6 +451,7 @@ const MockTestPage: React.FC = () => {
             code: programmingAnswer,
             languageId,
             isTestRun: false,
+            elapsedTime,
           },
           token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
         );
@@ -532,6 +540,7 @@ const MockTestPage: React.FC = () => {
           userAnswer,
           category: current.CATEGORY,
           topic: current.SUBCATEGORY,
+          elapsedTime,
         },
         submitConfig
       );
