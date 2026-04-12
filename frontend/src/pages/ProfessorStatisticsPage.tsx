@@ -463,29 +463,46 @@ const ProfessorStatisticsPage: React.FC = () =>
 
     const getPercentageGraphs = () => {
         const mastery = topicStats?.medianPerformanceMetric ?? 0;
+        const accuracyPercent = (topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0)
+            ? Math.round(topicStats.medianAccuracy * 100)
+            : 0;
+        const masteryPercent = mastery > 0 ? Math.round(mastery * 100) : 0;
+        const accuracyBarHeight = Math.max(12, accuracyPercent * 1.5);
+        const masteryBarHeight = Math.max(12, masteryPercent * 1.5);
+        const useOutsideAccuracyLabel = accuracyBarHeight < 28;
+        const useOutsideMasteryLabel = masteryBarHeight < 28;
         
             return (
                 <div className="flex items-end gap-2 h-30">
                     <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
                         <div className="w-1/2 h-14 flex items-end">
-                            <div className={`w-full rounded-t text-white text-center text-sm
+                            <div className={`relative w-full rounded-t
                                 ${topicStats?.medianAccuracy !== undefined ? (topicStats?.medianAccuracy > 0  ? "bg-blue-500" : "bg-gray-300") : "bg-gray-300"}`}
-                                style={{ height: `${Math.max(12, (topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats?.medianAccuracy*100*1.5 : 0)}%`
-                                }}
+                                style={{ height: `${accuracyBarHeight}%` }}
                                 title={`${topicChoice}: ${Math.round(((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? topicStats.medianAccuracy : 0)*100)}% accuracy`}
-                            >{((topicStats?.medianAccuracy !== undefined && topicStats?.medianAccuracy > 0) ? Math.round(topicStats.medianAccuracy*100) + '%' : '')}</div>
+                            >
+                                {accuracyPercent > 0 && (
+                                    <span className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold leading-none pointer-events-none ${useOutsideAccuracyLabel ? "-top-4 text-blue-600" : "top-1 text-white"}`}>
+                                        {`${accuracyPercent}%`}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <span className="text-[10px] text-gray-500 leading-none">Median Accuracy</span>
                     </div> 
                     <div className="flex-1 min-w-0 flex flex-col items-center gap-1">
                         <div className="w-1/2 h-14 flex items-end">
                             <div
-                                className={`w-full rounded-t text-white text-center text-sm
+                                className={`relative w-full rounded-t
                                     ${mastery > 0 ? "bg-blue-500" : "bg-gray-300"}`}
-                                style={{ height: `${Math.max(12, (topicStats?.medianPerformanceMetric ?? 0) * 100 * 1.5)}%` }}
+                                style={{ height: `${masteryBarHeight}%` }}
                                 title={`${topicChoice}: ${Math.round((topicStats?.medianPerformanceMetric ?? 0) * 100)}% mastery`}
                             >
-                                {mastery > 0 ? Math.round(mastery * 100) + '%' : ''}
+                                {masteryPercent > 0 && (
+                                    <span className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold leading-none pointer-events-none ${useOutsideMasteryLabel ? "-top-4 text-blue-600" : "top-1 text-white"}`}>
+                                        {`${masteryPercent}%`}
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <span className="text-[10px] text-gray-500 leading-none">Median Mastery</span>
@@ -546,6 +563,14 @@ const ProfessorStatisticsPage: React.FC = () =>
         const length = checkQuestions.filter((question) => {return question.isChecked}).length
         const moreThanOneChecked: boolean =  length > 1
         const noneChecked: boolean = length < 1
+
+        if (statsLoading && !noneChecked) {
+            return (
+                <div className="mt-3 flex text-center justify-center py-10">
+                    <p className="text-xl font-semibold text-gray-900">Loading question statistics...</p>
+                </div>
+            );
+        }
         
 
         return questionStats?.responseCount !== undefined && questionStats?.responseCount > 0 && !noneChecked ?
@@ -576,7 +601,9 @@ const ProfessorStatisticsPage: React.FC = () =>
             </div>
         ) : (
             <div className="mt-3 flex text-center justify-center py-10">
-                <p className="text-xl font-semibold text-gray-900">No Question Responses To Show!</p>
+                <p className="text-xl font-semibold text-gray-900">
+                    {noneChecked ? 'Select a question to view statistics' : 'No statistics have been reported for this question set yet.'}
+                </p>
             </div>
         );
     }
@@ -743,13 +770,13 @@ const ProfessorStatisticsPage: React.FC = () =>
                     )}
 
                     {!loading && (
-                    <div className="flex justify-between items-center w-full">
+                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Topic Stats</h2>
                         <div>
-                            <span className="pr-2 text-lg text-gray-900 font-bold">Topic: </span>
+                            <span className="pr-2 text-base sm:text-lg text-gray-900 font-bold">Topic: </span>
                             <select 
                                 value={topicChoice}
-                                className="border border-gray-300 rounded-lg px-3 py-2 text-md text-gray-700 bg-gray-100"
+                                className="border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-md text-gray-700 bg-gray-100"
                                 onChange={(event) => {
                                     const topic: string = event.target.value as string;
                                     setTopicChoice(topic);
@@ -765,14 +792,14 @@ const ProfessorStatisticsPage: React.FC = () =>
                     )}
 
                     {!loading && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-                        <section className="rounded-xl border border-gray-200 bg-white p-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+                        <section className="rounded-xl border border-gray-200 bg-white p-5 flex h-full flex-col">
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Percentages</p>
 
                             {getPercentageGraphs()}
 
                         </section>
-                        <section className="rounded-xl border border-gray-200 bg-white p-5">
+                        <section className="rounded-xl border border-gray-200 bg-white p-5 flex h-full flex-col">
                              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Statistics</p>
                              {getStatisticsGrid()}
                         </section>
@@ -780,12 +807,12 @@ const ProfessorStatisticsPage: React.FC = () =>
                     )}
 
                     {!loading && (
-                    <div className="flex justify-between items-center w-full">
+                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-600">Question Stats</h2>
 
                         <select 
                             value={topicChoice2}
-                            className="border border-gray-300 rounded-lg px-3 py-2 text-md text-gray-700 bg-gray-100"
+                            className="border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-md text-gray-700 bg-gray-100"
                             onChange={(event) => {
                                 const topic: string = event.target.value as string;
                                 setTopicChoice2(topic);
@@ -800,14 +827,16 @@ const ProfessorStatisticsPage: React.FC = () =>
                     )}
 
                     {!loading && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-                        <section className="rounded-xl border border-gray-200 bg-white p-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+                        <section className="rounded-xl border border-gray-200 bg-white p-5 flex h-full flex-col">
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">{statsLoading ? 'Updating...' : 'Statistics'}</p>
-                            {getQuestionStatisticsGrid()}
+                            <div className="flex-1">
+                                {getQuestionStatisticsGrid()}
+                            </div>
                         </section>
-                        <section className={`rounded-xl border border-gray-200 bg-white pr-1 p-5 ${questionsPagination?.totalPages !== undefined && questionsPagination?.totalPages > 1 ? `max-h-120` : `max-h-100`}`}>
+                        <section className={`rounded-xl border border-gray-200 bg-white pr-1 p-5 flex h-full flex-col ${questionsPagination?.totalPages !== undefined && questionsPagination?.totalPages > 1 ? `max-h-120` : `max-h-100`} `}>
                             <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Question Select</p>
-                            <div className={`w-full h-full max-h-85 overflow-auto pr-4 mb-3 border-y border-gray-300 transition-opacity ${listLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                            <div className={`w-full h-full flex-1 min-h-0 max-h-85 overflow-auto pr-4 mb-3 border-y border-gray-300 transition-opacity ${listLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
                     {questions.map((question) => (
                                 <div key={question.id} className={`flex mt-2 mb-2 gap-3 rounded-lg items-center justify-between px-4 py-3 
                                     ${isSelected(question.id) ?  `border bg-amber-100 border-amber-400` : `border bg-gray-50 border-gray-300`}`}>

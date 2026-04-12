@@ -100,7 +100,7 @@ const TopicCard: React.FC = () => {
         >
           <h2 className="text-lg sm:text-xl font-semibold text-gray-600">{group.title}</h2>
 
-          <div className="flex flex-wrap gap-[0.3rem]">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
             {group.topics.map((topic) => (
               <button
                 key={topic.title}
@@ -110,7 +110,7 @@ const TopicCard: React.FC = () => {
                     ? "bg-yellow-500 border-yellow-500 text-black"
                     : groupColorClasses[group.title] || "bg-white border-gray-200 text-gray-800 hover:bg-gray-100"}
                   transition-all shadow-md text-sm sm:text-base font-semibold
-                  w-32 h-32 sm:w-36 sm:h-36 md:w-44 md:h-44`}
+                  h-28 w-full sm:h-36 md:h-44`}
               >
                 <div>{topic.icon}</div>
                 <span className="mt-2 text-center">{topic.title}</span>
