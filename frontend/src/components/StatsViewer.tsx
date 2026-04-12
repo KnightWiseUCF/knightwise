@@ -99,7 +99,9 @@ const StatsViewer: React.FC = () => {
     NumQuestions: 0});
   const [topicChoice, setTopicChoice] = useState<string>("All");
   const [, setTotalPages]   = useState<number>(1);
-  const [isLoading, setIsLoading]     = useState<boolean>(true);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(true);
+  const [isProgressLoading, setIsProgressLoading] = useState<boolean>(true);
+  const isLoading = isHistoryLoading || isProgressLoading;
 
   const nullOrNumToNum = (nullOrNum: number | null | undefined) => {
 
@@ -210,7 +212,7 @@ const StatsViewer: React.FC = () => {
 
   const fetchHistory = useCallback(async () => {
 
-    setIsLoading(true);
+    setIsHistoryLoading(true);
     const token = localStorage.getItem('token');
     const allHistory: HistoryEntry[] = [];
 
@@ -228,25 +230,31 @@ const StatsViewer: React.FC = () => {
 
       setTotalPages(response.data.totalPages);
 
-      for(let i = 2; i <= (response.data.totalPages < 20 ? response.data.totalPages : 20); i++)
+      const maxPage = response.data.totalPages < 20 ? response.data.totalPages : 20;
+      if (maxPage >= 2)
       {
-        try 
+        const pageRequests: Promise<{ data: HistoryResponse }>[] = [];
+
+        for (let i = 2; i <= maxPage; i++)
         {
-          const response2 = await api.get<HistoryResponse>("api/progress/history", 
-          {
+          pageRequests.push(
+            api.get<HistoryResponse>("api/progress/history", 
+            {
               headers: { 'Authorization': `Bearer ${token}` },
               params: { page: i, limit: 10 },
-          });
+            })
+          );
+        }
 
-          //setHistory(response.data.history);
-          response2.data.history.map((entry) => {
+        const pageResponses = await Promise.allSettled(pageRequests);
+        pageResponses.forEach((result) => {
+          if (result.status === 'fulfilled')
+          {
+            result.value.data.history.forEach((entry) => {
               allHistory.push(entry);
-          })
-        }
-        catch 
-        {
-          console.error('Error fetching history');
-        }
+            });
+          }
+        });
       }
 
       //console.log(allHistory);
@@ -259,13 +267,13 @@ const StatsViewer: React.FC = () => {
     }
     finally
     {
-      setIsLoading(false);
+      setIsHistoryLoading(false);
     }
   }, []);
 
   // Fetch user progress data
   const fetchProgressData = async () => {
-    setIsLoading(true);
+    setIsProgressLoading(true);
     const token = localStorage.getItem('token');
 
     try {
@@ -286,16 +294,9 @@ const StatsViewer: React.FC = () => {
     }
     finally
     {
-      setIsLoading(false)
+      setIsProgressLoading(false)
     }
   };
-
-  useEffect(() => {
-    fetchProgressData();
-    fetchHistory();
-    //aggregateStats();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicChoice]);
 
   useEffect(() => {
     fetchProgressData();
@@ -361,7 +362,7 @@ const StatsViewer: React.FC = () => {
           : statViewerData.AvgElapsedTime > 120 ? "Taking your time I see... See if you can go faster!" 
           : statViewerData.AvgElapsedTime > 60 ? "Not bad. Pretty quick with that knowledge!"
           : statViewerData.AvgElapsedTime > 15 ? "You're quick to answer! I bet you destroy on Kahoot!"
-          : `So Fast! You'real speed demon!`
+          : `So Fast! You're a real speed demon!`
   }
 
   const toCanonicalTopicSlug = (topic?: string): string | null => {
@@ -453,9 +454,13 @@ const StatsViewer: React.FC = () => {
               <div className="flex-1 min-w-15 max-w-20 h-full flex flex-col items-center gap-1">
                   <div className="w-full h-full flex items-end">
                       <div className={`relative w-full rounded-t
+                          motion-safe:transition-[height,background-color] motion-safe:duration-500 motion-safe:ease-out
                           ${statViewerData?.Performance > 0  ? "bg-blue-500" : "bg-gray-300"}`}
                           
-                          style={{ height: `${performanceBarHeight}%`}}
+                          style={{
+                            height: `${performanceBarHeight}%`,
+                            transitionDelay: '0ms',
+                          }}
 
                           title={`${topicChoice}: ${(statViewerData?.Performance)}% Performance`}
                       >
@@ -472,9 +477,13 @@ const StatsViewer: React.FC = () => {
               <div className="flex-1 min-w-15 max-w-20 h-full flex flex-col items-center gap-1">
                   <div className="w-full h-20 h-full flex items-end">
                       <div className={`relative w-full rounded-t
+                          motion-safe:transition-[height,background-color] motion-safe:duration-500 motion-safe:ease-out
                           ${statViewerData?.AvgScore > 0  ? "bg-blue-500" : "bg-gray-300"}`}
                           
-                          style={{ height: `${scoreBarHeight}%`}}
+                          style={{
+                            height: `${scoreBarHeight}%`,
+                            transitionDelay: '40ms',
+                          }}
 
                           title={`${topicChoice}: ${(statViewerData?.AvgScore)}% Points Possible Earned`}
                       >
@@ -491,9 +500,13 @@ const StatsViewer: React.FC = () => {
               <div className="flex-1 min-w-15 max-w-20 h-full flex flex-col items-center gap-1">
                   <div className="w-full h-20 h-full flex items-end">
                       <div className={`relative w-full rounded-t
+                          motion-safe:transition-[height,background-color] motion-safe:duration-500 motion-safe:ease-out
                           ${statViewerData?.Accuracy > 0  ? "bg-blue-500" : "bg-gray-300"}`}
                           
-                          style={{ height: `${accuracyBarHeight}%`}}
+                          style={{
+                            height: `${accuracyBarHeight}%`,
+                            transitionDelay: '80ms',
+                          }}
 
                           title={`${topicChoice}: ${(statViewerData?.Accuracy)}% Questions Correct`}
                       >
