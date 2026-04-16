@@ -19,14 +19,15 @@ const CreditsPage: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
       <ul className="mb-6 text-left list-disc list-inside space-y-2">
         <li><span className="font-semibold">Daniel Landsman</span> – API</li>
         <li><span className="font-semibold">Mina Georgoudiou</span> – DB + API</li>
-        <li><span className="font-semibold">Dayton Hawk</span> – Frontend</li>
+        <li><span className="font-semibold">Dayton Hawk</span> – Frontend and Prototyping</li>
         <li><span className="font-semibold">Dahlia Frederico</span> – Frontend + Project Manager</li>
         <br />
         <span className="font-semibold">Special Thanks To:</span> 
         <li><span className="font-semibold">Joshua Paz</span> </li>
         <li><span className="font-semibold">Carla McBurnie</span> </li>
         <li><span className="font-semibold">Yeoneui Lee</span> </li>
-        <li><span className="font-semibold">Pinx Clifton</span> </li>
+        <li><span className="font-semibold">Pinx, Tawny, HP, Racc, and the rest of the Sour Brigade</span> </li>
+        <li><span className="font-semibold">Cacti, Dew, Kupliva, Mr. Knows, Haru, Matt, Pidgey, Linca, and Welsh</span></li>
         <li><span className="font-semibold">Wendy Frederico</span> </li>
         <li><span className="font-semibold">Dr. Matthew Gerber</span> </li>
       </ul>

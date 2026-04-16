@@ -8,6 +8,7 @@ import api from "../api";
 import { getBackgroundUrlByItemName, getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getProfilePathForUser } from "../utils/profileRouting";
 import { getFlairPresentation } from "../utils/flairPresentation";
+import { formatTenthsLocale } from "../utils/numberFormat";
 import type {
   ApiMessageResponse,
   GuildInfoResponse,
@@ -72,6 +73,11 @@ interface FollowedLeaderboardResponse {
   leaderboard: FollowedLeaderboardEntry[];
 }
 
+interface GuildContributionResponse {
+  message: string;
+  newlyUnlocked?: Array<{ id: number; name: string; type: string }>;
+}
+
 const DELETE_CONFIRMATION_PHRASE = "YES DELETE NOW";
 
 const toNumber = (value: number | string | null | undefined): number => {
@@ -87,12 +93,21 @@ const toNumber = (value: number | string | null | undefined): number => {
   return 0;
 };
 
-const toBoolean = (value: boolean | number | null | undefined): boolean => {
+const toBoolean = (value: boolean | number | string | null | undefined): boolean => {
   if (typeof value === "boolean") {
     return value;
   }
 
-  return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "1" || normalized === "true";
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  return false;
 };
 
 const formatRoleLabel = (role: GuildRole | string | undefined): string => {
@@ -153,6 +168,10 @@ const getApiMessage = (error: unknown, fallback: string): string => {
   return message || error.message || fallback;
 };
 
+const isStoreItemType = (value: string): value is StoreItem["TYPE"] => {
+  return value === "flair" || value === "profile_picture" || value === "background";
+};
+
 const GUILDS_CACHE_KEY = "guild_snapshot_v1";
 
 interface GuildPageCacheSnapshot {
@@ -192,6 +211,7 @@ const GuildsPage: React.FC = () => {
   const storedUsername = useMemo(() => getStoredUsername(), []);
   const hasLoadedOnceRef = useRef(false);
   const isFetchingRef = useRef(false);
+  const isBrowseFetchingRef = useRef(false);
 
   const [tab, setTab] = useState<GuildTab>("overview");
   const [notice, setNotice] = useState<string | null>(null);
@@ -232,6 +252,8 @@ const GuildsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState("");
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
+  const [unlockModalItems, setUnlockModalItems] = useState<StoreItem[]>([]);
   const [kickTargetMember, setKickTargetMember] = useState<{ id: number; username: string } | null>(null);
   const [followedUsernames, setFollowedUsernames] = useState<Set<string>>(new Set());
   const [followActionUsername, setFollowActionUsername] = useState<string | null>(null);
@@ -498,36 +520,92 @@ const GuildsPage: React.FC = () => {
   }, []);
 
   const refreshBrowseGuilds = useCallback(async () => {
+    if (isBrowseFetchingRef.current) {
+      return;
+    }
+
+    isBrowseFetchingRef.current = true;
     setBrowseLoading(true);
     setBrowseError(null);
+
     try {
-      const response = await api.get<GuildLeaderboardResponse>("/api/leaderboard/guilds/weekly?page=1");
-      const rankedGuilds = response.data.leaderboard as BrowseGuildItem[];
+      // Fetch first page to get total page count
+      const firstPageResponse = await api.get<GuildLeaderboardResponse>("/api/leaderboard/guilds/weekly?page=1");
+      const totalPages = Math.max(1, Number(firstPageResponse.data.totalPages || 1));
+      const allGuildEntries = [...(Array.isArray(firstPageResponse.data.leaderboard) ? firstPageResponse.data.leaderboard : [])];
 
-      const openGuildChecks = await Promise.all(
-        rankedGuilds.map(async (browseGuild) => {
-          try {
-            const guildResponse = await api.get<GuildInfoResponse>(`/api/guilds/${browseGuild.id}`);
-            if (!toBoolean(guildResponse.data.guild?.IS_OPEN)) return null;
-            const equipped = guildResponse.data.equippedItems || [];
-            const bg = equipped.find((item) => item.TYPE === "background") ?? null;
-            const pfp = equipped.find((item) => item.TYPE === "profile_picture") ?? null;
-            return {
-              ...browseGuild,
-              backgroundName: bg ? bg.NAME : null,
-              profilePictureName: pfp ? pfp.NAME : null,
-            };
-          } catch {
-            return null;
+      // Fetch remaining pages in parallel
+      if (totalPages > 1) {
+        const pageRequests: Array<Promise<GuildLeaderboardResponse>> = [];
+        for (let page = 2; page <= totalPages; page += 1) {
+          pageRequests.push(
+            api.get<GuildLeaderboardResponse>(`/api/leaderboard/guilds/weekly?page=${page}`).then((r) => r.data)
+          );
+        }
+
+        const pageResponses = await Promise.allSettled(pageRequests);
+        for (const result of pageResponses) {
+          if (result.status === "fulfilled" && Array.isArray(result.value.leaderboard)) {
+            allGuildEntries.push(...result.value.leaderboard);
           }
-        })
-      );
+        }
+      }
 
-      setBrowseGuilds(openGuildChecks.filter((guild): guild is BrowseGuildItem => guild !== null));
+      // Determine open status for each guild
+      // If the leaderboard provides isOpen, use it directly; otherwise fall back to per-guild check
+      console.debug("[Browse] allGuildEntries raw:", JSON.stringify(allGuildEntries.map(e => ({ id: e.id, name: e.name, isOpen: e.isOpen, isOpenType: typeof e.isOpen }))));
+      const resolvedEntries: Array<{ entry: typeof allGuildEntries[number]; isOpen: boolean }> = [];
+
+      const needsCheck: typeof allGuildEntries = [];
+      for (const entry of allGuildEntries) {
+        if (entry.isOpen !== undefined && entry.isOpen !== null) {
+          resolvedEntries.push({ entry, isOpen: toBoolean(entry.isOpen) });
+        } else {
+          needsCheck.push(entry);
+        }
+      }
+
+      if (needsCheck.length > 0) {
+        const checks = await Promise.allSettled(
+          needsCheck.map(async (entry) => {
+            const guildResponse = await api.get<GuildInfoResponse>(`/api/guilds/${entry.id}`);
+            return { entry, isOpen: toBoolean(guildResponse.data.guild?.IS_OPEN) };
+          })
+        );
+
+        for (const result of checks) {
+          if (result.status === "fulfilled") {
+            resolvedEntries.push(result.value);
+          }
+          // Failed checks are silently excluded (treated as closed)
+        }
+      }
+
+      const normalized = resolvedEntries
+        .filter((r) => r.isOpen)
+        .map((r) => ({
+          rank: r.entry.rank,
+          id: r.entry.id,
+          name: r.entry.name,
+          exp: toNumber(r.entry.exp),
+          guildPicture: r.entry.guildPicture,
+          backgroundName: r.entry.background ?? null,
+          profilePictureName: r.entry.guildPicture,
+        }))
+        .sort((left, right) => {
+          if (left.rank !== right.rank) return left.rank - right.rank;
+          return left.id - right.id;
+        });
+
+      console.debug("[Browse] resolvedEntries:", resolvedEntries.map(r => ({ id: r.entry.id, name: r.entry.name, isOpen: r.isOpen })));
+      console.debug("[Browse] normalized (final):", normalized.length, "guilds");
+
+      setBrowseGuilds(normalized);
     } catch (requestError) {
       setBrowseError(getApiMessage(requestError, "Failed to load guilds."));
       setBrowseGuilds([]);
     } finally {
+      isBrowseFetchingRef.current = false;
       setBrowseLoading(false);
     }
   }, []);
@@ -754,8 +832,44 @@ const GuildsPage: React.FC = () => {
     setNotice(null);
 
     try {
-      const response = await api.post<{ message: string }>(`/api/guilds/${guildId}/contribute`, { amount });
+      const response = await api.post<GuildContributionResponse>(`/api/guilds/${guildId}/contribute`, { amount });
       setNotice(response.data.message || "Contribution successful.");
+
+      const newlyUnlocked = Array.isArray(response.data.newlyUnlocked)
+        ? response.data.newlyUnlocked
+        : [];
+
+      if (newlyUnlocked.length > 0)
+      {
+        const storeItemsById = new Map(guildStoreItems.map((item) => [item.ID, item]));
+        const normalizedUnlockedItems = newlyUnlocked.flatMap((unlocked) => {
+          const matchedStoreItem = storeItemsById.get(unlocked.id);
+          if (matchedStoreItem)
+          {
+            return [matchedStoreItem];
+          }
+
+          if (!isStoreItemType(unlocked.type))
+          {
+            return [];
+          }
+
+          return [{
+            ID: unlocked.id,
+            TYPE: unlocked.type,
+            COST: "0",
+            NAME: unlocked.name,
+            IS_GUILD_ITEM: true,
+          }];
+        });
+
+        if (normalizedUnlockedItems.length > 0)
+        {
+          setUnlockModalItems(normalizedUnlockedItems);
+          setIsUnlockModalOpen(true);
+        }
+      }
+
       await refreshGuild(guildId);
       await refreshMyGuild();
     } catch (requestError) {
@@ -1200,7 +1314,10 @@ const GuildsPage: React.FC = () => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => setTab("browse")}
+                      onClick={() => {
+                        setTab("browse");
+                        void refreshBrowseGuilds();
+                      }}
                       className="mt-4 rounded-lg bg-gray-900 px-4 py-2 font-semibold text-white hover:bg-black"
                     >
                       Open Browse
@@ -1280,7 +1397,7 @@ const GuildsPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Coin Bank</p>
-                          <p className="font-semibold text-gray-900">{toNumber(guild.COINS).toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">{formatTenthsLocale(toNumber(guild.COINS))}</p>
                         </div>
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Members</p>
@@ -1288,11 +1405,11 @@ const GuildsPage: React.FC = () => {
                         </div>
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Weekly EXP</p>
-                          <p className="font-semibold text-gray-900">{toNumber(guild.WEEKLY_EXP).toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">{formatTenthsLocale(toNumber(guild.WEEKLY_EXP))}</p>
                         </div>
                         <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
                           <p className="text-gray-500">Lifetime EXP</p>
-                          <p className="font-semibold text-gray-900">{toNumber(guild.LIFETIME_EXP).toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">{formatTenthsLocale(toNumber(guild.LIFETIME_EXP))}</p>
                         </div>
                       </div>
                     </div>
@@ -1392,7 +1509,7 @@ const GuildsPage: React.FC = () => {
                         </div>
                         <div className="rounded-lg border border-yellow-200 bg-white/80 p-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Coin Bank</p>
-                          <p className="mt-1 text-2xl font-bold text-gray-900">{coinBank.toLocaleString()}</p>
+                          <p className="mt-1 text-2xl font-bold text-gray-900">{formatTenthsLocale(coinBank)}</p>
                         </div>
                         <div className="rounded-lg border border-yellow-200 bg-white/80 p-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Progress To Next</p>
@@ -1458,7 +1575,7 @@ const GuildsPage: React.FC = () => {
                             </div>
                             {guildUnlockProgress.nextItem && guildUnlockProgress.nextThreshold !== null && (
                               <p className="mt-3 text-xs text-gray-700">
-                                Coin bank: {coinBank.toLocaleString()} / {guildUnlockProgress.nextThreshold.toLocaleString()} ({Math.max(0, guildUnlockProgress.nextThreshold - coinBank).toLocaleString()} coins remaining)
+                                Coin bank: {formatTenthsLocale(coinBank)} / {formatTenthsLocale(guildUnlockProgress.nextThreshold)} ({formatTenthsLocale(Math.max(0, guildUnlockProgress.nextThreshold - coinBank))} coins remaining)
                               </p>
                             )}
                           </div>
@@ -1555,7 +1672,7 @@ const GuildsPage: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                   <p className="text-xs text-gray-500">#{index + 1}</p>
-                                  <p className="text-xs text-gray-500">{metricLabel}: {metricValue.toLocaleString()}</p>
+                                  <p className="text-xs text-gray-500">{metricLabel}: {formatTenthsLocale(metricValue)}</p>
                                 </div>
                               </div>
 
@@ -1978,7 +2095,7 @@ const GuildsPage: React.FC = () => {
                             </div>
                           </div>
                           <div className="ml-4 text-right">
-                            <p className="text-sm font-semibold text-gray-900">{toNumber(g.exp)} XP</p>
+                            <p className="text-sm font-semibold text-gray-900">{formatTenthsLocale(toNumber(g.exp))} XP</p>
                           </div>
                         </div>
                         <div className="mt-3 flex gap-2">
@@ -2037,6 +2154,59 @@ const GuildsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {isUnlockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
+            <div className="relative mb-4">
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {unlockModalItems.length > 1 ? "⭐ New Guild Items Unlocked! ⭐" : "⭐ New Guild Item Unlocked! ⭐"}
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Your contribution unlocked {unlockModalItems.length === 1 ? "a" : unlockModalItems.length} new guild item{unlockModalItems.length === 1 ? "" : "s"}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUnlockModalOpen(false);
+                  setUnlockModalItems([]);
+                }}
+                className="absolute right-0 top-0 rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Close unlock modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3">
+              {unlockModalItems.map((item) => (
+                <div key={item.ID} className="w-full max-w-sm rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  {renderGuildItemPreview(item)}
+                  <p className="font-semibold text-gray-900">{item.NAME}</p>
+                  <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">
+                    {item.TYPE.replace("_", " ")}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUnlockModalOpen(false);
+                  setUnlockModalItems([]);
+                }}
+                className="rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-600"
+              >
+                Nice!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

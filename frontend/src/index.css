@@ -1,6 +1,13 @@
 /* Tailwind is being used */
 @import 'tailwindcss';
 
+html,
+body,
+#root {
+	max-width: 100%;
+	overflow-x: hidden;
+}
+
 .question-rich-text code {
 	white-space: break-spaces;
 }

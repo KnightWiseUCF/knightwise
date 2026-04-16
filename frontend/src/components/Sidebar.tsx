@@ -121,7 +121,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="h-full w-72 bg-gray-100 p-4 sm:p-6 shadow-lg flex flex-col">
+    <div className="flex h-full w-[85vw] max-w-72 flex-col bg-gray-100 p-3 shadow-lg sm:p-6 md:w-72">
       {/* user name */}
       <div className="pt-6 sm:pt-10 mb-6 sm:mb-10 text-center">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
@@ -155,7 +155,7 @@ const Sidebar = () => {
             location.pathname.startsWith(item.path)
           );
 
-          const itemClassName = `flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg mb-2 sm:mb-3 text-base sm:text-lg md:text-xl transition-colors ${
+          const itemClassName = `flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg mb-2 sm:mb-3 text-sm sm:text-base md:text-lg transition-colors ${
             isActive
               ? "bg-yellow-500 text-white font-semibold"
               : isDisabled
@@ -187,7 +187,7 @@ const Sidebar = () => {
 
       {/* logout*/}
       <button
-        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 mt-auto rounded-lg text-base sm:text-lg md:text-xl text-gray-700 bg-white shadow-md border border-gray-300 hover:bg-gray-200 transition-all"
+        className="mt-auto flex items-center gap-3 rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-700 shadow-md transition-all hover:bg-gray-200 sm:gap-4 sm:p-4 sm:text-base md:text-lg"
         onClick={doLogout}
       >
         <LogOut size={24} className="text-gray-700" />

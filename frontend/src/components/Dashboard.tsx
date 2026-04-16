@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////////////////
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import api from "../api";
@@ -23,6 +23,7 @@ import { HistoryEntry, UserInfoResponse } from "../models";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { ALL_TOPICS, formatSubcategoryLabel } from "../utils/topicLabels";
+import { formatTenths } from "../utils/numberFormat";
 
 interface MessageDataResponse {
   history?: Array<{ datetime: string; topic: string }>;
@@ -85,6 +86,8 @@ const toFiniteNumber = (value: unknown): number => {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { equippedItems } = useUserCustomizationStore();
+  const dashboardRequestSeqRef = useRef(0);
+  const isDashboardFetchingRef = useRef(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [mastery, setMastery] = useState<Record<string, number>>({});
   const [streakCount, setStreakCount] = useState<number>(0);
@@ -114,58 +117,50 @@ const Dashboard: React.FC = () => {
     backgroundPosition: "center",
   } : undefined;
 
-  const fetchDashboardData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchDashboardData = useCallback(async (options?: { background?: boolean }) => {
+    if (isDashboardFetchingRef.current) {
+      return;
+    }
+
+    isDashboardFetchingRef.current = true;
+    const requestSeq = ++dashboardRequestSeqRef.current;
+    const isBackgroundRefresh = options?.background === true;
+
+    if (!isBackgroundRefresh) {
+      setIsLoading(true);
+    }
 
     const userId = getStoredUserId();
-
-    const historyPromise = (async () => {
-      const firstPageResponse = await api.get<DashboardHistoryResponse>("/api/progress/history", {
-        params: { page: 1 },
-      });
-
-      const firstPageHistory = Array.isArray(firstPageResponse.data.history)
-        ? firstPageResponse.data.history
-        : [];
-
-      const totalPages = Number(firstPageResponse.data.totalPages || 1);
-      if (totalPages <= 1) {
-        return firstPageHistory;
-      }
-
-      const remainingPageRequests: Array<Promise<DashboardHistoryResponse>> = [];
-      for (let page = 2; page <= totalPages; page += 1) {
-        remainingPageRequests.push(
-          api.get<DashboardHistoryResponse>("/api/progress/history", { params: { page } }).then((response) => response.data)
-        );
-      }
-
-      const remainingPages = await Promise.all(remainingPageRequests);
-      const remainingHistory = remainingPages.flatMap((pageData) =>
-        Array.isArray(pageData.history) ? pageData.history : []
-      );
-
-      return [...firstPageHistory, ...remainingHistory];
-    })();
+    const historyFirstPagePromise = api.get<DashboardHistoryResponse>("/api/progress/history", {
+      params: { page: 1 },
+    });
 
     const messagePromise = api.get<MessageDataResponse>("/api/progress/messageData");
     const leaderboardPromise = api.get<LeaderboardResponse>("/api/leaderboard/weekly?page=1");
     const userPromise = userId ? api.get<UserInfoResponse>(`/api/users/${userId}`) : Promise.resolve(null);
 
-    const [messageResult, historyResult, leaderboardResult, userResult] = await Promise.allSettled([
+    const [messageResult, historyFirstPageResult, leaderboardResult, userResult] = await Promise.allSettled([
       messagePromise,
-      historyPromise,
+      historyFirstPagePromise,
       leaderboardPromise,
       userPromise,
     ]);
+
+    if (requestSeq !== dashboardRequestSeqRef.current) {
+      isDashboardFetchingRef.current = false;
+      return;
+    }
 
     if (messageResult.status === "fulfilled") {
       setMastery(messageResult.value.data.mastery || {});
       setStreakCount(Number(messageResult.value.data.streak || 0));
     }
 
-    if (historyResult.status === "fulfilled") {
-      setHistory(Array.isArray(historyResult.value) ? historyResult.value : []);
+    if (historyFirstPageResult.status === "fulfilled") {
+      const firstPageHistory = Array.isArray(historyFirstPageResult.value.data.history)
+        ? historyFirstPageResult.value.data.history
+        : [];
+      setHistory(firstPageHistory);
     } else {
       setHistory([]);
     }
@@ -180,23 +175,72 @@ const Dashboard: React.FC = () => {
       setLifetimeExp(userResult.value.data.user.LIFETIME_EXP ?? null);
     }
 
-    setIsLoading(false);
+    if (!isBackgroundRefresh) {
+      setIsLoading(false);
+    }
+
+    // Hydrate additional history pages in the background only as needed for weekly metrics.
+    if (historyFirstPageResult.status === "fulfilled") {
+      const firstPageData = historyFirstPageResult.value.data;
+      const firstPageHistory = Array.isArray(firstPageData.history) ? firstPageData.history : [];
+      const totalPages = Number(firstPageData.totalPages || 1);
+
+      if (totalPages > 1) {
+        const sevenDaysAgoTs = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const mergedHistory = [...firstPageHistory];
+
+        for (let page = 2; page <= totalPages; page += 1) {
+          try {
+            const response = await api.get<DashboardHistoryResponse>("/api/progress/history", {
+              params: { page },
+            });
+
+            if (requestSeq !== dashboardRequestSeqRef.current) {
+              break;
+            }
+
+            const pageHistory = Array.isArray(response.data.history) ? response.data.history : [];
+            if (pageHistory.length === 0) {
+              break;
+            }
+
+            mergedHistory.push(...pageHistory);
+
+            const oldestEntryTs = Math.min(
+              ...pageHistory.map((entry) => new Date(entry.datetime).getTime())
+            );
+
+            if (!Number.isFinite(oldestEntryTs) || oldestEntryTs < sevenDaysAgoTs) {
+              break;
+            }
+          } catch {
+            break;
+          }
+        }
+
+        if (requestSeq === dashboardRequestSeqRef.current) {
+          setHistory(mergedHistory);
+        }
+      }
+    }
+
+    isDashboardFetchingRef.current = false;
   }, []);
 
   useEffect(() => {
     void fetchDashboardData();
 
     const refreshIntervalId = window.setInterval(() => {
-      void fetchDashboardData();
+      void fetchDashboardData({ background: true });
     }, 30000);
 
     const handleFocus = () => {
-      void fetchDashboardData();
+      void fetchDashboardData({ background: true });
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        void fetchDashboardData();
+        void fetchDashboardData({ background: true });
       }
     };
 
@@ -326,6 +370,9 @@ const Dashboard: React.FC = () => {
   const lastTopicSlug = toCanonicalTopicSlug(lastAttempt?.topic);
   const lastTopicLabel = formatSubcategoryLabel(lastTopicSlug || lastAttempt?.topic);
   const weakTopicLabel = weakestTopics.length > 0 ? formatSubcategoryLabel(weakestTopics[0][0]) : null;
+  const lifetimeExpText = formatTenths(lifetimeExp ?? 0);
+  const coinsText = formatTenths(coins ?? 0);
+  const weeklyExpText = formatTenths(weeklyExp ?? 0);
 
   const handlePracticeTopic = (topic: string) => {
     const slug = toCanonicalTopicSlug(topic);
@@ -468,7 +515,7 @@ const Dashboard: React.FC = () => {
             <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
               <p className="text-xs text-gray-500 mb-2">7-day activity</p>
               <div className="flex items-end gap-2 h-20">
-                {weeklyActivity.map((day) => {
+                {weeklyActivity.map((day, index) => {
                   const barHeight = Math.max(8, Math.round((day.attempts / maxDailyAttempts) * 100));
                   const accuracy = day.attempts > 0 ? Math.round((day.correct / day.attempts) * 100) : 0;
 
@@ -476,8 +523,11 @@ const Dashboard: React.FC = () => {
                     <div key={day.key} className="flex-1 min-w-0 flex flex-col items-center gap-1">
                       <div className="w-full h-14 flex items-end">
                         <div
-                          className={`w-full rounded-t ${day.attempts > 0 ? "bg-blue-500" : "bg-gray-300"}`}
-                          style={{ height: `${barHeight}%` }}
+                          className={`w-full rounded-t motion-safe:transition-[height,background-color] motion-safe:duration-500 motion-safe:ease-out ${day.attempts > 0 ? "bg-blue-500" : "bg-gray-300"}`}
+                          style={{
+                            height: `${barHeight}%`,
+                            transitionDelay: `${index * 40}ms`,
+                          }}
                           title={`${day.label}: ${day.attempts} attempts, ${accuracy}% accuracy`}
                         />
                       </div>
@@ -525,7 +575,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Lifetime XP</p>
-                <p className="text-2xl font-bold text-gray-900">{lifetimeExp ?? 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{lifetimeExpText}</p>
               </div>
             </div>
           </section>
@@ -539,10 +589,10 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Coins</p>
-                <p className="text-2xl font-bold text-gray-900">{coins ?? 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{coinsText}</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mt-3">Weekly XP: {weeklyExp ?? 0}</p>
+            <p className="text-sm text-gray-600 mt-3">Weekly XP: {weeklyExpText}</p>
           </section>
         </div>
         </div>

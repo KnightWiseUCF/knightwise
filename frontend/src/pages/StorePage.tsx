@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import api from "../api";
 import type { StoreItem, StoreItemsResponse } from "../models";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
+import { formatTenthsLocale } from "../utils/numberFormat";
 
 const StorePage: React.FC = () => {
   const { purchases, isLoading } = useUserCustomizationStore();
@@ -98,7 +99,7 @@ const StorePage: React.FC = () => {
                 <article key={item.ID} className="rounded-lg border border-gray-200 bg-gray-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">{item.TYPE.replace("_", " ")}</p>
                   <h2 className="text-lg font-semibold text-gray-900">{item.NAME}</h2>
-                  <p className="text-gray-700 mt-2">Cost: {item.COST} coins</p>
+                  <p className="text-gray-700 mt-2">Cost: {formatTenthsLocale(item.COST)} coins</p>
 
                   <button
                     type="button"

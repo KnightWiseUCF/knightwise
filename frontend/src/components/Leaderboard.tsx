@@ -5,6 +5,7 @@ import { getProfilePictureUrlByItemName } from "../utils/storeCosmetics";
 import { getBackgroundUrlByItemName } from "../utils/storeCosmetics";
 import { getFlairPresentation } from "../utils/flairPresentation";
 import { getProfilePathForUser } from "../utils/profileRouting";
+import { formatTenthsLocale } from "../utils/numberFormat";
 import { useUserCustomizationStore, userCustomizationStore } from "../stores/userCustomizationStore";
 import { Trophy, ChevronLeft, ChevronRight, Swords, Users, UserCheck } from "lucide-react";
 
@@ -38,6 +39,8 @@ interface GuildLeaderboardEntry
   name:           string;
   exp:            number;
   guildPicture:   string | null;
+  background:     string | null;
+  flairNames:     string[];
 }
 
 interface GuildLeaderboardResponse
@@ -138,6 +141,8 @@ const Leaderboard: React.FC = () =>
   const [leaderboardBackgrounds, setLeaderboardBackgrounds] = useState<Map<string, string | null>>(new Map());
   const leaderboardCacheRef = useRef<Map<string, LeaderboardResponse>>(new Map());
   const guildLeaderboardCacheRef = useRef<Map<string, GuildLeaderboardResponse>>(new Map());
+  const visibleDataRef = useRef<LeaderboardResponse | null>(null);
+  const visibleGuildDataRef = useRef<GuildLeaderboardResponse | null>(null);
   const hasHydratedSnapshotRef = useRef(false);
   const { equippedItems } = useUserCustomizationStore();
 
@@ -203,6 +208,14 @@ const Leaderboard: React.FC = () =>
   }, [mode, activeTab, page]);
 
   useEffect(() => {
+    visibleDataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
+    visibleGuildDataRef.current = guildData;
+  }, [guildData]);
+
+  useEffect(() => {
     saveLeaderboardSnapshot({
       username: storedUsername,
       leaderboardPages: Array.from(leaderboardCacheRef.current.entries()),
@@ -218,7 +231,7 @@ const Leaderboard: React.FC = () =>
     const cacheKey = getLeaderboardPageKey("individual", tab, pageNum);
     const cached = leaderboardCacheRef.current.get(cacheKey);
 
-    setLoading(!cached);
+    setLoading(!cached && !visibleDataRef.current);
     setError(null);
 
     if (cached) {
@@ -248,7 +261,7 @@ const Leaderboard: React.FC = () =>
     const cacheKey = getLeaderboardPageKey("followed", tab, pageNum);
     const cached = leaderboardCacheRef.current.get(cacheKey);
 
-    setLoading(!cached);
+    setLoading(!cached && !visibleDataRef.current);
     setError(null);
 
     if (cached) {
@@ -301,7 +314,7 @@ const Leaderboard: React.FC = () =>
     const cacheKey = getLeaderboardPageKey("guild", tab, pageNum);
     const cached = guildLeaderboardCacheRef.current.get(cacheKey);
 
-    setLoading(!cached);
+    setLoading(!cached && !visibleGuildDataRef.current);
     setError(null);
 
     if (cached) {
@@ -347,7 +360,6 @@ const Leaderboard: React.FC = () =>
     if (tab === activeTab) return;
     setActiveTab(tab);
     setPage(1);
-    setData(null);
   };
 
   const getRankOrdinal = (rank: number) => {
@@ -382,7 +394,6 @@ const Leaderboard: React.FC = () =>
     setMode("individual");
     setActiveTab("weekly");
     setPage(1);
-    setData(null);
     setFocusedUsername(requestedUsername);
   }, [location.state]);
 
@@ -565,7 +576,7 @@ const Leaderboard: React.FC = () =>
             {/* Left: Individual / Guild */}
             <div className="flex gap-1 p-1 bg-white border border-gray-200 rounded-lg w-fit">
               <button
-                onClick={() => { setMode("individual"); setPage(1); setData(null); }}
+                onClick={() => { setMode("individual"); setPage(1); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   mode === "individual"
                     ? "bg-gray-800 text-white shadow"
@@ -576,7 +587,7 @@ const Leaderboard: React.FC = () =>
                 Individual
               </button>
               <button
-                onClick={() => { setMode("followed"); setPage(1); setData(null); }}
+                onClick={() => { setMode("followed"); setPage(1); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   mode === "followed"
                     ? "bg-gray-800 text-white shadow"
@@ -587,8 +598,8 @@ const Leaderboard: React.FC = () =>
                 Following
               </button>
               <button
-                onClick={() => { setMode("guild"); setPage(1); setData(null); }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-md font-semibold transition-colors ${
+                onClick={() => { setMode("guild"); setPage(1); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   mode === "guild"
                     ? "bg-gray-800 text-white shadow"
                     : "bg-white text-gray-600 hover:bg-gray-200"
@@ -686,7 +697,7 @@ const Leaderboard: React.FC = () =>
                   {data.userRank !== null ? `${data.userRank}${getRankOrdinal(data.userRank)}` : "Unranked"}
                   {data.userExp !== null && (
                     <span className="ml-3 text-base font-normal text-blue-500">
-                      {data.userExp.toLocaleString()} XP
+                      {formatTenthsLocale(data.userExp)} XP
                     </span>
                   )}
                 </p>
@@ -703,7 +714,7 @@ const Leaderboard: React.FC = () =>
                   {guildData.guildRank !== null ? `${guildData.guildRank}${getRankOrdinal(guildData.guildRank)}` : "Unranked"}
                   {guildData.guildExp !== null && (
                     <span className="ml-3 text-base font-normal text-blue-500">
-                      {guildData.guildExp.toLocaleString()} XP
+                      {formatTenthsLocale(guildData.guildExp)} XP
                     </span>
                   )}
                 </p>
@@ -765,9 +776,15 @@ const Leaderboard: React.FC = () =>
                         const rowBackgroundUrl = visibleBackgroundName
                           ? getBackgroundUrlByItemName(visibleBackgroundName)
                           : null;
-                        const userRowStyle = !isFocusedUser && !isCurrentUser && rowBackgroundUrl ? {
-                          backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${rowBackgroundUrl})`,
-                          backgroundSize: "cover",
+                        const rowOverlay = isFocusedUser
+                          ? "rgba(253,230,138,0.62)"
+                          : isCurrentUser
+                            ? "rgba(191,219,254,0.58)"
+                            : "rgba(245,245,245,0.86)";
+                        const userRowStyle = rowBackgroundUrl ? {
+                          backgroundImage: `linear-gradient(${rowOverlay}, ${rowOverlay}), url(${rowBackgroundUrl})`,
+                          backgroundSize: "auto",
+                          backgroundRepeat: "no-repeat",
                           backgroundPosition: "center",
                         } : undefined;
 
@@ -786,9 +803,9 @@ const Leaderboard: React.FC = () =>
                             key={`${entry.username}-${entry.rank}`}
                             className={`border-b border-gray-100 transition-colors ${
                               isFocusedUser
-                                ? "bg-amber-100"
+                                ? "bg-amber-100/90"
                                 : isCurrentUser
-                                ? "bg-blue-100"
+                                ? "bg-blue-100/90"
                                 : "hover:bg-gray-200"
                             }`}
                             style={userRowStyle}
@@ -904,7 +921,7 @@ const Leaderboard: React.FC = () =>
 
                             {/* XP */}
                             <td className="py-3 pr-10 text-right font-semibold text-gray-700 text-sm">
-                              {entry.exp.toLocaleString()} XP
+                              {formatTenthsLocale(entry.exp)} XP
                             </td>
                           </tr>
                         )
@@ -981,10 +998,26 @@ const Leaderboard: React.FC = () =>
                           ? getProfilePictureUrlByItemName(entry.guildPicture)
                           : null;
 
-                        const guildBgUrl = typeof entry.id === "number" ? (guildBackgrounds.get(entry.id as number) ?? null) : null;
-                        const guildRowStyle = !isCurrentUserGuild && guildBgUrl ? {
-                          backgroundImage: `linear-gradient(rgba(245,245,245,0.86), rgba(245,245,245,0.86)), url(${guildBgUrl})`,
-                          backgroundSize: "cover",
+                        const guildIdKey = Number(entry.id);
+                        const fallbackGuildBackground = Number.isInteger(guildIdKey) && guildIdKey > 0
+                          ? (guildBackgrounds.get(guildIdKey) ?? null)
+                          : null;
+                        const visibleGuildBackground = typeof entry.background === "string" && entry.background.trim().length > 0
+                          ? entry.background
+                          : fallbackGuildBackground;
+                        const visibleGuildFlairs = Array.isArray(entry.flairNames)
+                          ? entry.flairNames.slice(0, 3)
+                          : [];
+                        const guildBgUrl = visibleGuildBackground
+                          ? getBackgroundUrlByItemName(visibleGuildBackground)
+                          : null;
+                        const guildRowOverlay = isCurrentUserGuild
+                          ? "rgba(191,219,254,0.58)"
+                          : "rgba(245,245,245,0.86)";
+                        const guildRowStyle = guildBgUrl ? {
+                          backgroundImage: `linear-gradient(${guildRowOverlay}, ${guildRowOverlay}), url(${guildBgUrl})`,
+                          backgroundSize: "auto",
+                          backgroundRepeat: "no-repeat",
                           backgroundPosition: "center",
                         } : undefined;
 
@@ -1007,7 +1040,7 @@ const Leaderboard: React.FC = () =>
                             key={`${entry.name}-${entry.rank}`}
                             className={`border-b border-gray-100 transition-colors ${
                               isCurrentUserGuild
-                                ? "bg-blue-100"
+                                ? "bg-blue-100/90"
                                 : "hover:bg-gray-200"
                             }`}
                             style={guildRowStyle}
@@ -1052,6 +1085,22 @@ const Leaderboard: React.FC = () =>
                                     <p className={`leading-tight truncate transition-colors pb-1 group-hover:text-blue-600 ${isCurrentUserGuild ? "font-semibold text-gray-800" : "text-gray-800"}`}>
                                       {entry.name}
                                     </p>
+                                    {visibleGuildFlairs.length > 0 && (
+                                      <div className="flex flex-wrap items-center gap-1 pb-1">
+                                        {visibleGuildFlairs.map((flairName) => {
+                                          const flairStyle = getFlairPresentation(flairName);
+                                          return (
+                                            <span
+                                              key={`${entry.name}-${flairName}`}
+                                              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${flairStyle.className}`}
+                                            >
+                                              <span className="mr-1" aria-hidden="true">{flairStyle.emoji}</span>
+                                              <span>{flairName}</span>
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
                                   {isCurrentUserGuild && (
                                       <span className="ml-1 shrink-0 text-xs bg-blue-200 border border-blue-600 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
@@ -1079,6 +1128,22 @@ const Leaderboard: React.FC = () =>
                                     <p className={`leading-tight truncate ${isCurrentUserGuild ? "font-semibold text-gray-800" : "text-gray-800"}`}>
                                       {entry.name}
                                     </p>
+                                    {visibleGuildFlairs.length > 0 && (
+                                      <div className="flex flex-wrap items-center gap-1 pb-1">
+                                        {visibleGuildFlairs.map((flairName) => {
+                                          const flairStyle = getFlairPresentation(flairName);
+                                          return (
+                                            <span
+                                              key={`${entry.name}-${flairName}`}
+                                              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${flairStyle.className}`}
+                                            >
+                                              <span className="mr-1" aria-hidden="true">{flairStyle.emoji}</span>
+                                              <span>{flairName}</span>
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                     <p className="text-gray-400 text-xs truncate">@{entry.name}</p>
                                   </div>
                                   {isCurrentUserGuild && (
@@ -1092,7 +1157,7 @@ const Leaderboard: React.FC = () =>
 
                             {/* XP */}
                             <td className="py-3 pr-10 text-right font-semibold text-gray-700 text-sm">
-                              {entry.exp.toLocaleString()} XP
+                              {formatTenthsLocale(entry.exp)} XP
                             </td>
                           </tr>
                         );

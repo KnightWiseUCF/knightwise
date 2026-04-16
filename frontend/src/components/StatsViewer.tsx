@@ -99,7 +99,9 @@ const StatsViewer: React.FC = () => {
     NumQuestions: 0});
   const [topicChoice, setTopicChoice] = useState<string>("All");
   const [, setTotalPages]   = useState<number>(1);
-  const [isLoading, setIsLoading]     = useState<boolean>(true);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(true);
+  const [isProgressLoading, setIsProgressLoading] = useState<boolean>(true);
+  const isLoading = isHistoryLoading || isProgressLoading;
 
   const nullOrNumToNum = (nullOrNum: number | null | undefined) => {
 
@@ -210,7 +212,7 @@ const StatsViewer: React.FC = () => {
 
   const fetchHistory = useCallback(async () => {
 
-    setIsLoading(true);
+    setIsHistoryLoading(true);
     const token = localStorage.getItem('token');
     const allHistory: HistoryEntry[] = [];
 
@@ -228,25 +230,31 @@ const StatsViewer: React.FC = () => {
 
       setTotalPages(response.data.totalPages);
 
-      for(let i = 2; i <= (response.data.totalPages < 20 ? response.data.totalPages : 20); i++)
+      const maxPage = response.data.totalPages < 20 ? response.data.totalPages : 20;
+      if (maxPage >= 2)
       {
-        try 
+        const pageRequests: Promise<{ data: HistoryResponse }>[] = [];
+
+        for (let i = 2; i <= maxPage; i++)
         {
-          const response2 = await api.get<HistoryResponse>("api/progress/history", 
-          {
+          pageRequests.push(
+            api.get<HistoryResponse>("api/progress/history", 
+            {
               headers: { 'Authorization': `Bearer ${token}` },
               params: { page: i, limit: 10 },
-          });
+            })
+          );
+        }
 
-          //setHistory(response.data.history);
-          response2.data.history.map((entry) => {
+        const pageResponses = await Promise.allSettled(pageRequests);
+        pageResponses.forEach((result) => {
+          if (result.status === 'fulfilled')
+          {
+            result.value.data.history.forEach((entry) => {
               allHistory.push(entry);
-          })
-        }
-        catch 
-        {
-          console.error('Error fetching history');
-        }
+            });
+          }
+        });
       }
 
       //console.log(allHistory);
@@ -259,13 +267,13 @@ const StatsViewer: React.FC = () => {
     }
     finally
     {
-      setIsLoading(false);
+      setIsHistoryLoading(false);
     }
   }, []);
 
   // Fetch user progress data
   const fetchProgressData = async () => {
-    setIsLoading(true);
+    setIsProgressLoading(true);
     const token = localStorage.getItem('token');
 
     try {
@@ -286,16 +294,9 @@ const StatsViewer: React.FC = () => {
     }
     finally
     {
-      setIsLoading(false)
+      setIsProgressLoading(false)
     }
   };
-
-  useEffect(() => {
-    fetchProgressData();
-    fetchHistory();
-    //aggregateStats();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicChoice]);
 
   useEffect(() => {
     fetchProgressData();
@@ -350,7 +351,7 @@ const StatsViewer: React.FC = () => {
           : statViewerData.Performance > 25 ? "Keep on Practicing this topic! You got this!"
           : "This seems like a struggle area. Keep practicing!"
       else if(seed === 4 ||  seed === 5) //questions completed
-        return statViewerData.NumQuestions > 9999 ? "I think that's enough knightWise for you...." 
+        return statViewerData.NumQuestions > 9999 ? "I think that's enough KnightWise for you...." 
           : statViewerData.NumQuestions > 100 ? "Someone's been practicing! Remember to take breaks!" 
           : statViewerData.NumQuestions > 50 ? "That's a lot of questions completed! Good job!"
           : statViewerData.NumQuestions > 25 ? "Go you! Keep up the questions and soon you'll get this down!"
@@ -358,10 +359,10 @@ const StatsViewer: React.FC = () => {
           : "So few questions, you've got some work to do!"
       else /*(seed === 6 || seed === 7)*/ //elapsed time
         return statViewerData.AvgElapsedTime > 9000 ? "I bet you left your device running while on a question..." 
-          : statViewerData.AvgElapsedTime > 120 ? "Taking your time I see! See if you can go faster!" 
-          : statViewerData.AvgElapsedTime > 60 ? "Pretty good times! Quick with that knowledge!"
-          : statViewerData.AvgElapsedTime > 15 ? "You're a quick one to answer! I bet you destroy on Kahoot!"
-          : `So Fast! Either you're a CS wizz, rushing, or searching it up.`
+          : statViewerData.AvgElapsedTime > 120 ? "Taking your time I see... See if you can go faster!" 
+          : statViewerData.AvgElapsedTime > 60 ? "Not bad. Pretty quick with that knowledge!"
+          : statViewerData.AvgElapsedTime > 15 ? "You're quick to answer! I bet you destroy on Kahoot!"
+          : `So Fast! You're a real speed demon!`
   }
 
   const toCanonicalTopicSlug = (topic?: string): string | null => {
@@ -381,6 +382,13 @@ const StatsViewer: React.FC = () => {
     }
     navigate(`/topic-practice/${encodeURIComponent(slug)}`);
   };
+
+  const performanceBarHeight = Math.max(12, statViewerData?.Performance ?? 0);
+  const scoreBarHeight = Math.max(12, statViewerData?.AvgScore ?? 0);
+  const accuracyBarHeight = Math.max(12, statViewerData?.Accuracy ?? 0);
+  const useOutsidePerformanceLabel = performanceBarHeight < 28;
+  const useOutsideScoreLabel = scoreBarHeight < 28;
+  const useOutsideAccuracyLabel = accuracyBarHeight < 28;
     
 
   return (
@@ -390,19 +398,20 @@ const StatsViewer: React.FC = () => {
       
 
       {/* Check for loading state */}
-      {isLoading ? (
+      {isLoading && history.length === 0 ? (
         <p className="text-center text-gray-500">Loading history...</p>
       ) : history.length === 0 ? (
         <p className="text-center">No history yet, but every expert starts somewhere!</p>
       ) : (
         <>
-        <div className="flex justify-between items-center w-full mb-2">
-          <h2 className="text-2xl font-semibold mb-4 w-1/2">Statistics Viewer</h2>
+        <div className="mb-2 flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="mb-1 w-full text-xl font-semibold sm:mb-4 sm:w-1/2 sm:text-2xl">Statistics Viewer</h2>
 
           {/* Topic Dropdown*/}
-          <div className="flex justify-end items-center w-full">
-            <span className='pr-2 mb-4 text-lg text-gray-900 font-bold'>Topic: </span>
-            <select className='border border-gray-300 rounded-lg px-2 mb-4 py-2 text-md text-gray-700 bg-gray-100'
+          <div className="flex w-full items-center justify-start sm:justify-end">
+            <span className='mb-1 pr-2 text-base font-bold text-gray-900 sm:mb-4 sm:text-lg'>Topic: </span>
+            <select className='mb-1 rounded-lg border border-gray-300 bg-gray-100 px-2 py-2 text-sm text-gray-700 sm:mb-4 sm:text-md'
+              disabled={isLoading}
               value={topicChoice}
               onChange={(event) => {
                 const topic: string = event.target.value as string;
@@ -416,60 +425,97 @@ const StatsViewer: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex justify-between items-center min-h-60 w-full bg-white border-gray-300 p-4 gap-4 rounded-lg shadow">
+        <div className={`relative flex min-h-60 w-full flex-col gap-4 rounded-lg border-gray-300 bg-white p-4 shadow lg:flex-row lg:items-stretch lg:justify-between ${isLoading ? 'opacity-80' : ''}`}>
+
+          {isLoading ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70">
+              <p className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm">
+                Updating stats...
+              </p>
+            </div>
+          ) : null}
 
           {/*Additional Messages*/}
-          <div className="flex grid grid-cols-1 w-1/4 h-50">
-            <div className="flex items-center rounded-xl border border-blue-200 bg-blue-50 h-30 px-4 py-2">
+          <div className="flex h-auto w-full flex-col justify-between gap-3 lg:h-50 lg:w-1/4">
+            <div className={`flex min-h-24 items-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 ${topicChoice === 'All' ? 'h-full' : 'lg:h-30'}`}>
               <p className="text-sm text-blue-500 font-medium tracking-wide">{generateStatsMessage()}</p>
             </div>
-            {topicChoice !== 'All' ?
-            <button className="px-4 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200"
+            <button
+              className="w-full rounded-xl border border-amber-300 bg-amber-100 px-4 py-2 text-amber-900 hover:bg-amber-200"
               onClick={ () => handlePracticeTopic(topicChoice)}
             >
-              Practice Topic
+              {topicChoice === 'All' ? 'Go To Topic Practice' : 'Practice Topic'}
             </button>
-          : null}
           </div>
 
           {/*Percentage Bars*/}
-          <div className="flex justify-center items-end gap-6 h-50 rounded-xl border border-gray-200 bg-white px-5 py-2 pt-2 w-1/2">
+          <div className="flex h-56 w-full items-end justify-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-2 pt-2 sm:gap-6 sm:px-5 lg:h-50 lg:w-1/2">
 
               <div className="flex-1 min-w-15 max-w-20 h-full flex flex-col items-center gap-1">
                   <div className="w-full h-full flex items-end">
-                      <div className={`w-full rounded-t text-white text-center text-sm
+                      <div className={`relative w-full rounded-t
+                          motion-safe:transition-[height,background-color] motion-safe:duration-500 motion-safe:ease-out
                           ${statViewerData?.Performance > 0  ? "bg-blue-500" : "bg-gray-300"}`}
                           
-                          style={{ height: `${Math.max(12, statViewerData?.Performance)}%`}}
+                          style={{
+                            height: `${performanceBarHeight}%`,
+                            transitionDelay: '0ms',
+                          }}
 
                           title={`${topicChoice}: ${(statViewerData?.Performance)}% Performance`}
-                      >{(statViewerData?.Performance + '%')}</div>
+                      >
+                        {statViewerData?.Performance > 0 && (
+                          <span className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold leading-none pointer-events-none ${useOutsidePerformanceLabel ? "-top-4 text-blue-600" : "top-1 text-white"}`}>
+                            {`${statViewerData.Performance}%`}
+                          </span>
+                        )}
+                      </div>
                   </div>
                   <span className="text-sm text-gray-500 leading-none">Performance</span>
               </div> 
 
               <div className="flex-1 min-w-15 max-w-20 h-full flex flex-col items-center gap-1">
                   <div className="w-full h-20 h-full flex items-end">
-                      <div className={`w-full rounded-t text-white text-center text-sm
+                      <div className={`relative w-full rounded-t
+                          motion-safe:transition-[height,background-color] motion-safe:duration-500 motion-safe:ease-out
                           ${statViewerData?.AvgScore > 0  ? "bg-blue-500" : "bg-gray-300"}`}
                           
-                          style={{ height: `${Math.max(12, statViewerData?.AvgScore)}%`}}
+                          style={{
+                            height: `${scoreBarHeight}%`,
+                            transitionDelay: '40ms',
+                          }}
 
                           title={`${topicChoice}: ${(statViewerData?.AvgScore)}% Points Possible Earned`}
-                      >{(statViewerData?.AvgScore + '%')}</div>
+                      >
+                        {statViewerData?.AvgScore > 0 && (
+                          <span className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold leading-none pointer-events-none ${useOutsideScoreLabel ? "-top-4 text-blue-600" : "top-1 text-white"}`}>
+                            {`${statViewerData.AvgScore}%`}
+                          </span>
+                        )}
+                      </div>
                   </div>
                   <span className="text-sm text-gray-500 leading-none">Score</span>
               </div> 
 
               <div className="flex-1 min-w-15 max-w-20 h-full flex flex-col items-center gap-1">
                   <div className="w-full h-20 h-full flex items-end">
-                      <div className={`w-full rounded-t text-white text-center text-sm
+                      <div className={`relative w-full rounded-t
+                          motion-safe:transition-[height,background-color] motion-safe:duration-500 motion-safe:ease-out
                           ${statViewerData?.Accuracy > 0  ? "bg-blue-500" : "bg-gray-300"}`}
                           
-                          style={{ height: `${Math.max(12, statViewerData?.Accuracy)}%`}}
+                          style={{
+                            height: `${accuracyBarHeight}%`,
+                            transitionDelay: '80ms',
+                          }}
 
                           title={`${topicChoice}: ${(statViewerData?.Accuracy)}% Questions Correct`}
-                      >{(statViewerData?.Accuracy + '%')}</div>
+                      >
+                        {statViewerData?.Accuracy > 0 && (
+                          <span className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold leading-none pointer-events-none ${useOutsideAccuracyLabel ? "-top-4 text-blue-600" : "top-1 text-white"}`}>
+                            {`${statViewerData.Accuracy}%`}
+                          </span>
+                        )}
+                      </div>
                   </div>
                   <span className="text-sm text-gray-500 leading-none">Accuracy</span>
               </div> 
@@ -477,7 +523,7 @@ const StatsViewer: React.FC = () => {
           </div>
 
           {/*Number Stats*/}
-          <div className="grid grid-cols-1 gap-3 w-1/4 h-50">
+          <div className="grid h-auto w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:h-50 lg:w-1/4 lg:grid-cols-1">
               <div className="rounded-lg bg-gray-50 p-3 border border-gray-200 ">
                   <p className="text-xs text-gray-500 mb-2">Questions Completed</p>
                   <p className="text-2xl font-bold text-gray-800 ">{statViewerData.NumQuestions}</p>

@@ -281,8 +281,11 @@ export interface GuildLeaderboardEntry
   rank:         number;
   id:           number;
   name:         string;
+  isOpen?:      boolean | number;
   exp:          number | string;
   guildPicture: string | null;
+  background?:  string | null;
+  flairNames?:  string[];
 }
 
 export interface GuildLeaderboardResponse

@@ -5,7 +5,7 @@ import TopicCard from "../components/TopicCard";
 
 const TopicPage: React.FC = () => (
   <Layout>
-    <h1 className="text-5xl pt-6 font-bold text-center my-6">Choose your topics</h1>
+    <h1 className="my-4 pt-4 text-center text-2xl font-bold sm:my-6 sm:pt-6 sm:text-4xl md:text-5xl">Choose your topics</h1>
     <TopicCard />
   </Layout>
 );

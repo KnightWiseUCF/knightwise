@@ -16,6 +16,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { isAxiosError } from "axios";
+import { CircleHelp } from "lucide-react";
 
 const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
   const [username, setUsername] = useState("");
@@ -76,9 +77,28 @@ const Login: React.FC<{ onToggle: () => void }> = ({ onToggle }) => {
   return (
     <div className="flex flex-col items-center">
       <div className="bg-gray-100 p-8 sm:p-12 rounded-xl shadow-lg w-full max-w-2xl min-h-[500px] flex flex-col items-center justify-center">
-        <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-center text-gray-800 mb-10">
-          Sign In
-        </h2>
+        <div className="mb-10 flex items-center justify-center">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-center text-gray-800">
+            Sign In
+          </h2>
+          <div className="group relative ml-1.5 inline-flex">
+            <button
+              type="button"
+              className="inline-flex translate-y-[1px] items-center justify-center rounded-full text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
+              aria-label="How sign in works by account type"
+            >
+              <CircleHelp size={20} />
+            </button>
+            <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-72 -translate-x-1/2 rounded-lg border border-gray-200 bg-white p-3 text-left text-xs text-gray-700 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:text-sm">
+              <p>
+                <span className="font-semibold">Student:</span> Create an account and sign in right away.
+              </p>
+              <p className="mt-2">
+                <span className="font-semibold">Professors:</span> Apply for a professor account, and you can sign in once approved. 
+              </p>
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={handleLogin} className="space-y-4 w-full max-w-lg">
           {/* username */}

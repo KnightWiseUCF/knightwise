@@ -31,7 +31,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex min-h-screen flex-col">
       {/* Header */}
       <Header onMenuClick={() => setSidebarOpen(true)} onLogoClick={handleLogoClick} />
 
@@ -43,11 +43,14 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
 
         {/* small Sidebar */}
         {sidebarOpen && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden">
-            <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-lg">
+          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)}>
+            <div
+              className="absolute left-0 top-0 h-full w-[85vw] max-w-72 bg-white shadow-lg"
+              onClick={(event) => event.stopPropagation()}
+            >
               <Sidebar />
               <button
-                className="absolute top-2 right-2 text-gray-600"
+                className="absolute right-2 top-2 rounded-md p-2 text-gray-600"
                 onClick={() => setSidebarOpen(false)}
               >
                 ✕
@@ -57,7 +60,7 @@ const Layout: React.FC<PropsWithChildren> = ({ children }) => {
         )}
 
         {/* main */}
-        <main className="flex-grow min-h-0 overflow-y-auto w-full">
+        <main className="min-h-0 w-full flex-grow overflow-x-hidden overflow-y-auto">
           {children}
         </main>
       </div>
