@@ -139,7 +139,7 @@ const sendProfVerifiedEmail = async (prof) => {
                   Your KnightWise professor account has been verified by an administrator. You can now log in and start contributing questions.
                 </p>
                 <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
-                  <a href="https://knightwise.com/login" style="font-size: 18px; color: #ba9b37; font-weight: bold; text-decoration: none;">Log in to KnightWise</a>
+                  <a href="https://knightwise.dev/" style="font-size: 18px; color: #ba9b37; font-weight: bold; text-decoration: none;">Log in to KnightWise</a>
                 </div>
                 <p style="color: #6b7280; font-size: 14px;">If you didn't create this account, please contact us immediately.</p>
                 <p style="color: #6b7280; font-size: 14px;">Thanks for joining KnightWise!</p>
